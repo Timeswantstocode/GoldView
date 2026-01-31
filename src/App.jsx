@@ -1,118 +1,94 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
-import { TrendingUp, Calculator, Clock, RefreshCw, ShieldCheck, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
+import { Chart as ChartJS, registerables } from 'chart.js';
+import priceData from '../data.json';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
+ChartJS.register(...registerables);
 
-const VAT_RATE = 0.13;
+export default function App() {
+  const [activeTab, setActiveTab] = useState('gold');
+  const [calc, setCalc] = useState({ tola: 0, aana: 0, lal: 0, making: 0, vat: true });
+  const currentPrice = priceData[priceData.length - 1];
 
-const App = () => {
-  const [prices, setPrices] = useState({ gold: 318800, silver: 7065, source: 'Initial', lastUpdated: '' });
-  const [activeMetal, setActiveMetal] = useState('gold');
-  const [loading, setLoading] = useState(true);
-  const [weight, setWeight] = useState({ tola: '', aana: '', lal: '' });
-  const [makingCharge, setMakingCharge] = useState('');
-  const [showVat, setShowVat] = useState(false);
-
-  const toBS = (isoDate) => {
-    const d = isoDate ? new Date(isoDate) : new Date();
-    const yearBS = d.getFullYear() + 56;
-    const months = ["Baisakh", "Jestha", "Ashadh", "Shrawan", "Bhadra", "Ashoj", "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra"];
-    const monthBS = (d.getMonth() + 9) % 12;
-    return `${d.getDate()} ${months[monthBS]} ${yearBS}`;
+  const calculateTotal = () => {
+    // Correct Weight Math: 1 Tola = 16 Aana, 1 Aana = 12 Lal
+    const totalTola = parseFloat(calc.tola) + (calc.aana / 16) + (calc.lal / 192);
+    const rate = activeTab === 'gold' ? currentPrice.gold : currentPrice.silver;
+    const metalPrice = totalTola * rate;
+    const withMaking = metalPrice + parseFloat(calc.making || 0);
+    return calc.vat ? withMaking * 1.13 : withMaking;
   };
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json?t=${Date.now()}`);
-      const data = await response.json();
-      setPrices({
-        gold: data.gold,
-        silver: data.silver,
-        source: data.source,
-        lastUpdated: toBS(data.date)
-      });
-    } catch (e) {
-      setPrices(prev => ({ ...prev, source: 'Offline Cache', lastUpdated: toBS() }));
-    }
-    setLoading(false);
+  const chartData = {
+    labels: priceData.map(d => d.date),
+    datasets: [{
+      label: `${activeTab.toUpperCase()} Price`,
+      data: priceData.map(d => activeTab === 'gold' ? d.gold : d.silver),
+      borderColor: activeTab === 'gold' ? '#D4AF37' : '#C0C0C0',
+      backgroundColor: 'rgba(212, 175, 55, 0.1)',
+      fill: true,
+      tension: 0.4
+    }]
   };
-
-  useEffect(() => { loadData(); }, []);
-
-  const calculation = useMemo(() => {
-    const rate = activeMetal === 'gold' ? prices.gold : prices.silver;
-    const totalTola = Number(weight.tola || 0) + (Number(weight.aana || 0) / 16) + (Number(weight.lal || 0) / 100);
-    const subtotal = (totalTola * rate) + Number(makingCharge || 0);
-    return { vat: subtotal * VAT_RATE, total: subtotal * (1 + VAT_RATE) };
-  }, [weight, makingCharge, prices, activeMetal]);
 
   return (
-    <div className="min-h-screen bg-[#020202] text-slate-300 font-sans p-4 md:p-10 selection:bg-yellow-500/30">
-      <header className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center mb-12 border-b border-white/5 pb-10">
-        <div className="text-center md:text-left">
-          <h1 className="text-6xl font-black tracking-tighter text-white italic">GOLD<span className="text-yellow-500">VIEW</span></h1>
-          <div className="flex items-center justify-center md:justify-start text-slate-500 text-[10px] mt-2 uppercase tracking-[0.4em] font-bold">
-            <ShieldCheck size={12} className="mr-2 text-green-500" /> SOURCE: {prices.source} • {prices.lastUpdated}
-          </div>
-        </div>
-        <button onClick={loadData} className="p-5 bg-white/5 rounded-2xl hover:bg-yellow-500 transition-all">
-          <RefreshCw size={24} className={loading ? "animate-spin text-yellow-500" : ""} />
-        </button>
+    <div className="min-h-screen bg-black text-gray-100 p-4 font-sans">
+      {/* Header */}
+      <header className="text-center mb-8">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-700 bg-clip-text text-transparent">
+          GOLDVIEW
+        </h1>
+        <p className="text-xs tracking-widest text-gray-500 uppercase">Live Market Analytics</p>
       </header>
 
-      {prices.source.includes('API') && (
-        <div className="max-w-6xl mx-auto mb-8 bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-2xl flex items-center text-yellow-500 text-xs font-bold uppercase">
-          <AlertTriangle size={16} className="mr-3" /> Scraper blocked by Federation. Using Duty-Adjusted API.
+      {/* Price Cards */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div 
+          onClick={() => setActiveTab('gold')}
+          className={`p-4 rounded-2xl border-2 transition-all ${activeTab === 'gold' ? 'border-yellow-500 bg-yellow-950/20' : 'border-gray-800'}`}
+        >
+          <p className="text-gray-400 text-sm">Gold (Hallmark)</p>
+          <p className="text-2xl font-bold">रू {currentPrice.gold.toLocaleString()}</p>
         </div>
-      )}
+        <div 
+          onClick={() => setActiveTab('silver')}
+          className={`p-4 rounded-2xl border-2 transition-all ${activeTab === 'silver' ? 'border-gray-400 bg-gray-900/40' : 'border-gray-800'}`}
+        >
+          <p className="text-gray-400 text-sm">Silver</p>
+          <p className="text-2xl font-bold">रू {currentPrice.silver.toLocaleString()}</p>
+        </div>
+      </div>
 
-      <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-8 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button onClick={() => setActiveMetal('gold')} className={`p-10 rounded-[3rem] text-left border-2 transition-all ${activeMetal === 'gold' ? 'border-yellow-500 bg-yellow-500/[0.03]' : 'border-white/5 opacity-40'}`}>
-              <p className="text-[10px] font-black text-yellow-500 uppercase mb-3 tracking-widest">Fine Gold 24K</p>
-              <h2 className="text-5xl font-black text-white tracking-tighter">Rs. {prices.gold.toLocaleString()}</h2>
-            </button>
-            <button onClick={() => setActiveMetal('silver')} className={`p-10 rounded-[3rem] text-left border-2 transition-all ${activeMetal === 'silver' ? 'border-slate-400 bg-slate-400/[0.03]' : 'border-white/5 opacity-40'}`}>
-              <p className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest">Pure Silver</p>
-              <h2 className="text-5xl font-black text-white tracking-tighter">Rs. {prices.silver.toLocaleString()}</h2>
-            </button>
-          </div>
-          
-          {/* Graph Placeholder */}
-          <div className="bg-white/5 border border-white/10 p-10 rounded-[3.5rem] h-64 flex items-center justify-center text-slate-600 italic">
-            Graph scaling to Rs. {activeMetal === 'gold' ? prices.gold.toLocaleString() : prices.silver.toLocaleString()}...
-          </div>
+      {/* Chart Section */}
+      <div className="bg-gray-900/50 p-4 rounded-3xl border border-gray-800 mb-8">
+        <Line data={chartData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
+      </div>
+
+      {/* Calculator */}
+      <div className="bg-gradient-to-b from-gray-900 to-black p-6 rounded-3xl border border-yellow-900/30">
+        <h2 className="text-xl font-semibold mb-4 text-yellow-500">Weight Calculator</h2>
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <input type="number" placeholder="Tola" className="bg-gray-800 p-3 rounded-xl" onChange={e => setCalc({...calc, tola: e.target.value})} />
+          <input type="number" placeholder="Aana" className="bg-gray-800 p-3 rounded-xl" onChange={e => setCalc({...calc, aana: e.target.value})} />
+          <input type="number" placeholder="Lal" className="bg-gray-800 p-3 rounded-xl" onChange={e => setCalc({...calc, lal: e.target.value})} />
+        </div>
+        <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-gray-800 p-3 rounded-xl mb-4" onChange={e => setCalc({...calc, making: e.target.value})} />
+        
+        <div className="flex justify-between items-center mb-6">
+          <span>Include 13% VAT</span>
+          <button 
+            onClick={() => setCalc({...calc, vat: !calc.vat})}
+            className={`w-12 h-6 rounded-full transition-colors ${calc.vat ? 'bg-yellow-500' : 'bg-gray-700'}`}
+          >
+            <div className={`w-4 h-4 bg-white rounded-full transition-transform ${calc.vat ? 'translate-x-7' : 'translate-x-1'}`} />
+          </button>
         </div>
 
-        <div className="lg:col-span-4">
-          <div className="bg-[#0c0c0c] border border-white/10 p-10 rounded-[3.5rem] shadow-2xl">
-            <h3 className="text-[10px] font-black mb-10 text-white uppercase tracking-[0.2em] flex items-center">
-              <Calculator size={20} className="mr-3 text-yellow-500" /> Gold/Silver Price Calculator
-            </h3>
-            <div className="space-y-6">
-              <div className="grid grid-cols-3 gap-2">
-                {['tola', 'aana', 'lal'].map(u => (
-                  <div key={u}>
-                    <label className="text-[9px] uppercase font-bold text-slate-600 block mb-2">{u}</label>
-                    <input type="number" value={weight[u]} onChange={e => setWeight({...weight, [u]: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none focus:border-yellow-500" />
-                  </div>
-                ))}
-              </div>
-              <input type="number" placeholder="Making Charges" value={makingCharge} onChange={e => setMakingCharge(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white outline-none" />
-              <div className="pt-8 border-t border-white/10">
-                <span className="text-[10px] block font-black text-slate-500 uppercase mb-2">Grand Total</span>
-                <h2 className="text-5xl font-black text-white tracking-tighter">Rs. {Math.round(calculation.total).toLocaleString()}</h2>
-              </div>
-            </div>
-          </div>
+        <div className="text-center p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl">
+          <p className="text-gray-400 text-sm">Total Estimated Bill</p>
+          <p className="text-3xl font-bold text-yellow-500">रू {calculateTotal().toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
         </div>
-      </main>
+      </div>
     </div>
   );
-};
-
-export default App;
+}
