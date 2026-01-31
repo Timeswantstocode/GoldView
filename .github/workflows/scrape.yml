@@ -5,20 +5,23 @@ on:
     - cron: '0 */3 * * *'
   workflow_dispatch:
 
+# Grant permission to change files and deploy the site
 permissions:
   contents: write
   pages: write
   id-token: write
 
 jobs:
-  build:
+  scrape-and-deploy:
     runs-on: ubuntu-latest
     steps:
+      # 1. Get the code
       - name: Checkout Repo
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
+      # 2. Setup Python
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -27,25 +30,43 @@ jobs:
       - name: Install Dependencies
         run: pip install requests beautifulsoup4
 
+      # 3. Run Scraper
       - name: Run Scraper
         run: python scraper.py
 
-      - name: Commit and Push changes
+      # 4. SAFETY CHECK (New Step)
+      # This checks if index.html exists and is not empty. 
+      # If it is empty, the action will FAIL here and stop the deploy.
+      - name: Check for Valid HTML
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          if [ ! -s index.html ]; then
+            echo "ERROR: index.html is missing or empty! Stopping deploy."
+            exit 1
+          else
+            echo "index.html looks good. Proceeding."
+          fi
+
+      # 5. Save the Data (Commit & Push)
+      - name: Commit and Push Data
+        run: |
+          git config --global user.name "Scraper Bot"
+          git config --global user.email "bot@noreply.github.com"
+          # explicitly add only the data file
           git add data.json
-          git commit -m "Automated Price Update: $(date)" || exit 0
+          # Check if there are changes before committing to avoid errors
+          git diff --staged --quiet || git commit -m "Auto-update prices: $(date)"
           git push origin main
 
+      # 6. Prepare for Deploy
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # This uploads your whole folder to the web server
+          path: '.' 
 
+      # 7. Go Live
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
