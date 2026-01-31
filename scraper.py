@@ -14,7 +14,7 @@ def get_live_prices():
         nums = re.findall(r'(\d{4,6})', text)
         for n in nums:
             val = int(n)
-            if 200000 < val < 500000: gold = val; source = "FENEGOSIDA Official"
+            if 250000 < val < 500000: gold = val; source = "FENEGOSIDA Official"
             if 5000 < val < 15000: silver = val
     except: pass
     return gold, silver, source
