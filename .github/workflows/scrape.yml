@@ -2,35 +2,56 @@ name: Scrape Gold Data
 
 on:
   schedule:
-    # Runs every 6 hours (adjust as needed)
+    # Runs every 6 hours
     - cron: '0 */6 * * *'
-  workflow_dispatch: # Allows you to run it manually from the Actions tab
+  workflow_dispatch: # Manual trigger
 
 jobs:
-  build:
+  scrape-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # IMPORTANT: Gives the bot permission to push changes
+      contents: write
+      pages: write
+      id-token: write
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0  # Get full history for better git operations
+      
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-
+      
       - name: Install dependencies
         run: |
-          pip install requests beautifulsoup4 # Add any other libraries you use
-
+          pip install requests beautifulsoup4
+      
       - name: Run scraper
         run: python scraper.py
-
-      - name: Commit and Push changes
+      
+      - name: Check for changes
+        id: verify_diff
+        run: |
+          git diff --quiet . || echo "changed=true" >> $GITHUB_OUTPUT
+      
+      - name: Commit and Push ALL changes
+        if: steps.verify_diff.outputs.changed == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add data.json
-          # Only commit if there are changes to avoid erroring out
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update gold data: $(date)" && git push)
+          git add .  # Add ALL changed files, not just data.json
+          git commit -m "Auto-update gold data: $(date +'%Y-%m-%d %H:%M:%S UTC')"
+          git push
+      
+      - name: Trigger Pages deployment
+        if: steps.verify_diff.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: '.'  # Upload entire repo for Pages
+      
+      - name: Deploy to GitHub Pages
+        if: steps.verify_diff.outputs.changed == 'true'
+        uses: actions/deploy-pages@v2
