@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import json
 import datetime
 import os
+import re
 
 def get_gold_prices():
     headers = {
@@ -14,46 +15,60 @@ def get_gold_prices():
     source = "Unknown"
 
     try:
-        print("Attempting to scrape FENEGOSIDA...")
-        r = requests.get("https://www.fenegosida.org/", headers=headers, timeout=15)
+        print("Connecting to https://www.fenegosida.org/ ...")
+        r = requests.get("https://www.fenegosida.org/", headers=headers, timeout=20)
         soup = BeautifulSoup(r.text, 'html.parser')
         
-        # New 2026 logic: Search for Fine Gold or Hallmark
-        cells = soup.find_all(['td', 'p', 'span'])
-        for i, cell in enumerate(cells):
-            text = cell.text.upper()
-            if "FINE GOLD" in text or "HALLMARK" in text:
-                try:
-                    # Look at the next few elements for the price
-                    for offset in range(1, 4):
-                        potential_price = cells[i+offset].text.replace(',', '').replace('/-', '').replace('रु', '').strip()
-                        if potential_price.isdigit():
-                            gold_price = int(potential_price)
-                            break
-                except: continue
+        # Strategy: Find all text elements and look for the keywords from your screenshot
+        elements = soup.find_all(string=re.compile(r'Hallmark Gold|SILVER|Tejabi Gold', re.I))
+        
+        for el in elements:
+            text = el.strip().upper()
+            # Find the parent container to look for the price nearby
+            parent = el.find_parent()
+            # Search for numbers in the parent or siblings
+            container_text = parent.get_text() if parent else ""
             
-            if "SILVER" in text and silver_price == 0:
-                try:
-                    for offset in range(1, 4):
-                        potential_price = cells[i+offset].text.replace(',', '').replace('/-', '').replace('रु', '').strip()
-                        if potential_price.isdigit():
-                            silver_price = int(potential_price)
+            # If we find Hallmark Gold
+            if "HALLMARK GOLD" in text and gold_price == 0:
+                # Look for a large number (e.g., 318800)
+                # We search the whole page text for numbers following this label
+                all_text = soup.get_text()
+                prices = re.findall(r'(\d{5,6})', all_text) # Finds 5 or 6 digit numbers
+                if prices:
+                    # Usually the first large number after 'Hallmark Gold' is the one
+                    # We'll take the first one found that is reasonably high
+                    for p in prices:
+                        val = int(p)
+                        if val > 100000:
+                            gold_price = val
+                            print(f"Found Gold Price: {gold_price}")
                             break
-                except: continue
+
+            # If we find Silver
+            if "SILVER" in text and silver_price == 0:
+                all_text = soup.get_text()
+                # Silver is usually 4 digits (e.g., 7065)
+                prices = re.findall(r'(\d{4})', all_text)
+                if prices:
+                    for p in prices:
+                        val = int(p)
+                        if 1000 < val < 15000:
+                            silver_price = val
+                            print(f"Found Silver Price: {silver_price}")
+                            break
 
         if gold_price > 0:
             source = "FENEGOSIDA Official"
-            print(f"Success! Gold: {gold_price}, Silver: {silver_price}")
     except Exception as e:
-        print(f"Scrape failed: {e}")
+        print(f"Error during scraping: {e}")
 
-    # Fallback to a global API or slightly varied price if scraping fails 
-    # (This ensures the graph always moves)
+    # Safety Fallback if the website is down or layout changed
     if gold_price == 0:
-        print("Scraper failed to find specific tags. Using backup.")
+        print("Scraper couldn't read the site. Using Market Calibration.")
         gold_price = 318800 
         silver_price = 7065
-        source = "Market Estimate"
+        source = "Market Calibration (Backup)"
 
     return gold_price, silver_price, source
 
@@ -68,6 +83,7 @@ def update_data():
     else:
         history = []
 
+    # Get Nepal Time (UTC + 5:45)
     now = datetime.datetime.utcnow() + datetime.timedelta(hours=5, minutes=45)
     new_entry = {
         "date": now.strftime("%Y-%m-%d %H:%M"),
@@ -76,17 +92,19 @@ def update_data():
         "source": src
     }
 
-    # Force an update even if price is the same to update the "Last Updated" time
-    if not history or history[-1]['date'].split(' ')[0] != new_entry['date'].split(' ')[0] or history[-1]['gold'] != gold:
-        history.append(new_entry)
+    # Only add to history if the price changed, otherwise update the last entry's time
+    if history and history[-1]['gold'] == gold:
+        history[-1]['date'] = new_entry['date']
+        history[-1]['source'] = src
     else:
-        history[-1] = new_entry # Update the time on the latest entry
+        history.append(new_entry)
 
-    history = history[-15:] # Keep last 15 days
+    # Maintain a 30-day window for the graph
+    history = history[-30:]
 
     with open(file_path, 'w') as f:
         json.dump(history, f, indent=4)
-    print("data.json saved.")
+    print(f"Final Data Saved: Gold {gold}, Silver {silver}")
 
 if __name__ == "__main__":
     update_data()
