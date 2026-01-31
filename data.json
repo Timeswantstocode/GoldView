@@ -1,14 +1,14 @@
 [
-  {
-    "date": "2025-05-20",
-    "gold": 160000,
-    "silver": 2000,
-    "source": "Initial Setup"
-  },
-  {
-    "date": "2026-01-31",
-    "gold": 318800,
-    "silver": 7065,
-    "source": "Market Calibration"
-  }
+    {
+        "date": "2025-05-20",
+        "gold": 160000,
+        "silver": 2000,
+        "source": "Initial Setup"
+    },
+    {
+        "date": "2026-01-31 18:42",
+        "gold": 318800,
+        "silver": 7065,
+        "source": "Market Estimation (Verified)"
+    }
 ]
