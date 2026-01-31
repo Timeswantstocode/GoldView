@@ -48,10 +48,10 @@ jobs:
       
       - name: Trigger Pages deployment
         if: steps.verify_diff.outputs.changed == 'true'
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         with:
           path: '.'  # Upload entire repo for Pages
       
       - name: Deploy to GitHub Pages
         if: steps.verify_diff.outputs.changed == 'true'
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
