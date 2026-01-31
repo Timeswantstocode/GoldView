@@ -11,15 +11,11 @@ permissions:
   id-token: write
 
 jobs:
-  scrape_and_commit:
+  build_and_deploy:
     runs-on: ubuntu-latest
-    outputs:
-      commit_status: ${{ steps.commit.outcome }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -33,38 +29,17 @@ jobs:
         run: python scraper.py
 
       - name: Commit and Push changes
-        id: commit
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated Price Update: $(date)" && git push origin main)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update prices" && git push origin main)
 
-  deploy:
-    needs: scrape_and_commit
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Verify index.html exists
-        run: |
-          if [ ! -f index.html ]; then
-            echo "CRITICAL ERROR: index.html not found in root!"
-            exit 1
-          fi
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
+      # IMPORTANT: We "Upload" exactly what is in the folder right now
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # This MUST be the directory containing index.html
+          path: '.'
 
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
