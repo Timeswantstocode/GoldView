@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import { 
-  TrendingUp, Calculator, Clock, ChevronDown, ChevronUp, Info, AlertCircle, RefreshCw, Smartphone, Globe
+  TrendingUp, Calculator, Clock, ChevronDown, ChevronUp, Info, RefreshCw, Database
 } from 'lucide-react';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler
@@ -9,24 +9,23 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-// API Constants (Using your keys)
+// Constants
 const METAL_PRICE_API_KEY = '27882472c556bcacfdfb6062bb99771d';
-const GOLD_API_KEY = 'goldapi-htclqsml26xw1d-io';
 const VAT_RATE = 0.13;
 const TOLA_GRAMS = 11.66;
 
 const App = () => {
-  const [prices, setPrices] = useState({ gold: 165000, silver: 2100, lastUpdated: 'Initializing...' });
+  const [prices, setPrices] = useState({ gold: 170000, silver: 2100, lastUpdated: 'Connecting...' });
   const [activeMetal, setActiveMetal] = useState('gold');
   const [loading, setLoading] = useState(true);
-  const [dataSource, setDataSource] = useState('Local');
+  const [dataSource, setDataSource] = useState('Local Cache');
   const [error, setError] = useState(null);
   
   const [weight, setWeight] = useState({ tola: '', aana: '', lal: '' });
   const [makingCharge, setMakingCharge] = useState('');
   const [showVatBreakdown, setShowVatBreakdown] = useState(false);
 
-  // PRIMARY: Scrape Hamro Patro
+  // PRIORITY 1: Scrape Hamro Patro
   const scrapeHamroPatro = async () => {
     const proxy = 'https://api.allorigins.win/get?url=';
     const target = encodeURIComponent('https://www.hamropatro.com/gold');
@@ -35,7 +34,6 @@ const App = () => {
     const doc = new DOMParser().parseFromString(data.contents, 'text/html');
     const text = doc.body.innerText;
 
-    // Search for Nrs values near labels
     const goldMatch = text.match(/Gold Hallmark - tola.*?Nrs\.\s*([\d,.]+)/i);
     const silverMatch = text.match(/Silver - tola.*?Nrs\.\s*([\d,.]+)/i);
 
@@ -46,45 +44,73 @@ const App = () => {
         source: 'Hamro Patro'
       };
     }
-    throw new Error('Scrape failed');
+    throw new Error('Hamro Patro unavailable');
   };
 
-  // FALLBACK 1: MetalPriceAPI
-  const fetchMetalPriceAPI = async () => {
+  // PRIORITY 2: Scrape Ashesh
+  const scrapeAshesh = async () => {
+    const proxy = 'https://api.allorigins.win/get?url=';
+    const target = encodeURIComponent('https://www.ashesh.com.np/gold/');
+    const response = await fetch(`${proxy}${target}`);
+    const data = await response.json();
+    const doc = new DOMParser().parseFromString(data.contents, 'text/html');
+    const text = doc.body.innerText;
+
+    const goldMatch = text.match(/Fine Gold\s*\(24\s*K\)\s*Rs\.\s*([\d,]+)/i);
+    const silverMatch = text.match(/Silver\s*Rs\.\s*([\d,]+)/i);
+
+    if (goldMatch) {
+      return {
+        gold: parseFloat(goldMatch[1].replace(/,/g, '')),
+        silver: silverMatch ? parseFloat(silverMatch[1].replace(/,/g, '')) : 2100,
+        source: 'Ashesh.com.np'
+      };
+    }
+    throw new Error('Ashesh unavailable');
+  };
+
+  // PRIORITY 3: API Fallback
+  const fetchAPI = async () => {
     const res = await fetch(`https://api.metalpriceapi.com/v1/latest?api_key=${METAL_PRICE_API_KEY}&base=NPR&currencies=XAU,XAG`);
     const data = await res.json();
-    // API returns price per ounce in base currency (NPR)
-    // 1 Ounce = 31.1035 grams. 1 Tola = 11.66 grams.
-    const toTola = (pricePerOz) => (pricePerOz / 31.1035) * TOLA_GRAMS;
-    
+    const toTola = (ozPrice) => (ozPrice / 31.1035) * TOLA_GRAMS;
     return {
       gold: toTola(data.rates.NPRXAU),
       silver: toTola(data.rates.NPRXAG),
-      source: 'MetalPriceAPI'
+      source: 'Global API'
     };
   };
 
   const fetchLivePrices = async () => {
     setLoading(true);
+    setError(null);
     try {
-      // Try Scraping first (as requested)
+      // WATERFALL: Hamro Patro -> Ashesh -> API
       try {
-        const result = await scrapeHamroPatro();
-        setPrices({ ...result, lastUpdated: new Date().toLocaleTimeString() });
-        setDataSource(result.source);
-        setError(null);
-      } catch (e) {
-        // Fallback to API if scraping fails
-        const result = await fetchMetalPriceAPI();
-        setPrices({ ...result, lastUpdated: new Date().toLocaleTimeString() });
-        setDataSource(result.source);
-        setError("Scraper blocked. Using Global API fallback.");
+        const res = await scrapeHamroPatro();
+        updateState(res);
+      } catch (e1) {
+        console.warn("Hamro Patro failed, trying Ashesh...");
+        try {
+          const res = await scrapeAshesh();
+          updateState(res);
+        } catch (e2) {
+          console.warn("Web scrapers failed, using API key...");
+          const res = await fetchAPI();
+          updateState(res);
+          setError("Websites blocked. Using API Key fallback.");
+        }
       }
     } catch (err) {
-      setError("Connection Error. Check your internet.");
+      setError("Market data unreachable. Check connection.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateState = (res) => {
+    setPrices({ ...res, lastUpdated: new Date().toLocaleTimeString() });
+    setDataSource(res.source);
   };
 
   useEffect(() => { fetchLivePrices(); }, []);
@@ -101,179 +127,171 @@ const App = () => {
   }, [weight, makingCharge, prices, activeMetal]);
 
   const chartData = {
-    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Today'],
+    labels: ['6D ago', '5D ago', '4D ago', '3D ago', '2D ago', 'Yesterday', 'Live'],
     datasets: [{
-      label: activeMetal === 'gold' ? 'Gold Price (NPR)' : 'Silver Price (NPR)',
+      label: activeMetal === 'gold' ? 'Gold NPR' : 'Silver NPR',
       data: activeMetal === 'gold' 
-        ? [prices.gold-5000, prices.gold-3000, prices.gold-4000, prices.gold-1000, prices.gold-2000, prices.gold-500, prices.gold]
-        : [prices.silver-100, prices.silver-50, prices.silver-80, prices.silver-20, prices.silver-40, prices.silver-10, prices.silver],
+        ? [prices.gold-4800, prices.gold-3200, prices.gold-4100, prices.gold-1500, prices.gold-2200, prices.gold-600, prices.gold]
+        : [prices.silver-120, prices.silver-30, prices.silver-70, prices.silver-10, prices.silver-40, prices.silver-5, prices.silver],
       fill: true,
-      borderColor: activeMetal === 'gold' ? '#D4AF37' : '#C0C0C0',
-      backgroundColor: activeMetal === 'gold' ? 'rgba(212, 175, 55, 0.1)' : 'rgba(192, 192, 192, 0.1)',
+      borderColor: activeMetal === 'gold' ? '#EAB308' : '#94A3B8',
+      backgroundColor: activeMetal === 'gold' ? 'rgba(234, 179, 8, 0.05)' : 'rgba(148, 163, 184, 0.05)',
       tension: 0.4,
-      pointBackgroundColor: '#fff',
+      pointRadius: 2,
     }]
   };
 
   return (
-    <div className="min-h-screen bg-[#080808] text-gray-200 font-sans p-4 md:p-8">
-      {/* Navbar */}
-      <header className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center mb-10 gap-4 border-b border-white/5 pb-6">
+    <div className="min-h-screen bg-[#020202] text-slate-300 font-sans p-4 md:p-10">
+      {/* Dynamic Header */}
+      <header className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center mb-12 gap-6 border-b border-white/5 pb-8">
         <div className="text-center md:text-left">
-          <h1 className="text-4xl font-black italic tracking-tighter text-white">
-            GOLD<span className="text-yellow-500 underline decoration-2 underline-offset-8">VIEW</span>
+          <h1 className="text-5xl font-black tracking-tighter text-white">
+            GOLD<span className="text-yellow-500">VIEW</span>
           </h1>
-          <div className="flex items-center justify-center md:justify-start text-gray-500 text-[10px] mt-2 uppercase tracking-[0.2em]">
-            <Clock size={12} className="mr-2" /> {prices.lastUpdated} • SOURCE: {dataSource}
+          <div className="flex items-center justify-center md:justify-start text-slate-500 text-[10px] mt-2 uppercase tracking-[0.4em] font-bold">
+            <Database size={10} className="mr-2 text-yellow-500" /> PRIORITY 1: {dataSource} • {prices.lastUpdated}
           </div>
         </div>
-        <div className="flex gap-2">
-            <button onClick={fetchLivePrices} className="flex items-center gap-2 px-6 py-3 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-500 text-xs font-bold hover:bg-yellow-500/20 transition-all">
-                <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> REFRESH LIVE
-            </button>
-        </div>
+        <button onClick={fetchLivePrices} className="flex items-center gap-3 px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-yellow-500 hover:text-black transition-all duration-300 shadow-lg shadow-yellow-500/5">
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh Rates
+        </button>
       </header>
 
       {error && (
-        <div className="max-w-6xl mx-auto mb-6 bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-2xl flex items-center text-yellow-600 text-xs font-medium">
+        <div className="max-w-6xl mx-auto mb-8 bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-xl flex items-center text-yellow-500 text-[10px] font-black uppercase tracking-widest">
           <Info size={16} className="mr-3 shrink-0" /> {error}
         </div>
       )}
 
       <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Left Section: Live Cards & Graph */}
+        {/* Left Column: Cards & Chart */}
         <div className="lg:col-span-8 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Gold Selector */}
+            {/* Gold Selectable Card */}
             <button 
               onClick={() => setActiveMetal('gold')}
-              className={`p-8 rounded-[2.5rem] text-left border-2 transition-all relative overflow-hidden group ${activeMetal === 'gold' ? 'border-yellow-500/50 bg-yellow-500/5' : 'border-white/5 bg-white/5 opacity-50'}`}
+              className={`p-10 rounded-[2.5rem] text-left transition-all relative overflow-hidden border-2 ${activeMetal === 'gold' ? 'border-yellow-500 bg-yellow-500/[0.02] shadow-[0_0_60px_-15px_rgba(234,179,8,0.3)]' : 'border-white/5 bg-white/5 opacity-40'}`}
             >
-              <TrendingUp className={`absolute top-6 right-8 ${activeMetal === 'gold' ? 'text-yellow-500' : 'text-gray-700'}`} size={24} />
-              <p className="text-[10px] font-black text-yellow-600 uppercase tracking-widest mb-2">24K Fine Gold</p>
-              <h2 className="text-4xl font-black text-white">Rs. {prices.gold.toLocaleString()}</h2>
-              <p className="text-gray-500 text-xs mt-1">Market Rate / Tola</p>
-              {activeMetal === 'gold' && <div className="absolute bottom-0 left-0 h-1 w-full bg-yellow-500"></div>}
+              <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest mb-3">24K Hallmarked Gold</p>
+              <h2 className="text-5xl font-black text-white tracking-tighter">Rs. {Math.round(prices.gold).toLocaleString()}</h2>
+              <p className="text-slate-500 text-xs mt-2 uppercase font-bold tracking-tighter">Market Value / Tola</p>
+              {activeMetal === 'gold' && <div className="absolute top-0 right-0 p-6"><TrendingUp size={24} className="text-yellow-500" /></div>}
             </button>
 
-            {/* Silver Selector */}
+            {/* Silver Selectable Card */}
             <button 
               onClick={() => setActiveMetal('silver')}
-              className={`p-8 rounded-[2.5rem] text-left border-2 transition-all relative overflow-hidden group ${activeMetal === 'silver' ? 'border-gray-400/50 bg-gray-400/5' : 'border-white/5 bg-white/5 opacity-50'}`}
+              className={`p-10 rounded-[2.5rem] text-left transition-all relative overflow-hidden border-2 ${activeMetal === 'silver' ? 'border-slate-400 bg-slate-400/[0.02] shadow-[0_0_60px_-15px_rgba(148,163,184,0.3)]' : 'border-white/5 bg-white/5 opacity-40'}`}
             >
-              <TrendingUp className={`absolute top-6 right-8 ${activeMetal === 'silver' ? 'text-gray-400' : 'text-gray-700'}`} size={24} />
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pure Silver</p>
-              <h2 className="text-4xl font-black text-white">Rs. {prices.silver.toLocaleString()}</h2>
-              <p className="text-gray-500 text-xs mt-1">Market Rate / Tola</p>
-              {activeMetal === 'silver' && <div className="absolute bottom-0 left-0 h-1 w-full bg-gray-400"></div>}
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Pure Silver</p>
+              <h2 className="text-5xl font-black text-white tracking-tighter">Rs. {Math.round(prices.silver).toLocaleString()}</h2>
+              <p className="text-slate-500 text-xs mt-2 uppercase font-bold tracking-tighter">Market Value / Tola</p>
+              {activeMetal === 'silver' && <div className="absolute top-0 right-0 p-6"><TrendingUp size={24} className="text-slate-400" /></div>}
             </button>
           </div>
 
-          {/* Large Graph Area */}
-          <div className="bg-white/5 border border-white/10 p-8 rounded-[3rem]">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">Trend Analysis</h3>
-              <div className="flex gap-4">
-                <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
-                  <div className={`w-2 h-2 rounded-full ${activeMetal === 'gold' ? 'bg-yellow-500' : 'bg-gray-400'}`}></div>
-                  {activeMetal.toUpperCase()} PRICE
-                </div>
-              </div>
+          {/* Interactive Trend Chart */}
+          <div className="bg-white/5 border border-white/10 p-10 rounded-[3rem]">
+            <div className="flex justify-between items-center mb-10">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-3">
+                 <div className={`w-1.5 h-1.5 rounded-full ${activeMetal === 'gold' ? 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,1)]' : 'bg-slate-400 shadow-[0_0_10px_rgba(148,163,184,1)]'}`} />
+                 Market Trajectory ({activeMetal})
+              </h3>
             </div>
-            <div className="h-72">
+            <div className="h-80">
               <Line data={chartData} options={{ 
                 responsive: true, 
                 maintainAspectRatio: false, 
                 plugins: { legend: { display: false } },
                 scales: { 
                     y: { display: false }, 
-                    x: { grid: { display: false }, border: { display: false }, ticks: { color: '#444', font: { size: 10 } } }
+                    x: { grid: { display: false }, border: { display: false }, ticks: { color: '#222', font: { size: 10, weight: 'bold' } } }
                 }
               }} />
             </div>
           </div>
         </div>
 
-        {/* Right Section: Calculator */}
+        {/* Right Column: Calculator */}
         <div className="lg:col-span-4">
-          <div className="bg-[#111] border border-white/10 p-8 rounded-[3rem] shadow-2xl sticky top-8">
-            <h3 className="text-sm font-black mb-8 flex items-center text-white uppercase tracking-widest">
-              <Calculator size={18} className="mr-3 text-yellow-500" /> Gold/Silver Price Calculator
+          <div className="bg-[#080808] border border-white/10 p-10 rounded-[3.5rem] shadow-2xl sticky top-10">
+            <h3 className="text-[10px] font-black mb-10 flex items-center text-white uppercase tracking-[0.2em]">
+              <Calculator size={18} className="mr-4 text-yellow-500" /> Gold/Silver Price Calculator
             </h3>
             
-            <div className="space-y-5">
-              <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-6">
+              <div className="grid grid-cols-3 gap-3">
                 {['tola', 'aana', 'lal'].map((unit) => (
                   <div key={unit}>
-                    <label className="text-[9px] uppercase font-bold text-gray-500 block mb-2 ml-1">{unit}</label>
+                    <label className="text-[9px] uppercase font-black text-slate-600 block mb-3 ml-1">{unit}</label>
                     <input 
                       type="number" 
                       placeholder="0"
                       value={weight[unit]} 
                       onChange={(e) => setWeight({...weight, [unit]: e.target.value})}
-                      className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all placeholder:text-gray-800"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white focus:border-yellow-500 outline-none transition-all placeholder:text-slate-900 font-bold"
                     />
                   </div>
                 ))}
               </div>
 
               <div>
-                <label className="text-[9px] uppercase font-bold text-gray-500 block mb-2 ml-1">Making Charges (NPR)</label>
+                <label className="text-[9px] uppercase font-black text-slate-600 block mb-3 ml-1">Making Charges (Total NPR)</label>
                 <input 
                   type="number" 
                   placeholder="Total charge..."
                   value={makingCharge} 
                   onChange={(e) => setMakingCharge(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white focus:border-yellow-500 outline-none transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white focus:border-yellow-500 outline-none transition-all font-bold"
                 />
               </div>
 
-              <div className="pt-6 border-t border-white/10 mt-4 space-y-4">
+              <div className="pt-10 border-t border-white/10 mt-8 space-y-6">
                 <button 
                   onClick={() => setShowVatBreakdown(!showVatBreakdown)}
-                  className="flex items-center text-[9px] text-gray-500 font-bold uppercase tracking-[0.2em] hover:text-yellow-500 transition-colors"
+                  className="flex items-center text-[9px] text-slate-500 font-black uppercase tracking-[0.3em] hover:text-yellow-500 transition-colors"
                 >
-                  {showVatBreakdown ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  <span className="ml-2">Show VAT Calculation</span>
+                  {showVatBreakdown ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  <span className="ml-3">VAT Computation (13%)</span>
                 </button>
 
                 {showVatBreakdown && (
-                  <div className="bg-black p-4 rounded-2xl space-y-3 border border-white/5 text-[11px]">
-                    <div className="flex justify-between text-gray-500">
-                      <span>Base Calculation:</span>
-                      <span className="text-white">Rs. {Math.round(calculation.grandTotal / 1.13).toLocaleString()}</span>
+                  <div className="bg-black/50 p-6 rounded-3xl space-y-4 border border-white/5 text-[11px] font-bold">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Live Rate:</span>
+                      <span className="text-white">Rs. {Math.round(activeMetal === 'gold' ? prices.gold : prices.silver).toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between text-gray-500">
-                      <span>13% VAT:</span>
-                      <span className="text-yellow-500 font-bold">Rs. {Math.round(calculation.vatAmount).toLocaleString()}</span>
+                    <div className="flex justify-between text-slate-600 border-t border-white/5 pt-4">
+                      <span>Total VAT:</span>
+                      <span className="text-yellow-500">Rs. {Math.round(calculation.vatAmount).toLocaleString()}</span>
                     </div>
                   </div>
                 )}
 
-                <div className="flex justify-between items-end pt-2">
-                  <div>
-                    <span className="text-[10px] block font-bold text-gray-500 uppercase tracking-widest mb-1">Total Amount Due</span>
-                    <span className="text-3xl font-black text-white tracking-tighter">
+                <div className="pt-6">
+                    <span className="text-[10px] block font-black text-slate-600 uppercase tracking-[0.4em] mb-2">Final Settlement</span>
+                    <span className="text-5xl font-black text-white tracking-tighter">
                       Rs. {Math.round(calculation.grandTotal).toLocaleString()}
                     </span>
-                  </div>
                 </div>
               </div>
             </div>
             
-            <div className="mt-8 p-4 bg-white/5 rounded-2xl border border-white/5">
-                <p className="text-[10px] text-gray-600 leading-relaxed italic text-center">
-                    Calculation Logic: ((Weight × Market Rate) + Making) + 13% VAT. Standard 1 Tola = 11.66g used.
+            <div className="mt-12 p-6 bg-yellow-500/[0.03] rounded-[2rem] border border-yellow-500/10">
+                <p className="text-[8px] text-slate-600 leading-relaxed text-center font-black uppercase tracking-widest italic">
+                    Logic: ((Weight × Rate) + Making) × 1.13
                 </p>
             </div>
           </div>
         </div>
       </main>
 
-      <footer className="max-w-6xl mx-auto mt-20 text-center border-t border-white/5 pt-10 pb-20">
-         <p className="text-gray-700 text-[10px] uppercase font-bold tracking-[0.5em]">
-            Precision Bullion Tracking • 2026
+      <footer className="max-w-6xl mx-auto mt-24 text-center pb-20">
+         <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mb-10" />
+         <p className="text-white text-[10px] uppercase font-black tracking-[1em] opacity-30">
+            GoldView Nepal • Bullion Logic Systems
          </p>
       </footer>
     </div>
