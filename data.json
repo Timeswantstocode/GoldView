@@ -1,1 +1,14 @@
-{"gold": 312846, "silver": 7659, "source": "Ashesh Live", "date": "2026-01-31T11:56:14.114417"}
+[
+  {
+    "date": "2025-05-20",
+    "gold": 160000,
+    "silver": 2000,
+    "source": "Initial Setup"
+  },
+  {
+    "date": "2026-01-31",
+    "gold": 318800,
+    "silver": 7065,
+    "source": "Market Calibration"
+  }
+]
