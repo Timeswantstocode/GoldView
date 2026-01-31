@@ -5,11 +5,14 @@ on:
     - cron: '0 */3 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write      # Required to update the site
+  id-token: write   # Required to update the site
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -34,3 +37,16 @@ jobs:
           git add data.json
           git commit -m "Automated Price Update: $(date)" || exit 0
           git push origin main
+
+      # --- THE MISSING STEPS START HERE ---
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # This sends your index.html AND updated data.json to the server
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+      # --- THE MISSING STEPS END HERE ---
