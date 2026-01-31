@@ -11,11 +11,13 @@ permissions:
   id-token: write
 
 jobs:
-  build:
+  scrape_and_commit:
     runs-on: ubuntu-latest
+    outputs:
+      commit_status: ${{ steps.commit.outcome }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4 # Updated to v4 for stability
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -30,33 +32,38 @@ jobs:
       - name: Run Scraper
         run: python scraper.py
 
-      # --- SEE LOGIC: VALIDATION STEP ---
-      # This checks if index.html exists and has content. 
-      # If it's empty, the action stops here and won't break your site.
-      - name: Verify Files
-        run: |
-          if [ ! -s index.html ]; then
-            echo "ERROR: index.html is empty or missing. Stopping to prevent white screen."
-            exit 1
-          fi
-
       - name: Commit and Push changes
+        id: commit
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data.json
-          # Only commit if data.json actually changed
           git diff --quiet && git diff --staged --quiet || (git commit -m "Automated Price Update: $(date)" && git push origin main)
 
-      # --- DEPLOYMENT STEPS ---
+  deploy:
+    needs: scrape_and_commit
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Verify index.html exists
+        run: |
+          if [ ! -f index.html ]; then
+            echo "CRITICAL ERROR: index.html not found in root!"
+            exit 1
+          fi
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Ensure this points to the folder containing index.html
-          path: '.' 
+          path: '.' # This MUST be the directory containing index.html
 
       - name: Deploy to GitHub Pages
         id: deployment
