@@ -5,11 +5,14 @@ on:
     - cron: '0 */3 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -34,3 +37,15 @@ jobs:
           git add data.json
           git commit -m "Automated Price Update: $(date)" || exit 0
           git push origin main
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # This uploads your whole folder to the web server
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
