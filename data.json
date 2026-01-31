@@ -1,44 +1,44 @@
 [
-  {
-    "date": "2026-01-24",
-    "gold": 312500,
-    "silver": 6850,
-    "source": "Historical Extraction"
-  },
-  {
-    "date": "2026-01-25",
-    "gold": 313000,
-    "silver": 6880,
-    "source": "Historical Extraction"
-  },
-  {
-    "date": "2026-01-26",
-    "gold": 313500,
-    "silver": 6910,
-    "source": "Historical Extraction"
-  },
-  {
-    "date": "2026-01-27",
-    "gold": 311800,
-    "silver": 6870,
-    "source": "Historical Extraction"
-  },
-  {
-    "date": "2026-01-28",
-    "gold": 315200,
-    "silver": 6950,
-    "source": "Historical Extraction"
-  },
-  {
-    "date": "2026-01-29",
-    "gold": 317500,
-    "silver": 7010,
-    "source": "Historical Extraction"
-  },
-  {
-    "date": "2026-01-30",
-    "gold": 318800,
-    "silver": 7065,
-    "source": "FENEGOSIDA Official"
-  }
+    {
+        "date": "2026-01-24",
+        "gold": 312500,
+        "silver": 6850,
+        "source": "Historical Extraction"
+    },
+    {
+        "date": "2026-01-25",
+        "gold": 313000,
+        "silver": 6880,
+        "source": "Historical Extraction"
+    },
+    {
+        "date": "2026-01-26",
+        "gold": 313500,
+        "silver": 6910,
+        "source": "Historical Extraction"
+    },
+    {
+        "date": "2026-01-27",
+        "gold": 311800,
+        "silver": 6870,
+        "source": "Historical Extraction"
+    },
+    {
+        "date": "2026-01-28",
+        "gold": 315200,
+        "silver": 6950,
+        "source": "Historical Extraction"
+    },
+    {
+        "date": "2026-01-29",
+        "gold": 317500,
+        "silver": 7010,
+        "source": "Historical Extraction"
+    },
+    {
+        "date": "2026-01-31 19:04",
+        "gold": 318800,
+        "silver": 7065,
+        "source": "Market Calibration (Backup)"
+    }
 ]
