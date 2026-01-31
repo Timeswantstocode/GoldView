@@ -1,34 +1,8 @@
-name: Scheduled Scraper
-
-on:
-  schedule:
-    - cron: '0 */3 * * *' # Every 3 hours
-  workflow_dispatch: # Allows manual run
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
-      - name: Install Dependencies
-        run: pip install requests beautifulsoup4
-
-      - name: Run Scraper
-        run: python scraper.py
-
-      - name: Commit and Push changes
+- name: Commit and Push changes
         run: |
           git config --global user.name "GoldView-Bot"
           git config --global user.email "bot@goldview.com"
           git add data.json
-          git commit -m "Updated prices: $(date)" || exit 0
-          git push
+          # The next line forces a commit even if only the timestamp changed
+          git commit -m "Automated Price Update: $(date)" || echo "No changes to commit"
+          git push origin main
