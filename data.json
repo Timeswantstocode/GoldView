@@ -1,42 +1,36 @@
 [
     {
         "date": "2026-01-25 10:00",
-        "gold": 313000,
-        "silver": 6880,
-        "source": "History"
+        "gold": 303800,
+        "silver": 6480,
+        "source": "FENEGOSIDA Official"
     },
     {
         "date": "2026-01-26 10:00",
-        "gold": 313500,
-        "silver": 6910,
-        "source": "History"
+        "gold": 309000,
+        "silver": 6765,
+        "source": "FENEGOSIDA Official"
     },
     {
         "date": "2026-01-27 10:00",
-        "gold": 311800,
+        "gold": 309300,
         "silver": 6870,
-        "source": "History"
+        "source": "FENEGOSIDA Official"
     },
     {
         "date": "2026-01-28 10:00",
-        "gold": 315200,
-        "silver": 6950,
-        "source": "History"
+        "gold": 318800,
+        "silver": 7300,
+        "source": "FENEGOSIDA Official"
     },
     {
         "date": "2026-01-29 10:00",
-        "gold": 317500,
-        "silver": 7010,
-        "source": "History"
+        "gold": 339300,
+        "silver": 7505,
+        "source": "FENEGOSIDA Official"
     },
     {
-        "date": "2026-01-30 10:00",
-        "gold": 318200,
-        "silver": 7040,
-        "source": "History"
-    },
-    {
-        "date": "2026-01-31 20:27",
+        "date": "2026-01-30 20:27",
         "gold": 318800,
         "silver": 7065,
         "source": "FENEGOSIDA Official"
