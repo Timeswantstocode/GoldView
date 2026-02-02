@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Line } from 'react-chartjs-2';
 import { 
   Chart as ChartJS, registerables, Filler, Tooltip, 
@@ -6,7 +6,7 @@ import {
 } from 'chart.js';
 import { 
   LayoutDashboard, Calculator, RefreshCcw, TrendingUp, 
-  X, Calendar, Info, Zap, ChevronRight, Activity
+  X, Calendar, Info, Zap, ChevronRight, Activity, Coins
 } from 'lucide-react';
 
 ChartJS.register(...registerables, Filler, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
@@ -21,233 +21,212 @@ export default function App() {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
 
+  // 1. Optimized Data Fetching
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`${DATA_URL}?t=${Date.now()}`);
-        const json = await res.json();
-        setPriceData(Array.isArray(json) ? json : []);
-      } catch (e) {
-        console.error("Fetch error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    let isMounted = true;
+    fetch(`${DATA_URL}?t=${Date.now()}`)
+      .then(res => res.json())
+      .then(json => {
+        if (isMounted) {
+          setPriceData(Array.isArray(json) ? json : []);
+          setLoading(false);
+        }
+      })
+      .catch(() => setLoading(false));
+    return () => { isMounted = false };
   }, []);
 
-  const formatRS = (num) => `रू ${Math.round(num || 0).toLocaleString()}`;
-  const formatDateFull = (str) => {
-    if (!str) return "";
-    const d = new Date(str.replace(' ', 'T'));
-    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  };
-
+  // 2. Memoized Formatters & Stats (Stops Lag)
+  const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
+  
   const last7Days = useMemo(() => priceData.slice(-7), [priceData]);
-  const current = priceData[priceData.length - 1] || { gold: 0, silver: 0, tejabi: 0, date: "" };
+  const current = useMemo(() => priceData[priceData.length - 1] || {}, [priceData]);
 
-  const getStats = (metal) => {
-    const values = last7Days.map(d => Number(d[metal]) || 0);
+  const currentStats = useMemo(() => {
+    const values = last7Days.map(d => Number(d[activeMetal]) || 0);
     if (values.length === 0) return { low: 0, high: 0, change: "0.00" };
     const low = Math.min(...values);
     const high = Math.max(...values);
     const change = values.length > 1 ? (((values[values.length-1] - values[0]) / values[0]) * 100).toFixed(2) : "0.00";
     return { low, high, change };
-  };
+  }, [last7Days, activeMetal]);
 
-  const currentStats = getStats(activeMetal);
-
-  const chartData = {
+  // 3. High Performance Chart Configuration
+  const chartData = useMemo(() => ({
     labels: last7Days.map(d => d.date),
     datasets: [{
       data: last7Days.map(d => Number(d[activeMetal]) || 0),
       borderColor: activeMetal === 'gold' ? '#D4AF37' : activeMetal === 'tejabi' ? '#b8860b' : '#94a3b8',
-      borderWidth: 4,
-      pointBackgroundColor: activeMetal === 'gold' ? '#D4AF37' : '#94a3b8',
-      pointBorderColor: '#000',
-      pointBorderWidth: 3,
-      pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 10 : 0),
-      pointHoverRadius: 12,
+      borderWidth: 3,
       fill: true,
-      tension: 0.45,
+      tension: 0.4,
+      pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 8 : 0),
       backgroundColor: (context) => {
         const ctx = context.chart.ctx;
-        const gradient = ctx.createLinearGradient(0, 0, 0, 350);
-        gradient.addColorStop(0, activeMetal === 'gold' ? 'rgba(212, 175, 55, 0.3)' : 'rgba(148, 163, 184, 0.2)');
-        gradient.addColorStop(1, 'rgba(0,0,0,0)');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, activeMetal === 'gold' ? 'rgba(212, 175, 55, 0.2)' : 'rgba(148, 163, 184, 0.15)');
+        gradient.addColorStop(1, 'transparent');
         return gradient;
       },
     }]
-  };
+  }), [last7Days, activeMetal, selectedPoint]);
 
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
+    animation: { duration: 400 }, // Faster animations
+    plugins: { legend: false, tooltip: { enabled: false } }, // Custom UI handles this
+    scales: { x: { display: false }, y: { display: false } },
     onClick: (e, elements) => {
       if (elements.length > 0) {
         const index = elements[0].index;
         const point = last7Days[index];
         setSelectedPoint({ index, date: point.date, price: point[activeMetal] });
       }
-    },
-    plugins: {
-      legend: false,
-      tooltip: {
-        enabled: true,
-        backgroundColor: 'rgba(20, 20, 20, 0.9)',
-        padding: 12,
-        titleFont: { size: 13, weight: 'bold' },
-        bodyFont: { size: 15 },
-        displayColors: false,
-        callbacks: {
-          title: (items) => formatDateFull(items[0].label),
-          label: (item) => `${formatRS(item.raw)}`
-        }
-      }
-    },
-    scales: { x: { display: false }, y: { display: false } }
+    }
   };
+
+  const totalValuation = useMemo(() => {
+    const totalTola = (Number(calc.tola) || 0) + (Number(calc.aana) || 0) / 16 + (Number(calc.lal) || 0) / 192;
+    const rate = Number(current[activeMetal]) || 0;
+    const base = (totalTola * rate) + (Number(calc.making) || 0);
+    return calc.vat ? base * 1.13 : base;
+  }, [calc, current, activeMetal]);
 
   if (loading) return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-      <RefreshCcw className="w-10 h-10 text-[#D4AF37] animate-spin" />
+      <RefreshCcw className="w-8 h-8 text-[#D4AF37] animate-spin" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-100 font-sans selection:bg-[#D4AF37]/30 pb-32">
-      {/* BACKGROUND MESH GRADIENT */}
-      <div className="fixed inset-0 pointer-events-none opacity-40">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#D4AF37]/10 blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-zinc-800/20 blur-[100px] rounded-full"></div>
+    <div className="min-h-screen bg-[#050505] text-zinc-100 font-sans pb-32 overflow-x-hidden">
+      
+      {/* Background Glows */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#D4AF37]/5 blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px]" />
       </div>
 
       {/* Header */}
       <header className="p-8 pt-12 flex justify-between items-center relative z-10">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.8)] animate-pulse"></span>
-            <p className="text-[#D4AF37] text-[11px] font-black uppercase tracking-[0.25em]">Market Live • NPT</p>
-          </div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">Market View</h1>
+          <p className="text-[#D4AF37] text-[10px] font-black uppercase tracking-[0.2em] mt-1">Live from Nepal</p>
         </div>
-        <button onClick={() => window.location.reload()} className="w-12 h-12 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 flex items-center justify-center active:scale-90 transition-all shadow-xl">
+        <button onClick={() => window.location.reload()} className="w-12 h-12 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center">
           <RefreshCcw className="w-5 h-5 text-[#D4AF37]" />
         </button>
       </header>
 
       {view === 'dashboard' ? (
-        <main className="px-6 space-y-5 relative z-10">
+        <main className="px-6 space-y-4 relative z-10 animate-in fade-in duration-300">
           
-          {/* Prices Grid */}
-          <div className="grid grid-cols-1 gap-4">
-            {[
-              { id: 'gold', label: '24K Gold (Chhapawal)', color: 'from-[#D4AF37]/20 to-[#D4AF37]/5', border: 'border-[#D4AF37]/40', text: 'text-[#D4AF37]' },
-              { id: 'tejabi', label: '22K Gold (Tejabi)', color: 'from-[#b8860b]/20 to-[#b8860b]/5', border: 'border-yellow-900/40', text: 'text-yellow-600' },
-              { id: 'silver', label: 'Pure Silver', color: 'from-zinc-400/10 to-zinc-400/5', border: 'border-zinc-700/50', text: 'text-zinc-400' }
-            ].map((item) => {
-                const stats = getStats(item.id);
-                return (
-                  <div 
-                    key={item.id}
-                    onClick={() => { setActiveMetal(item.id); setSelectedPoint(null); }}
-                    className={`p-6 rounded-[2.2rem] border-2 transition-all duration-500 cursor-pointer relative overflow-hidden bg-gradient-to-br shadow-2xl ${
-                      activeMetal === item.id ? `${item.color} ${item.border} scale-[1.02]` : 'border-white/5 bg-white/5 opacity-40 grayscale-[0.5]'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${item.text}`}>{item.label}</span>
-                      <div className={`flex items-center gap-1.5 text-[11px] font-bold px-2 py-1 rounded-lg bg-black/40 ${Number(stats.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        <TrendingUp className={`w-3 h-3 ${Number(stats.change) < 0 ? 'rotate-180' : ''}`} /> {stats.change}%
-                      </div>
-                    </div>
-                    <h2 className="text-4xl font-black tracking-tighter mb-1">{formatRS(current[item.id])}</h2>
-                    <div className="flex justify-between items-center text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
-                      <span>Per Tola (11.66g)</span>
-                      <ChevronRight className={`w-4 h-4 transition-transform ${activeMetal === item.id ? 'translate-x-0' : '-translate-x-4 opacity-0'}`} />
-                    </div>
-                  </div>
-                );
-            })}
-          </div>
+          {/* Metal Cards */}
+          {[
+            { id: 'gold', label: '24K Gold (Chhapawal)', color: 'border-[#D4AF37]', bg: 'bg-[#D4AF37]/5', text: 'text-[#D4AF37]' },
+            { id: 'tejabi', label: '22K Gold (Tejabi)', color: 'border-yellow-700', bg: 'bg-yellow-900/5', text: 'text-yellow-600' },
+            { id: 'silver', label: 'Pure Silver', color: 'border-zinc-700', bg: 'bg-zinc-400/5', text: 'text-zinc-400' }
+          ].map((item) => {
+            const isActive = activeMetal === item.id;
+            return (
+              <div 
+                key={item.id}
+                onClick={() => { setActiveMetal(item.id); setSelectedPoint(null); }}
+                className={`p-5 rounded-[2rem] border-2 transition-all duration-300 cursor-pointer relative ${
+                  isActive ? `${item.color} ${item.bg} scale-[1.02]` : 'border-white/5 bg-white/5 opacity-50'
+                }`}
+              >
+                <div className="flex justify-between items-start">
+                  <span className={`text-[10px] font-black uppercase ${item.text}`}>{item.label}</span>
+                  {isActive && <TrendingUp className="w-4 h-4 text-green-500" />}
+                </div>
+                <h2 className="text-4xl font-black mt-1">{formatRS(current[item.id])}</h2>
+              </div>
+            );
+          })}
 
           {/* Chart Section */}
-          <section className="mt-10">
-            <div className="flex justify-between items-center mb-6 px-1">
-              <h3 className="text-xl font-bold flex items-center gap-2">Trend Analysis <Activity className="w-5 h-5 text-[#D4AF37]" /></h3>
-              <span className="text-[10px] font-black bg-[#D4AF37]/10 text-[#D4AF37] px-4 py-1.5 rounded-full border border-[#D4AF37]/20 uppercase">Last 7 Days</span>
+          <section className="mt-8 bg-white/5 border border-white/10 rounded-[2.5rem] p-6 backdrop-blur-md">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold">Trend Analysis</h3>
+              <div className="text-[10px] font-black bg-black/40 px-3 py-1 rounded-full text-zinc-400 border border-white/5">7D DATA</div>
             </div>
-
-            <div className="bg-gradient-to-b from-white/10 to-transparent border border-white/10 backdrop-blur-xl rounded-[3rem] p-8 shadow-3xl">
-              <div className="h-64 relative">
-                <Line data={chartData} options={chartOptions} />
+            <div className="h-56 relative">
+              <Line data={chartData} options={chartOptions} />
+            </div>
+            
+            {/* Stats Bar */}
+            <div className="flex justify-between mt-8 pt-6 border-t border-white/5">
+              <div className="text-center">
+                <p className="text-[9px] font-black text-zinc-600 uppercase">Weekly Low</p>
+                <p className="text-sm font-bold text-blue-400">{formatRS(currentStats.low)}</p>
               </div>
-              
-              <div className="flex justify-between mt-10 pt-8 border-t border-white/5">
-                <div className="text-center">
-                  <p className="text-[10px] font-black text-zinc-600 uppercase mb-1.5">Weekly Low</p>
-                  <p className="text-base font-bold text-blue-400">{formatRS(currentStats.low)}</p>
-                </div>
-                <div className="text-center px-10 border-x border-white/5">
-                  <p className="text-[10px] font-black text-zinc-600 uppercase mb-1.5">Volatility</p>
-                  <p className={`text-base font-bold ${Number(currentStats.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {currentStats.change}%
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[10px] font-black text-zinc-600 uppercase mb-1.5">Weekly High</p>
-                  <p className="text-base font-bold text-green-500">{formatRS(currentStats.high)}</p>
-                </div>
+              <div className="text-center px-6 border-x border-white/5">
+                <p className="text-[9px] font-black text-zinc-600 uppercase">Change</p>
+                <p className={`text-sm font-bold ${Number(currentStats.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>{currentStats.change}%</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[9px] font-black text-zinc-600 uppercase">Weekly High</p>
+                <p className="text-sm font-bold text-green-500">{formatRS(currentStats.high)}</p>
               </div>
             </div>
 
-            {/* SELECTED DATE BOX - REDESIGNED & POSITIONED BELOW GRAPH */}
+            {/* Selected Date Overlay Below Chart */}
             {selectedPoint && (
-              <div className="mt-8 bg-gradient-to-r from-[#1a1810] to-zinc-900 border-2 border-[#D4AF37]/30 rounded-[2.5rem] p-6 flex justify-between items-center animate-in slide-in-from-bottom-6 duration-500 shadow-2xl relative z-20">
-                <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 bg-[#D4AF37]/15 rounded-3xl flex items-center justify-center border border-[#D4AF37]/20">
-                    <Calendar className="w-7 h-7 text-[#D4AF37]" />
+              <div className="mt-6 bg-gradient-to-r from-zinc-900 to-[#1a1812] border-2 border-[#D4AF37]/30 rounded-[2rem] p-5 flex justify-between items-center animate-in slide-in-from-bottom-4 transition-all">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-2xl flex items-center justify-center border border-[#D4AF37]/20">
+                    <Calendar className="w-6 h-6 text-[#D4AF37]" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.2em] mb-1">Historical Data</p>
-                    <p className="text-lg font-bold text-white leading-tight">{formatDateFull(selectedPoint.date)}</p>
+                    <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Selected Record</p>
+                    <p className="text-sm font-bold">{new Date(selectedPoint.date.replace(' ', 'T')).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                   <div className="text-right">
-                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Price Point</p>
-                    <p className="text-3xl font-black bg-gradient-to-r from-[#D4AF37] to-yellow-600 bg-clip-text text-transparent">{formatRS(selectedPoint.price)}</p>
-                   </div>
-                   <button onClick={() => setSelectedPoint(null)} className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-700 transition-colors">
-                     <X className="w-5 h-5 text-zinc-400" />
-                   </button>
+                <div className="flex items-center gap-4 text-right">
+                  <div>
+                    <p className="text-[9px] font-black text-zinc-500 uppercase">Rate</p>
+                    <p className="text-xl font-black text-[#D4AF37]">{formatRS(selectedPoint.price)}</p>
+                  </div>
+                  <button onClick={() => setSelectedPoint(null)} className="p-1.5 bg-zinc-800 rounded-full">
+                    <X className="w-4 h-4 text-zinc-400" />
+                  </button>
                 </div>
               </div>
             )}
           </section>
         </main>
       ) : (
-        <main className="px-6 relative z-10 animate-in fade-in zoom-in-95 duration-500">
-          <div className="bg-gradient-to-b from-white/10 to-transparent border border-white/10 backdrop-blur-2xl rounded-[3.5rem] p-10 shadow-3xl">
-            <div className="flex items-center gap-5 mb-12">
-              <div className="w-14 h-14 bg-[#D4AF37]/20 rounded-[2rem] flex items-center justify-center border border-[#D4AF37]/30 shadow-inner">
-                <Calculator className="w-7 h-7 text-[#D4AF37]" />
+        <main className="px-6 relative z-10 animate-in zoom-in-95 duration-300">
+          <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 backdrop-blur-xl">
+            
+            {/* CALCULATOR METAL INDICATOR (NEW) */}
+            <div className={`mb-8 p-4 rounded-2xl border-2 flex items-center justify-between transition-all ${
+              activeMetal === 'gold' ? 'border-[#D4AF37] bg-[#D4AF37]/10' :
+              activeMetal === 'tejabi' ? 'border-yellow-700 bg-yellow-900/10' :
+              'border-zinc-700 bg-zinc-400/10'
+            }`}>
+              <div className="flex items-center gap-3">
+                <Coins className={`w-6 h-6 ${activeMetal === 'gold' ? 'text-[#D4AF37]' : 'text-zinc-400'}`} />
+                <div>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase">Calculating For</p>
+                  <p className="text-lg font-black uppercase">{activeMetal === 'gold' ? '24K Chhapawal Gold' : activeMetal === 'tejabi' ? '22K Tejabi Gold' : 'Pure Silver'}</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight">Price Estimator</h2>
-                <p className="text-zinc-500 text-sm">Real-time valuation engine</p>
+              <div className="text-right font-black text-sm text-zinc-400">
+                Rate: {formatRS(current[activeMetal])}
               </div>
             </div>
-            
-            <div className="grid grid-cols-3 gap-4 mb-8">
+
+            <div className="grid grid-cols-3 gap-3 mb-6">
               {['tola', 'aana', 'lal'].map((unit) => (
                 <div key={unit}>
-                  <label className="text-[11px] font-black text-zinc-500 uppercase mb-2 block ml-2 tracking-widest">{unit}</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase block ml-1 mb-2 tracking-widest">{unit}</label>
                   <input 
                     type="number" 
                     placeholder="0"
-                    className="w-full bg-black/40 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-xl outline-none focus:border-[#D4AF37] transition-all"
+                    className="w-full bg-black border border-zinc-800 p-4 rounded-2xl text-center font-black text-xl outline-none focus:border-[#D4AF37] transition-all"
                     value={calc[unit]}
                     onChange={(e) => setCalc({...calc, [unit]: e.target.value})}
                   />
@@ -255,61 +234,52 @@ export default function App() {
               ))}
             </div>
 
-            <div className="space-y-5 mb-10">
-              <div className="flex flex-col gap-2">
-                <label className="text-[11px] font-black text-zinc-500 uppercase ml-2 tracking-widest">Making Charges (Rs)</label>
-                <input 
-                  type="number" 
-                  placeholder="Enter custom amount..."
-                  className="w-full bg-black/40 border-2 border-zinc-800 p-5 rounded-3xl font-bold outline-none focus:border-[#D4AF37] placeholder:text-zinc-700"
-                  value={calc.making}
-                  onChange={(e) => setCalc({...calc, making: e.target.value})}
-                />
-              </div>
+            <div className="space-y-4 mb-10">
+              <input 
+                type="number" 
+                placeholder="Making Charges (Rs)"
+                className="w-full bg-black border border-zinc-800 p-5 rounded-3xl font-bold outline-none focus:border-[#D4AF37]"
+                value={calc.making}
+                onChange={(e) => setCalc({...calc, making: e.target.value})}
+              />
               <div 
                 onClick={() => setCalc({...calc, vat: !calc.vat})}
-                className="flex justify-between items-center p-6 bg-white/5 rounded-3xl border border-white/5 cursor-pointer active:scale-[0.98] transition-all"
+                className="flex justify-between items-center p-5 bg-white/5 rounded-2xl border border-white/5 cursor-pointer active:scale-95 transition-all"
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${calc.vat ? 'border-[#D4AF37] bg-[#D4AF37]' : 'border-zinc-700'}`}>
-                    {calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}
-                  </div>
-                  <span className="font-bold text-zinc-300">Apply 13% Goverment VAT</span>
+                <span className="text-sm font-bold text-zinc-300">Include 13% Government VAT</span>
+                <div className={`w-10 h-6 rounded-full transition-all relative ${calc.vat ? 'bg-[#D4AF37]' : 'bg-zinc-800'}`}>
+                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${calc.vat ? 'left-5' : 'left-1'}`} />
                 </div>
-                <Info className="w-5 h-5 text-zinc-600" />
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-[#D4AF37] via-yellow-500 to-yellow-600 p-10 rounded-[3rem] text-black text-center shadow-[0_25px_60px_rgba(212,175,55,0.4)] relative overflow-hidden group">
-               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-               <p className="text-[11px] font-black uppercase tracking-[0.3em] mb-2 opacity-60">Final Estimated Total</p>
-               <h3 className="text-5xl font-black tracking-tighter">
-                  {formatRS(( ( (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192 ) * current[activeMetal] + (Number(calc.making)||0) ) * (calc.vat ? 1.13 : 1))}
-               </h3>
+            <div className="bg-gradient-to-r from-[#D4AF37] to-yellow-600 p-8 rounded-[2.5rem] text-black text-center shadow-[0_20px_40px_rgba(212,175,55,0.3)]">
+               <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-60">Estimated Valuation</p>
+               <h3 className="text-4xl font-black">{formatRS(totalValuation)}</h3>
             </div>
           </div>
         </main>
       )}
 
-      {/* Modern Floating Bottom Navbar */}
-      <nav className="fixed bottom-10 left-8 right-8 h-20 bg-zinc-900/60 backdrop-blur-[30px] rounded-[2.5rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-[0_30px_60px_rgba(0,0,0,0.8)]">
+      {/* Floating Bottom Nav */}
+      <nav className="fixed bottom-8 left-8 right-8 h-20 bg-zinc-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-2xl">
         <button 
-          onClick={() => { setView('dashboard'); setSelectedPoint(null); }}
-          className={`flex flex-col items-center gap-1.5 px-10 py-3.5 rounded-[1.8rem] transition-all duration-500 ${
-            view === 'dashboard' ? 'bg-[#D4AF37] text-black shadow-[0_0_25px_rgba(212,175,55,0.4)]' : 'text-zinc-500 hover:text-zinc-300'
+          onClick={() => setView('dashboard')}
+          className={`flex flex-col items-center gap-1.5 px-10 py-3.5 rounded-3xl transition-all duration-300 ${
+            view === 'dashboard' ? 'bg-[#D4AF37] text-black' : 'text-zinc-500'
           }`}
         >
-          <LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} />
-          <span className="text-[10px] font-black uppercase tracking-tighter">Market</span>
+          <LayoutDashboard className="w-6 h-6" />
+          <span className="text-[9px] font-black uppercase tracking-tighter">Market</span>
         </button>
         <button 
-          onClick={() => { setView('calculator'); setSelectedPoint(null); }}
-          className={`flex flex-col items-center gap-1.5 px-10 py-3.5 rounded-[1.8rem] transition-all duration-500 ${
-            view === 'calculator' ? 'bg-[#D4AF37] text-black shadow-[0_0_25px_rgba(212,175,55,0.4)]' : 'text-zinc-500 hover:text-zinc-300'
+          onClick={() => setView('calculator')}
+          className={`flex flex-col items-center gap-1.5 px-10 py-3.5 rounded-3xl transition-all duration-300 ${
+            view === 'calculator' ? 'bg-[#D4AF37] text-black' : 'text-zinc-500'
           }`}
         >
-          <Calculator className={`w-6 h-6 ${view === 'calculator' ? 'fill-black' : ''}`} />
-          <span className="text-[10px] font-black uppercase tracking-tighter">Calc</span>
+          <Calculator className="w-6 h-6" />
+          <span className="text-[9px] font-black uppercase tracking-tighter">Calc</span>
         </button>
       </nav>
 
