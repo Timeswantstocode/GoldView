@@ -4,7 +4,7 @@ import { Chart as ChartJS, registerables, Filler, Tooltip } from 'chart.js';
 
 ChartJS.register(...registerables, Filler, Tooltip);
 
-// URL to your live data on GitHub
+// LINK TO YOUR LIVE DATA ON GITHUB
 const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json";
 
 const getBSDate = (adDateStr) => {
@@ -43,22 +43,26 @@ export default function App() {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const chartRef = useRef(null);
 
-  // FETCH LIVE DATA
+  // FETCH LIVE DATA FROM GITHUB
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // We add a timestamp (?t=...) to prevent the browser from caching old data
+        setLoading(true);
+        // We add a timestamp to the URL to force the browser to get the freshest data
         const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
+        if (!response.ok) throw new Error("Failed to fetch data");
         const json = await response.json();
         setPriceData(json);
-        setLoading(false);
       } catch (error) {
         console.error("Error loading gold data:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
   }, []);
 
+  // 1. LOADING SCREEN (Prevents White Screen/Crashing)
   if (loading || !priceData || priceData.length === 0) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center text-[#D4AF37]">
@@ -69,6 +73,7 @@ export default function App() {
     );
   }
 
+  // Now that we are sure data exists, we can define these variables
   const last7Days = priceData.slice(-7);
   const current = priceData[priceData.length - 1];
   const currentTime = new Date(current.date.replace(' ', 'T'));
@@ -122,25 +127,18 @@ export default function App() {
         },
       }]
     };
-  }, [activeMetal, priceData]); // Added priceData to memo dependencies
+  }, [activeMetal, priceData]);
 
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    interaction: {
-      mode: 'index',
-      intersect: false,
-    },
+    interaction: { mode: 'index', intersect: false },
     onClick: (event, elements) => {
       if (elements.length > 0) {
         const index = elements[0].index;
         const dataPoint = last7Days[index];
         const price = activeMetal === 'gold' ? dataPoint.gold : dataPoint.silver;
-        setSelectedPoint({
-          date: formatDate(dataPoint.date),
-          price: price,
-          index: index
-        });
+        setSelectedPoint({ date: formatDate(dataPoint.date), price: price, index: index });
       }
     },
     plugins: {
@@ -150,11 +148,6 @@ export default function App() {
         backgroundColor: 'rgba(30, 30, 30, 0.95)',
         titleColor: '#D4AF37',
         bodyColor: '#fff',
-        titleFont: { size: 11, weight: 'bold' },
-        bodyFont: { size: 14, weight: 'bold' },
-        padding: 12,
-        cornerRadius: 12,
-        displayColors: false,
         callbacks: {
           title: (items) => formatDate(items[0].label),
           label: (item) => `रू ${item.raw.toLocaleString()} per Tola`
@@ -163,15 +156,8 @@ export default function App() {
     },
     scales: {
       x: {
-        display: true,
+        ticks: { color: '#666', font: { size: 10 }, callback: (v, i) => getShortDate(last7Days[i].date) },
         grid: { display: false },
-        ticks: {
-          color: '#666',
-          font: { size: 10 },
-          callback: function(value, index) {
-            return getShortDate(last7Days[index].date);
-          }
-        },
         border: { display: false }
       },
       y: { display: false }
@@ -197,11 +183,11 @@ export default function App() {
             </div>
           </div>
           <button 
-             onClick={() => window.location.reload()}
-             className="w-10 h-10 bg-[#D4AF37]/10 rounded-full flex items-center justify-center border border-[#D4AF37]/30">
+            onClick={() => window.location.reload()}
+            className="w-10 h-10 bg-[#D4AF37]/10 rounded-full flex items-center justify-center border border-[#D4AF37]/30"
+          >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
-              <path d="M21 3v5h-5"/>
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
             </svg>
           </button>
         </div>
@@ -209,26 +195,14 @@ export default function App() {
 
       {view === 'dashboard' ? (
         <main className="px-4 space-y-3">
-          
-          <div 
-            onClick={() => setActiveMetal('gold')}
-            className={`p-5 rounded-2xl border transition-all duration-300 cursor-pointer ${
-              activeMetal === 'gold' 
-                ? 'bg-gradient-to-br from-[#1a1508] to-[#0f0f0f] border-[#D4AF37]/50' 
-                : 'bg-[#111] border-zinc-800/50 opacity-70'
-            }`}
-          >
+          {/* Gold Card */}
+          <div onClick={() => setActiveMetal('gold')} className={`p-5 rounded-2xl border transition-all duration-300 cursor-pointer ${activeMetal === 'gold' ? 'bg-gradient-to-br from-[#1a1508] to-[#0f0f0f] border-[#D4AF37]/50' : 'bg-[#111] border-zinc-800/50 opacity-70'}`}>
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-[#D4AF37] font-semibold text-sm">24K Gold (Chhapawal)</p>
                 <p className="text-zinc-500 text-xs mt-0.5">Pure Fine Gold</p>
               </div>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 ${
-                Number(goldStats.change) >= 0 
-                  ? 'bg-green-500/20 text-green-400' 
-                  : 'bg-red-500/20 text-red-400'
-              }`}>
-                <span className="text-[10px]">↗</span>
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${Number(goldStats.change) >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                 {Number(goldStats.change) >= 0 ? '+' : ''}{goldStats.change}%
               </span>
             </div>
@@ -236,25 +210,14 @@ export default function App() {
             <p className="text-zinc-600 text-xs mt-1">per Tola (11.66g)</p>
           </div>
 
-          <div 
-            onClick={() => setActiveMetal('silver')}
-            className={`p-5 rounded-2xl border transition-all duration-300 cursor-pointer ${
-              activeMetal === 'silver' 
-                ? 'bg-gradient-to-br from-[#12141a] to-[#0f0f0f] border-slate-400/30' 
-                : 'bg-[#111] border-zinc-800/50 opacity-70'
-            }`}
-          >
+          {/* Silver Card */}
+          <div onClick={() => setActiveMetal('silver')} className={`p-5 rounded-2xl border transition-all duration-300 cursor-pointer ${activeMetal === 'silver' ? 'bg-gradient-to-br from-[#12141a] to-[#0f0f0f] border-slate-400/30' : 'bg-[#111] border-zinc-800/50 opacity-70'}`}>
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-slate-300 font-semibold text-sm">Silver</p>
                 <p className="text-zinc-500 text-xs mt-0.5">Pure Silver</p>
               </div>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 ${
-                Number(silverStats.change) >= 0 
-                  ? 'bg-green-500/20 text-green-400' 
-                  : 'bg-red-500/20 text-red-400'
-              }`}>
-                <span className="text-[10px]">↗</span>
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${Number(silverStats.change) >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                 {Number(silverStats.change) >= 0 ? '+' : ''}{silverStats.change}%
               </span>
             </div>
@@ -262,39 +225,14 @@ export default function App() {
             <p className="text-zinc-600 text-xs mt-1">per Tola (11.66g)</p>
           </div>
 
+          {/* Chart Section */}
           <section className="bg-[#111] rounded-2xl p-5 border border-zinc-800/50 mt-4">
             <div className="flex justify-between items-center mb-4">
               <p className="font-semibold text-sm text-zinc-300">7 Day Trend</p>
-              <p className="text-xs text-zinc-500">{getShortDate(current.date)}</p>
             </div>
-            
             <div className="h-44 relative">
               <Line ref={chartRef} data={chartData} options={chartOptions} />
             </div>
-
-            {selectedPoint && (
-              <div className="mt-4 bg-zinc-900/80 rounded-xl p-4 border border-zinc-700/50">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-zinc-400 text-xs uppercase">{selectedPoint.date}</p>
-                    <p className="text-2xl font-bold text-[#D4AF37] mt-1">
-                      रू {selectedPoint.price.toLocaleString()}
-                    </p>
-                    <p className="text-green-500 text-xs mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                      per Tola
-                    </p>
-                  </div>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setSelectedPoint(null); }}
-                    className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center"
-                  >
-                    <span className="text-zinc-400 text-lg">×</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
             <div className="flex justify-between mt-4 pt-4 border-t border-zinc-800/50">
               <div className="text-center">
                 <p className="text-zinc-500 text-[10px] uppercase">Low</p>
@@ -302,9 +240,7 @@ export default function App() {
               </div>
               <div className="text-center">
                 <p className="text-zinc-500 text-[10px] uppercase">Change</p>
-                <p className={`font-semibold text-sm mt-1 ${Number(currentStats.change) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {Number(currentStats.change) >= 0 ? '+' : ''}{currentStats.change}%
-                </p>
+                <p className={`font-semibold text-sm mt-1 ${Number(currentStats.change) >= 0 ? 'text-green-400' : 'text-red-400'}`}>{currentStats.change}%</p>
               </div>
               <div className="text-center">
                 <p className="text-zinc-500 text-[10px] uppercase">High</p>
@@ -312,47 +248,29 @@ export default function App() {
               </div>
             </div>
           </section>
-
         </main>
       ) : (
         <main className="px-4">
-          {/* ... [Calculated code stays the same as your original] ... */}
+          {/* Calculator View */}
           <div className="bg-[#111] p-6 rounded-2xl border border-zinc-800/50">
             <h3 className="text-[#D4AF37] font-bold text-center mb-8 uppercase tracking-wider text-sm">Price Calculator</h3>
-            {/* ... rest of calculator UI ... */}
             <div className="flex gap-2 mb-6">
-              <button onClick={() => setActiveMetal('gold')} className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${activeMetal === 'gold' ? 'bg-[#D4AF37] text-black' : 'bg-zinc-800 text-zinc-400'}`}>Gold</button>
-              <button onClick={() => setActiveMetal('silver')} className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${activeMetal === 'silver' ? 'bg-slate-400 text-black' : 'bg-zinc-800 text-zinc-400'}`}>Silver</button>
+              <button onClick={() => setActiveMetal('gold')} className={`flex-1 py-3 rounded-xl font-semibold text-sm ${activeMetal === 'gold' ? 'bg-[#D4AF37] text-black' : 'bg-zinc-800 text-zinc-400'}`}>Gold</button>
+              <button onClick={() => setActiveMetal('silver')} className={`flex-1 py-3 rounded-xl font-semibold text-sm ${activeMetal === 'silver' ? 'bg-slate-400 text-black' : 'bg-zinc-800 text-zinc-400'}`}>Silver</button>
             </div>
-            
             <div className="grid grid-cols-3 gap-3 mb-5">
-              <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-zinc-500 uppercase ml-1">Tola</label>
-                <input type="number" placeholder="0" className="w-full bg-black p-3 rounded-xl border border-zinc-800 text-center font-semibold outline-none focus:border-[#D4AF37] transition-colors" value={calc.tola} onChange={e => setCalc({...calc, tola: e.target.value})}/>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-zinc-500 uppercase ml-1">Aana</label>
-                <input type="number" placeholder="0" className="w-full bg-black p-3 rounded-xl border border-zinc-800 text-center font-semibold outline-none focus:border-[#D4AF37] transition-colors" value={calc.aana} onChange={e => setCalc({...calc, aana: e.target.value})}/>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-semibold text-zinc-500 uppercase ml-1">Lal</label>
-                <input type="number" placeholder="0" className="w-full bg-black p-3 rounded-xl border border-zinc-800 text-center font-semibold outline-none focus:border-[#D4AF37] transition-colors" value={calc.lal} onChange={e => setCalc({...calc, lal: e.target.value})}/>
-              </div>
+              <input type="number" placeholder="Tola" className="bg-black p-3 rounded-xl border border-zinc-800 text-center outline-none focus:border-[#D4AF37]" value={calc.tola} onChange={e => setCalc({...calc, tola: e.target.value})}/>
+              <input type="number" placeholder="Aana" className="bg-black p-3 rounded-xl border border-zinc-800 text-center outline-none focus:border-[#D4AF37]" value={calc.aana} onChange={e => setCalc({...calc, aana: e.target.value})}/>
+              <input type="number" placeholder="Lal" className="bg-black p-3 rounded-xl border border-zinc-800 text-center outline-none focus:border-[#D4AF37]" value={calc.lal} onChange={e => setCalc({...calc, lal: e.target.value})}/>
             </div>
-
             <div className="space-y-2 mb-6">
               <label className="text-[10px] font-semibold text-zinc-500 uppercase ml-1">Making Charges (Rs)</label>
-              <input type="number" placeholder="Enter amount..." className="w-full bg-black p-4 rounded-xl border border-zinc-800 font-semibold outline-none focus:border-[#D4AF37] transition-colors" value={calc.making} onChange={e => setCalc({...calc, making: e.target.value})}/>
+              <input type="number" placeholder="Enter amount..." className="w-full bg-black p-4 rounded-xl border border-zinc-800 outline-none focus:border-[#D4AF37]" value={calc.making} onChange={e => setCalc({...calc, making: e.target.value})}/>
             </div>
-
             <div className="flex justify-between items-center mb-6 px-1">
-              <p className="text-sm font-medium">Include 13% VAT</p>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked={calc.vat} onChange={() => setCalc({...calc, vat: !calc.vat})} className="sr-only peer"/>
-                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#D4AF37]"></div>
-              </label>
+              <p className="text-sm">Include 13% VAT</p>
+              <input type="checkbox" checked={calc.vat} onChange={() => setCalc({...calc, vat: !calc.vat})} className="w-5 h-5 accent-[#D4AF37]"/>
             </div>
-
             <div className="bg-gradient-to-r from-[#D4AF37] to-[#b8960c] p-6 rounded-2xl text-black text-center">
               <p className="text-[10px] uppercase font-semibold opacity-70 mb-1">Total Amount</p>
               <p className="text-3xl font-bold">रू {calculateTotal().toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
@@ -361,13 +279,12 @@ export default function App() {
         </main>
       )}
 
-      <nav className="fixed bottom-6 left-4 right-4 h-16 bg-[#111]/95 backdrop-blur-xl rounded-2xl border border-zinc-800 flex justify-around items-center shadow-2xl z-50">
-        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1 transition-all px-8 py-2 rounded-xl ${view === 'dashboard' ? 'text-[#D4AF37] bg-[#D4AF37]/10' : 'text-zinc-500'}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-6 left-4 right-4 h-16 bg-[#111]/95 backdrop-blur-xl rounded-2xl border border-zinc-800 flex justify-around items-center z-50">
+        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1 px-8 py-2 rounded-xl ${view === 'dashboard' ? 'text-[#D4AF37] bg-[#D4AF37]/10' : 'text-zinc-500'}`}>
           <span className="text-[10px] font-semibold">Dashboard</span>
         </button>
-        <button onClick={() => setView('calculator')} className={`flex flex-col items-center gap-1 transition-all px-8 py-2 rounded-xl ${view === 'calculator' ? 'text-[#D4AF37] bg-[#D4AF37]/10' : 'text-zinc-500'}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+        <button onClick={() => setView('calculator')} className={`flex flex-col items-center gap-1 px-8 py-2 rounded-xl ${view === 'calculator' ? 'text-[#D4AF37] bg-[#D4AF37]/10' : 'text-zinc-500'}`}>
           <span className="text-[10px] font-semibold">Calculator</span>
         </button>
       </nav>
