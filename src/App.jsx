@@ -1,9 +1,11 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, registerables, Filler, Tooltip } from 'chart.js';
-import priceData from '../data.json';
 
 ChartJS.register(...registerables, Filler, Tooltip);
+
+// URL to your live data on GitHub
+const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json";
 
 const getBSDate = (adDateStr) => {
   if (!adDateStr) return "";
@@ -33,13 +35,31 @@ const getShortDate = (dateStr) => {
 };
 
 export default function App() {
+  const [priceData, setPriceData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState('dashboard');
   const [activeMetal, setActiveMetal] = useState('gold');
   const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
   const [selectedPoint, setSelectedPoint] = useState(null);
   const chartRef = useRef(null);
 
-  if (!priceData || priceData.length === 0) {
+  // FETCH LIVE DATA
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // We add a timestamp (?t=...) to prevent the browser from caching old data
+        const response = await fetch(`${DATA_URL}?t=${new Date().getTime()}`);
+        const json = await response.json();
+        setPriceData(json);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading gold data:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading || !priceData || priceData.length === 0) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center text-[#D4AF37]">
         <div className="text-center animate-pulse font-black tracking-widest uppercase">
@@ -102,7 +122,7 @@ export default function App() {
         },
       }]
     };
-  }, [activeMetal]);
+  }, [activeMetal, priceData]); // Added priceData to memo dependencies
 
   const chartOptions = {
     responsive: true,
@@ -176,7 +196,9 @@ export default function App() {
               </span>
             </div>
           </div>
-          <button className="w-10 h-10 bg-[#D4AF37]/10 rounded-full flex items-center justify-center border border-[#D4AF37]/30">
+          <button 
+             onClick={() => window.location.reload()}
+             className="w-10 h-10 bg-[#D4AF37]/10 rounded-full flex items-center justify-center border border-[#D4AF37]/30">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
               <path d="M21 3v5h-5"/>
@@ -294,30 +316,13 @@ export default function App() {
         </main>
       ) : (
         <main className="px-4">
+          {/* ... [Calculated code stays the same as your original] ... */}
           <div className="bg-[#111] p-6 rounded-2xl border border-zinc-800/50">
             <h3 className="text-[#D4AF37] font-bold text-center mb-8 uppercase tracking-wider text-sm">Price Calculator</h3>
-            
+            {/* ... rest of calculator UI ... */}
             <div className="flex gap-2 mb-6">
-              <button 
-                onClick={() => setActiveMetal('gold')}
-                className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${
-                  activeMetal === 'gold' 
-                    ? 'bg-[#D4AF37] text-black' 
-                    : 'bg-zinc-800 text-zinc-400'
-                }`}
-              >
-                Gold
-              </button>
-              <button 
-                onClick={() => setActiveMetal('silver')}
-                className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${
-                  activeMetal === 'silver' 
-                    ? 'bg-slate-400 text-black' 
-                    : 'bg-zinc-800 text-zinc-400'
-                }`}
-              >
-                Silver
-              </button>
+              <button onClick={() => setActiveMetal('gold')} className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${activeMetal === 'gold' ? 'bg-[#D4AF37] text-black' : 'bg-zinc-800 text-zinc-400'}`}>Gold</button>
+              <button onClick={() => setActiveMetal('silver')} className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${activeMetal === 'silver' ? 'bg-slate-400 text-black' : 'bg-zinc-800 text-zinc-400'}`}>Silver</button>
             </div>
             
             <div className="grid grid-cols-3 gap-3 mb-5">
@@ -357,46 +362,15 @@ export default function App() {
       )}
 
       <nav className="fixed bottom-6 left-4 right-4 h-16 bg-[#111]/95 backdrop-blur-xl rounded-2xl border border-zinc-800 flex justify-around items-center shadow-2xl z-50">
-        <button 
-          onClick={() => setView('dashboard')} 
-          className={`flex flex-col items-center gap-1 transition-all px-8 py-2 rounded-xl ${
-            view === 'dashboard' 
-              ? 'text-[#D4AF37] bg-[#D4AF37]/10' 
-              : 'text-zinc-500'
-          }`}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect width="7" height="7" x="3" y="3" rx="1"/>
-            <rect width="7" height="7" x="14" y="3" rx="1"/>
-            <rect width="7" height="7" x="14" y="14" rx="1"/>
-            <rect width="7" height="7" x="3" y="14" rx="1"/>
-          </svg>
+        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1 transition-all px-8 py-2 rounded-xl ${view === 'dashboard' ? 'text-[#D4AF37] bg-[#D4AF37]/10' : 'text-zinc-500'}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
           <span className="text-[10px] font-semibold">Dashboard</span>
         </button>
-        <button 
-          onClick={() => setView('calculator')} 
-          className={`flex flex-col items-center gap-1 transition-all px-8 py-2 rounded-xl ${
-            view === 'calculator' 
-              ? 'text-[#D4AF37] bg-[#D4AF37]/10' 
-              : 'text-zinc-500'
-          }`}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="4" y="2" width="16" height="20" rx="2"/>
-            <line x1="8" x2="16" y1="6" y2="6"/>
-            <line x1="16" x2="16" y1="14" y2="18"/>
-            <path d="M16 10h.01"/>
-            <path d="M12 10h.01"/>
-            <path d="M8 10h.01"/>
-            <path d="M12 14h.01"/>
-            <path d="M8 14h.01"/>
-            <path d="M12 18h.01"/>
-            <path d="M8 18h.01"/>
-          </svg>
+        <button onClick={() => setView('calculator')} className={`flex flex-col items-center gap-1 transition-all px-8 py-2 rounded-xl ${view === 'calculator' ? 'text-[#D4AF37] bg-[#D4AF37]/10' : 'text-zinc-500'}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
           <span className="text-[10px] font-semibold">Calculator</span>
         </button>
       </nav>
-
     </div>
   );
 }
