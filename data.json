@@ -58,5 +58,11 @@
         "gold": 290300,
         "silver": 5335,
         "source": "FENEGOSIDA Official"
+    },
+    {
+        "date": "2026-02-04 11:02",
+        "gold": 318800,
+        "silver": 7065,
+        "source": "Market Fallback"
     }
 ]
