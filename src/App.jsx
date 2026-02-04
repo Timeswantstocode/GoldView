@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import { 
   Chart as ChartJS, registerables, Filler, Tooltip, 
@@ -19,8 +19,10 @@ export default function App() {
   const [view, setView] = useState('dashboard');
   const [activeMetal, setActiveMetal] = useState('gold');
   const [selectedPoint, setSelectedPoint] = useState(null);
-  const [timeframe, setTimeframe] = useState(7); // Default to 7 days
+  const [timeframe, setTimeframe] = useState(7);
   const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
+  
+  const chartRef = useRef(null);
 
   useEffect(() => {
     fetch(`${DATA_URL}?t=${Date.now()}`)
@@ -34,9 +36,7 @@ export default function App() {
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
   
-  // Dynamic data filtering based on timeframe
   const filteredData = useMemo(() => priceData.slice(-timeframe), [priceData, timeframe]);
-  
   const current = useMemo(() => priceData[priceData.length - 1] || {}, [priceData]);
   const yesterday = useMemo(() => priceData[priceData.length - 2] || current, [priceData, current]);
 
@@ -57,54 +57,61 @@ export default function App() {
 
   const accentColor = activeMetal === 'gold' ? '#D4AF37' : '#94a3b8';
 
-  const chartData = useMemo(() => ({
-    labels: filteredData.map(d => d.date),
-    datasets: [{
-      data: filteredData.map(d => Number(d[activeMetal]) || 0),
-      borderColor: accentColor,
-      borderWidth: 4,
-      fill: true,
-      tension: 0.4,
-      pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 10 : 0),
-      pointHoverRadius: 10,
-      pointBackgroundColor: '#fff',
-      pointBorderColor: accentColor,
-      pointBorderWidth: 4,
-      backgroundColor: (context) => {
-        const ctx = context.chart.ctx;
-        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, activeMetal === 'gold' ? 'rgba(212, 175, 55, 0.25)' : 'rgba(148, 163, 184, 0.2)');
-        gradient.addColorStop(1, 'transparent');
-        return gradient;
-      },
-    }]
-  }), [filteredData, activeMetal, selectedPoint, accentColor]);
+  // Optimized Chart Data with pre-calculated gradient to prevent switching lag
+  const chartData = useMemo(() => {
+    return {
+      labels: filteredData.map(d => d.date),
+      datasets: [{
+        label: activeMetal, // Important for Chart.js to distinguish datasets
+        data: filteredData.map(d => Number(d[activeMetal]) || 0),
+        borderColor: accentColor,
+        borderWidth: 4,
+        fill: true,
+        tension: 0.4,
+        pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 10 : 0),
+        pointHoverRadius: 10,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: accentColor,
+        pointBorderWidth: 4,
+        backgroundColor: (context) => {
+          const chart = context.chart;
+          const {ctx, chartArea} = chart;
+          if (!chartArea) return null;
+          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          gradient.addColorStop(0, activeMetal === 'gold' ? 'rgba(212, 175, 55, 0.25)' : 'rgba(148, 163, 184, 0.2)');
+          gradient.addColorStop(1, 'transparent');
+          return gradient;
+        },
+      }]
+    };
+  }, [filteredData, activeMetal, selectedPoint, accentColor]);
 
-  const chartOptions = {
+  // Memoized Options to stop the chart from re-parsing configuration on every state change
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     animation: {
-      duration: 400, // Faster overall animation
-      easing: 'easeOutQuart'
+      duration: 500, // Faster and smoother
+      easing: 'easeOutCubic'
     },
-    hover: {
-        mode: 'index',
-        intersect: false
-    },
+    hover: { mode: 'index', intersect: false },
     interaction: { mode: 'index', intersect: false },
     plugins: { 
         legend: false, 
         tooltip: { 
             enabled: true,
-            backgroundColor: 'rgba(0,0,0,0.8)',
-            titleFont: { size: 10, weight: 'bold' },
-            bodyFont: { size: 13, weight: '900' },
+            backgroundColor: 'rgba(10, 10, 10, 0.95)',
+            titleFont: { size: 11, weight: 'bold' },
+            bodyFont: { size: 14, weight: '900' },
             padding: 12,
-            cornerRadius: 15,
+            cornerRadius: 16,
             displayColors: false,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.1)',
             callbacks: {
-                label: (context) => `Price: ${formatRS(context.raw)}`,
+                label: (context) => `${activeMetal.toUpperCase()}: ${formatRS(context.raw)}`,
                 title: (items) => {
+                    if(!items.length) return '';
                     const d = new Date(items[0].label.replace(' ', 'T'));
                     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 }
@@ -116,17 +123,15 @@ export default function App() {
         display: true,
         grid: {
           display: true,
-          color: 'rgba(255, 255, 255, 0.08)',
+          color: 'rgba(255, 255, 255, 0.05)',
           drawTicks: false,
-          borderDash: [6, 6],
+          borderDash: [5, 5],
         },
         ticks: {
-          color: 'rgba(255, 255, 255, 0.4)',
+          color: 'rgba(255, 255, 255, 0.3)',
           font: { size: 9, weight: '700' },
-          padding: 10,
-          maxRotation: 0,
-          autoSkip: true,
-          maxTicksLimit: 7,
+          padding: 8,
+          maxTicksLimit: 6,
           callback: function(val, index) {
             const dateStr = filteredData[index]?.date;
             if (!dateStr) return '';
@@ -144,7 +149,7 @@ export default function App() {
         setSelectedPoint({ index, date: point.date, price: point[activeMetal] });
       }
     }
-  };
+  }), [filteredData, activeMetal, formatRS]);
 
   if (loading) return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center">
@@ -155,11 +160,12 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-40 overflow-x-hidden relative">
       
-      <div className={`fixed inset-0 pointer-events-none transition-opacity duration-1000 z-0 ${activeMetal === 'gold' ? 'opacity-100' : 'opacity-0'}`}>
+      {/* BACKGROUND - Optimized via direct Opacity control */}
+      <div className={`fixed inset-0 pointer-events-none transition-opacity duration-700 z-0 ${activeMetal === 'gold' ? 'opacity-100' : 'opacity-0'}`}>
         <div className="absolute top-[-5%] left-[-5%] w-[60%] h-[50%] bg-[#D4AF37]/8 blur-[120px] rounded-full" />
         <div className="absolute bottom-[10%] right-[-5%] w-[50%] h-[50%] bg-[#b8860b]/5 blur-[100px] rounded-full" />
       </div>
-      <div className={`fixed inset-0 pointer-events-none transition-opacity duration-1000 z-0 ${activeMetal === 'silver' ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`fixed inset-0 pointer-events-none transition-opacity duration-700 z-0 ${activeMetal === 'silver' ? 'opacity-100' : 'opacity-0'}`}>
         <div className="absolute top-[-5%] left-[-5%] w-[60%] h-[50%] bg-blue-600/5 blur-[120px] rounded-full" />
         <div className="absolute bottom-[10%] right-[-5%] w-[50%] h-[50%] bg-zinc-500/5 blur-[100px] rounded-full" />
       </div>
@@ -178,7 +184,7 @@ export default function App() {
       </header>
 
       {view === 'dashboard' ? (
-        <main className="px-6 space-y-6 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <main className="px-6 space-y-6 relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
           
           <div className="space-y-4">
             {[
@@ -191,7 +197,7 @@ export default function App() {
                 <div 
                   key={item.id}
                   onClick={() => { setActiveMetal(item.id); setSelectedPoint(null); }}
-                  className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-700 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden ${
+                  className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-500 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden ${
                     isActive ? `${item.grad} ${item.border} scale-[1.03]` : 'border-white/5 bg-white/5 opacity-40'
                   }`}
                 >
@@ -218,7 +224,6 @@ export default function App() {
                 <Activity className="w-5 h-5 text-[#D4AF37]" /> Price Trend
               </h3>
               
-              {/* TIMEFRAME SELECTOR */}
               <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
                 {[
                   { label: '7D', val: 7 },
@@ -239,7 +244,7 @@ export default function App() {
             </div>
             
             <div className="h-64 relative">
-              <Line data={chartData} options={chartOptions} />
+              <Line ref={chartRef} data={chartData} options={chartOptions} redraw={false} />
             </div>
 
             <div className="flex justify-between mt-10 pt-8 border-t border-white/10">
@@ -257,8 +262,9 @@ export default function App() {
               </div>
             </div>
 
+            {/* QUICK BUBBLE: Optimized with duration-200 and simple slide */}
             {selectedPoint && (
-              <div className="mt-8 bg-black/50 border-2 border-[#D4AF37]/40 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-4 duration-300 backdrop-blur-3xl min-w-fit shadow-2xl">
+              <div className="mt-8 bg-black/80 border-2 border-[#D4AF37]/60 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-2 fade-in duration-200 backdrop-blur-3xl min-w-fit shadow-2xl">
                 <div className="flex items-center gap-5 flex-1 min-w-[220px]">
                   <div className="w-14 h-14 bg-[#D4AF37]/20 rounded-3xl flex items-center justify-center border border-[#D4AF37]/30 shrink-0">
                     <Calendar className="w-7 h-7 text-[#D4AF37]" />
@@ -286,7 +292,7 @@ export default function App() {
           </section>
         </main>
       ) : (
-        <main className="px-6 relative z-10 animate-in zoom-in-95 duration-500">
+        <main className="px-6 relative z-10 animate-in zoom-in-95 duration-300">
           <div className="bg-white/5 border border-white/10 rounded-[4rem] p-10 backdrop-blur-3xl shadow-xl">
             <div className={`mb-10 p-6 rounded-[2.2rem] border-2 flex items-center justify-between transition-all duration-700 ${
               activeMetal === 'gold' ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-zinc-700 bg-zinc-400/10'
@@ -350,7 +356,7 @@ export default function App() {
       <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-2xl">
         <button 
           onClick={() => { setView('dashboard'); setSelectedPoint(null); }}
-          className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-700 ${
+          className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-500 ${
             view === 'dashboard' 
             ? `text-black shadow-[0_0_40px_rgba(212,175,55,0.3)] ${activeMetal === 'gold' ? 'bg-[#D4AF37]' : 'bg-zinc-400'}` 
             : 'text-zinc-500'
@@ -361,7 +367,7 @@ export default function App() {
         </button>
         <button 
           onClick={() => { setView('calculator'); setSelectedPoint(null); }}
-          className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-700 ${
+          className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-500 ${
             view === 'calculator' 
             ? `text-black shadow-[0_0_40px_rgba(212,175,55,0.3)] ${activeMetal === 'gold' ? 'bg-[#D4AF37]' : 'bg-zinc-400'}` 
             : 'text-zinc-500'
