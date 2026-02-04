@@ -310,15 +310,15 @@ try:
     success = data_manager.add_entry(gold, silver, source)
     
     if success:
-        print(f"✓ Update successful - Gold: {gold:,}, Silver: {silver:,}, Source: {source}")
+        print(f"[SUCCESS] Update successful - Gold: {gold:,}, Silver: {silver:,}, Source: {source}")
         logger.info("Update process completed successfully")
     else:
-        print(f"⚠ Update completed with warnings - Gold: {gold:,}, Silver: {silver:,}")
+        print(f"[WARNING] Update completed with warnings - Gold: {gold:,}, Silver: {silver:,}")
         logger.warning("Data saved with issues")
         
 except Exception as e:
     logger.error(f"Unexpected error in main: {e}", exc_info=True)
-    print(f"✗ Update failed: {e}")
+    print(f"[ERROR] Update failed: {e}")
 ```
 
 if **name** == “**main**”:
