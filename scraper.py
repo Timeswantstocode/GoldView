@@ -5,93 +5,103 @@ import os
 import re
 from bs4 import BeautifulSoup
 
-def get_last_known_prices(file_path):
-    """Retrieves the most recent data from your JSON file so we don't use old fallbacks."""
-    try:
-        if os.path.exists(file_path):
-            with open(file_path, 'r') as f:
-                history = json.load(f)
-                if history:
-                    last = history[-1]
-                    return last['gold'], last['silver']
-    except:
-        pass
-    return 304700, 5600  # Only used if the JSON file is totally empty
-
-def get_live_prices(last_g, last_s):
+def get_live_prices():
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
     }
     
-    # Start with last known prices
-    gold, silver, status = last_g, last_s, "Last Known (Carry Over)"
+    # Return 0, 0 if scrape fails so the update function knows to use "Last Known"
+    gold, silver, status = 0, 0, "Failed"
     
     try:
         r = requests.get("https://www.fenegosida.org/", headers=headers, timeout=30)
-        if r.status_code == 200:
-            soup = BeautifulSoup(r.text, 'html.parser')
-            rows = soup.find_all('tr')
-            
-            for row in rows:
-                text = row.get_text(separator=' ').lower().replace(',', '')
-                # Find all numbers (including decimals) and clean them
-                nums = [int(float(n)) for n in re.findall(r'\b\d+(?:\.\d+)?\b', text)]
-                
-                if "fine gold" in text:
-                    # Filter for gold: usually > 150k for 10g or Tola
-                    valid_gold = [n for n in nums if 150000 < n < 500000]
-                    if valid_gold:
-                        gold = max(valid_gold) # Always take Tola (highest)
-                        status = "FENEGOSIDA Official"
-                
-                if "silver" in text:
-                    # Filter for silver: ignore purity (999), look for price per Tola/10g
-                    valid_silver = [n for n in nums if 3500 < n < 15000]
-                    if valid_silver:
-                        silver = max(valid_silver) # Always take Tola (highest)
-                        status = "FENEGOSIDA Official"
-    except Exception as e:
-        print(f"Scrape Error: {e}")
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, 'html.parser')
+
+        rows = soup.find_all('tr')
         
+        for row in rows:
+            cells = row.find_all('td')
+            if len(cells) < 2: continue
+            
+            row_text = row.get_text().lower()
+            
+            # Extract numbers from each cell individually to avoid merging them
+            row_nums = []
+            for cell in cells:
+                # Remove commas and non-digits
+                val = re.sub(r'[^\d]', '', cell.get_text())
+                if val.isdigit() and len(val) >= 4:
+                    row_nums.append(int(val))
+
+            # GOLD: Tola price (304k) is always higher than 10g price (~261k)
+            if "fine gold" in row_text:
+                if row_nums:
+                    gold = max(row_nums)
+                    status = "FENEGOSIDA Official"
+
+            # SILVER: Tola price (5600) is always higher than 10g price (4801)
+            # Filter range: 3500-15000 (Ignores 999 purity and phone numbers)
+            if "silver" in row_text:
+                valid_silver = [n for n in row_nums if 3500 < n < 15000]
+                if valid_silver:
+                    silver = max(valid_silver)
+                    status = "FENEGOSIDA Official"
+
+    except Exception as e:
+        print(f"Scrape attempt failed: {e}")
+
     return gold, silver, status
 
 def update():
     file = 'data.json'
     
-    # 1. Get previous prices in case the website is down today
-    last_g, last_s = get_last_known_prices(file)
+    # 1. Try to get new data
+    new_gold, new_silver, src = get_live_prices()
     
-    # 2. Try to get live prices
-    gold, silver, src = get_live_prices(last_g, last_s)
-    
-    # 3. Handle History
+    # 2. Load the entire history
     if os.path.exists(file):
         try:
-            with open(file, 'r') as f: history = json.load(f)
-        except: history = []
-    else: history = []
+            with open(file, 'r') as f:
+                history = json.load(f)
+        except:
+            history = []
+    else:
+        history = []
 
+    # 3. SELF-HEALING CARRY OVER
+    # If the website is down (0) or data is missing, use the last entry in the file
+    if (new_gold == 0 or new_silver == 0) and history:
+        new_gold = history[-1]['gold']
+        new_silver = history[-1]['silver']
+        src = "Last Known (Carry Over)"
+    elif new_gold == 0 or new_silver == 0:
+        # Only happens if JSON is empty AND website is down
+        new_gold, new_silver, src = 304700, 5600, "Emergency Fallback"
+
+    # 4. Handle Time (Nepal UTC +5:45)
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
     today_str = now.strftime("%Y-%m-%d")
     
     new_entry = {
-        "date": now.strftime("%Y-%m-%d %H:%M"), 
-        "gold": gold, 
-        "silver": silver, 
+        "date": now.strftime("%Y-%m-%d %H:%M"),
+        "gold": new_gold,
+        "silver": new_silver,
         "source": src
     }
 
-    # Only update/append if we have valid data
+    # 5. Update logic
+    # If today's entry already exists, update it. Otherwise, add a new one.
     if history and history[-1]['date'].startswith(today_str):
         history[-1] = new_entry
     else:
         history.append(new_entry)
 
-    # 4. Save and keep rolling 90 days
+    # 6. Save EVERYTHING (Removed the [-90:] limit)
     with open(file, 'w') as f:
-        json.dump(history[-90:], f, indent=4)
+        json.dump(history, f, indent=4)
     
-    print(f"Update: Gold {gold}, Silver {silver} via {src}")
+    print(f"Updated: Gold {new_gold}, Silver {new_silver} ({src})")
 
 if __name__ == "__main__":
     update()
