@@ -19,6 +19,7 @@ export default function App() {
   const [view, setView] = useState('dashboard');
   const [activeMetal, setActiveMetal] = useState('gold');
   const [selectedPoint, setSelectedPoint] = useState(null);
+  const [timeframe, setTimeframe] = useState(7); // Default to 7 days
   const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
 
   useEffect(() => {
@@ -33,7 +34,9 @@ export default function App() {
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
   
-  const last7Days = useMemo(() => priceData.slice(-7), [priceData]);
+  // Dynamic data filtering based on timeframe
+  const filteredData = useMemo(() => priceData.slice(-timeframe), [priceData, timeframe]);
+  
   const current = useMemo(() => priceData[priceData.length - 1] || {}, [priceData]);
   const yesterday = useMemo(() => priceData[priceData.length - 2] || current, [priceData, current]);
 
@@ -44,26 +47,26 @@ export default function App() {
   };
 
   const currentStats = useMemo(() => {
-    const values = last7Days.map(d => Number(d[activeMetal]) || 0);
+    const values = filteredData.map(d => Number(d[activeMetal]) || 0);
     if (values.length === 0) return { low: 0, high: 0, change: "0.00" };
     const low = Math.min(...values);
     const high = Math.max(...values);
     const change = values.length > 1 ? (((values[values.length-1] - values[0]) / values[0]) * 100).toFixed(2) : "0.00";
     return { low, high, change };
-  }, [last7Days, activeMetal]);
+  }, [filteredData, activeMetal]);
 
   const accentColor = activeMetal === 'gold' ? '#D4AF37' : '#94a3b8';
 
   const chartData = useMemo(() => ({
-    labels: last7Days.map(d => d.date),
+    labels: filteredData.map(d => d.date),
     datasets: [{
-      data: last7Days.map(d => Number(d[activeMetal]) || 0),
+      data: filteredData.map(d => Number(d[activeMetal]) || 0),
       borderColor: accentColor,
       borderWidth: 4,
       fill: true,
       tension: 0.4,
       pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 10 : 0),
-      pointHoverRadius: 12,
+      pointHoverRadius: 10,
       pointBackgroundColor: '#fff',
       pointBorderColor: accentColor,
       pointBorderWidth: 4,
@@ -75,17 +78,39 @@ export default function App() {
         return gradient;
       },
     }]
-  }), [last7Days, activeMetal, selectedPoint, accentColor]);
+  }), [filteredData, activeMetal, selectedPoint, accentColor]);
 
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     animation: {
-      duration: 1000,
-      easing: 'easeInOutQuart'
+      duration: 400, // Faster overall animation
+      easing: 'easeOutQuart'
+    },
+    hover: {
+        mode: 'index',
+        intersect: false
     },
     interaction: { mode: 'index', intersect: false },
-    plugins: { legend: false, tooltip: { enabled: false } },
+    plugins: { 
+        legend: false, 
+        tooltip: { 
+            enabled: true,
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleFont: { size: 10, weight: 'bold' },
+            bodyFont: { size: 13, weight: '900' },
+            padding: 12,
+            cornerRadius: 15,
+            displayColors: false,
+            callbacks: {
+                label: (context) => `Price: ${formatRS(context.raw)}`,
+                title: (items) => {
+                    const d = new Date(items[0].label.replace(' ', 'T'));
+                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                }
+            }
+        } 
+    },
     scales: {
       x: {
         display: true,
@@ -93,14 +118,17 @@ export default function App() {
           display: true,
           color: 'rgba(255, 255, 255, 0.08)',
           drawTicks: false,
-          borderDash: [6, 6], // VERTICAL DASHED LINES
+          borderDash: [6, 6],
         },
         ticks: {
           color: 'rgba(255, 255, 255, 0.4)',
           font: { size: 9, weight: '700' },
           padding: 10,
+          maxRotation: 0,
+          autoSkip: true,
+          maxTicksLimit: 7,
           callback: function(val, index) {
-            const dateStr = last7Days[index]?.date;
+            const dateStr = filteredData[index]?.date;
             if (!dateStr) return '';
             const d = new Date(dateStr.replace(' ', 'T'));
             return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -112,7 +140,7 @@ export default function App() {
     onClick: (e, elements) => {
       if (elements.length > 0) {
         const index = elements[0].index;
-        const point = last7Days[index];
+        const point = filteredData[index];
         setSelectedPoint({ index, date: point.date, price: point[activeMetal] });
       }
     }
@@ -127,7 +155,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-40 overflow-x-hidden relative">
       
-      {/* LIGHTER CLOUDY BACKGROUND */}
       <div className={`fixed inset-0 pointer-events-none transition-opacity duration-1000 z-0 ${activeMetal === 'gold' ? 'opacity-100' : 'opacity-0'}`}>
         <div className="absolute top-[-5%] left-[-5%] w-[60%] h-[50%] bg-[#D4AF37]/8 blur-[120px] rounded-full" />
         <div className="absolute bottom-[10%] right-[-5%] w-[50%] h-[50%] bg-[#b8860b]/5 blur-[100px] rounded-full" />
@@ -190,7 +217,25 @@ export default function App() {
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3">
                 <Activity className="w-5 h-5 text-[#D4AF37]" /> Price Trend
               </h3>
-              <span className="text-[9px] font-black bg-white/5 px-4 py-1.5 rounded-full border border-white/10 text-zinc-500 tracking-[0.2em] uppercase">7 Day</span>
+              
+              {/* TIMEFRAME SELECTOR */}
+              <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
+                {[
+                  { label: '7D', val: 7 },
+                  { label: '1M', val: 30 },
+                  { label: '3M', val: 90 }
+                ].map((t) => (
+                  <button
+                    key={t.label}
+                    onClick={() => { setTimeframe(t.val); setSelectedPoint(null); }}
+                    className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all tracking-tighter ${
+                      timeframe === t.val ? `bg-[#D4AF37] text-black shadow-lg` : 'text-zinc-500'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
             </div>
             
             <div className="h-64 relative">
@@ -212,9 +257,8 @@ export default function App() {
               </div>
             </div>
 
-            {/* ADAPTIVE SELECTED DATE BOX */}
             {selectedPoint && (
-              <div className="mt-8 bg-black/50 border-2 border-[#D4AF37]/40 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-8 duration-500 backdrop-blur-3xl min-w-fit shadow-2xl">
+              <div className="mt-8 bg-black/50 border-2 border-[#D4AF37]/40 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-4 duration-300 backdrop-blur-3xl min-w-fit shadow-2xl">
                 <div className="flex items-center gap-5 flex-1 min-w-[220px]">
                   <div className="w-14 h-14 bg-[#D4AF37]/20 rounded-3xl flex items-center justify-center border border-[#D4AF37]/30 shrink-0">
                     <Calendar className="w-7 h-7 text-[#D4AF37]" />
