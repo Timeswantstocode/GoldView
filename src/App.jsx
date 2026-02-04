@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Calculator, RefreshCcw, TrendingUp, 
   X, Calendar, Info, Zap, ChevronRight, Activity, Coins
 } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 ChartJS.register(...registerables, Filler, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
 
@@ -381,6 +382,7 @@ export default function App() {
         </button>
       </nav>
 
+      <Analytics />
     </div>
   );
 }
