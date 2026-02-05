@@ -442,5 +442,11 @@
         "gold": 304700,
         "silver": 5600,
         "source": "FENEGOSIDA Official"
+    },
+    {
+        "date": "2026-02-05 11:19",
+        "gold": 304700,
+        "silver": 5600,
+        "source": "Last Known (Carry Over)"
     }
 ]
