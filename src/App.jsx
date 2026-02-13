@@ -16,9 +16,11 @@ const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/ma
 const FOREX_PROXY = "/api/forex";
 
 export default function App() {
-  // 1. STATE & PERSISTENT CACHE
-  const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('gv_v10_metal') || '[]'));
-  const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('gv_v10_forex') || '[]'));
+  // ---------------------------------------------------------
+  // 1. STATE & PERSISTENT CACHE INITIALIZATION
+  // ---------------------------------------------------------
+  const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('gv_v11_metals') || '[]'));
+  const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('gv_v11_forex') || '[]'));
   
   const [loading, setLoading] = useState(priceData.length === 0);
   const [forexLoading, setForexLoading] = useState(true);
@@ -41,30 +43,35 @@ export default function App() {
     { code: 'EUR', flag: '🇪🇺' }
   ];
 
-  // 2. DATA FETCHING
+  // ---------------------------------------------------------
+  // 2. DATA FETCHING (PARALLEL)
+  // ---------------------------------------------------------
   useEffect(() => {
     fetch(`${DATA_URL}?t=${Date.now()}`).then(res => res.json()).then(json => {
         setPriceData(json);
-        localStorage.setItem('gv_v10_metal', JSON.stringify(json));
+        localStorage.setItem('gv_v11_metals', JSON.stringify(json));
         setLoading(false);
     }).catch(() => setLoading(false));
 
     fetch(FOREX_PROXY).then(res => res.json()).then(json => {
         const transformed = json.data.payload.map(day => ({
           date: day.date,
+          // Buyer gets Buy rate (e.g., 145.23)
           usdRate: parseFloat(day.rates.find(r => r.currency.iso3 === 'USD')?.buy || 0),
           rates: day.rates
         })).sort((a, b) => new Date(a.date) - new Date(b.date));
         
         setForexHistory(transformed);
-        localStorage.setItem('gv_v10_forex', JSON.stringify(transformed));
+        localStorage.setItem('gv_v11_forex', JSON.stringify(transformed));
         setForexLoading(false);
     }).catch(() => setForexLoading(false));
   }, []);
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
 
+  // ---------------------------------------------------------
   // 3. COLOR THEME ENGINE
+  // ---------------------------------------------------------
   const themeColor = useMemo(() => {
     if (view === 'calculator' && calcMode === 'currency') return '#22c55e';
     if (activeMetal === 'gold') return '#D4AF37';
@@ -90,7 +97,9 @@ export default function App() {
     return { low: Math.min(...values), high: Math.max(...values), change: values.length > 1 ? (((values[values.length-1] - values[0]) / values[0]) * 100).toFixed(2) : "0.00" };
   }, [filteredData, activeMetal]);
 
-  // 4. CHART & INTERACTION
+  // ---------------------------------------------------------
+  // 4. CHART ENGINE (GRID LABELS & CLICK SENSITIVITY)
+  // ---------------------------------------------------------
   const chartData = useMemo(() => ({
     labels: filteredData.map(d => {
         const date = new Date(d.date.replace(' ', 'T'));
@@ -120,18 +129,13 @@ export default function App() {
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
+    interaction: { mode: 'index', intersect: false }, // Allows clicking near lines
     plugins: { 
         legend: false, 
         tooltip: { 
             enabled: true,
             backgroundColor: 'rgba(20, 20, 20, 0.8)',
             backdropFilter: 'blur(10px)',
-            titleFont: { size: 10, weight: '700' },
-            bodyFont: { size: 12, weight: '900' },
-            padding: 10,
-            cornerRadius: 12,
-            displayColors: false,
             callbacks: {
                 label: (ctx) => `रू ${ctx.raw.toLocaleString(undefined, {minimumFractionDigits: activeMetal === 'usd' ? 2 : 0})}`,
                 title: (items) => items[0].label
@@ -162,10 +166,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-40 overflow-x-hidden relative">
+      
+      {/* HEADER WITH SYNCED COLORS */}
       <header className="p-8 pt-16 flex justify-between items-end relative z-10">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full shadow-lg animate-pulse" style={{ backgroundColor: themeColor }}></div>
+            <div className="w-2 h-2 rounded-full shadow-lg animate-pulse transition-all duration-500" style={{ backgroundColor: themeColor, boxShadow: `0 0 12px ${themeColor}` }}></div>
             <p className="text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500" style={{ color: themeColor }}>Market Update</p>
           </div>
           <h1 className="text-4xl font-black tracking-tighter text-white">GoldView</h1>
@@ -175,7 +181,9 @@ export default function App() {
         </button>
       </header>
 
-      {/* MARKET VIEW */}
+      {/* ---------------------------------------------------------
+          MARKET TAB
+      --------------------------------------------------------- */}
       <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
         <main className="px-6 space-y-6 relative z-10 animate-in fade-in duration-500">
           <div className="space-y-4">
@@ -193,19 +201,17 @@ export default function App() {
                   className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden ${
                     isActive ? `${meta.grad} border-white/20 scale-[1.02]` : 'border-white/5 bg-white/5 opacity-40'
                   }`}>
-                  <div className="flex justify-between items-start mb-2 text-[10px] font-black uppercase tracking-widest">
-                    <div>{meta.label}<p className="text-[8px] opacity-50 mt-0.5">{meta.sub}</p></div>
+                  <div className="flex justify-between items-start mb-2">
+                    <div><span className="text-[10px] font-black uppercase tracking-widest">{meta.label}</span><p className="text-[8px] font-bold opacity-50 uppercase mt-0.5">{meta.sub}</p></div>
                     {type === 'usd' && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /> : 
-                    <div className={`px-2.5 py-1 rounded-xl border ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
+                    <div className={`px-2.5 py-1 rounded-xl border text-[9px] font-black ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
                   </div>
-                  <div className="flex justify-between items-end text-4xl font-black tracking-tighter">
-                    <h2>{type === 'usd' ? `रू ${val.toFixed(2)}` : formatRS(val)}</h2>
-                    {isActive && <TrendingUp className={`w-5 h-5 ${diff.isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
-                  </div>
+                  <h2 className="text-4xl font-black tracking-tighter">{type === 'usd' ? `रू ${val.toFixed(2)}` : formatRS(val)}</h2>
                 </div>
                );
             })}
           </div>
+
           <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-3xl shadow-xl">
             <div className="flex justify-between items-center mb-8 px-1">
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> Price Trend</h3>
@@ -214,6 +220,8 @@ export default function App() {
               </div>
             </div>
             <div className="h-64 relative w-full"><Line ref={chartRef} data={chartData} options={chartOptions} redraw={false} /></div>
+            
+            {/* Historical Point Detail Box - Appears on 1st Click */}
             {selectedPoint && (
               <div className="mt-8 bg-black/80 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-2 shadow-2xl w-full border-white/10" style={{ borderColor: `${themeColor}80` }}>
                 <div className="flex items-center gap-5 flex-1 min-w-[220px]">
@@ -228,15 +236,23 @@ export default function App() {
         </main>
       </div>
 
-      {/* CALCULATOR VIEW */}
+      {/* ---------------------------------------------------------
+          CALCULATOR TAB
+      --------------------------------------------------------- */}
       <div style={{ display: view === 'calculator' ? 'block' : 'none' }}>
         <main className="px-6 relative z-10 animate-in zoom-in-95 duration-500">
           <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-3xl shadow-xl">
+            {/* Tab Sub-Toggle */}
             <div className="flex p-1 bg-black/40 rounded-3xl mb-10 border border-white/5">
-                <button onClick={() => setCalcMode('jewelry')} style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`}>Jewelry</button>
-                <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black' : 'text-zinc-500'}`}>Currency</button>
+                <button onClick={() => setCalcMode('jewelry')} 
+                  style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}}
+                  className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`}>Jewelry</button>
+                <button onClick={() => setCalcMode('currency')} 
+                  className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`}>Currency</button>
             </div>
+
             {calcMode === 'jewelry' ? (
+              /* --- JEWELRY CALCULATOR --- */
               <div className="space-y-6">
                 <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto">
                     {['gold', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (metal === 'gold' ? '#D4AF37' : '#94a3b8') : 'transparent' }} className={`px-8 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black shadow-md' : 'text-zinc-500'}`}>{metal}</button>))}
@@ -246,25 +262,26 @@ export default function App() {
                   <div className="text-right text-[10px] font-black text-zinc-500">{formatRS(priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal])}</div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                  {['tola', 'aana', 'lal'].map((u) => (<div key={u}><label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{u}</label>
-                  <input type="number" style={{ caretColor: themeColor }} className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-2xl text-white outline-none" onFocus={(e) => e.target.style.borderColor = themeColor} onBlur={(e) => e.target.style.borderColor = '#27272a'} value={calc[u]} onChange={(e) => setCalc({...calc, [u]: e.target.value})} /></div>))}
+                  {['tola', 'aana', 'lal'].map((unit) => (<div key={unit}><label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{unit}</label>
+                  <input type="number" style={{ caretColor: themeColor }} className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-2xl text-white outline-none focus:border-white/20 transition-all" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} /></div>))}
                 </div>
-                <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none text-white focus:border-white/20" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
+                <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none text-white focus:border-white/20 transition-all" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
                 <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer active:scale-[0.98] transition-all"><div className="flex items-center gap-3"><div className="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all" style={{ borderColor: calc.vat ? themeColor : '#27272a', backgroundColor: calc.vat ? themeColor : 'transparent' }}>{calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}</div><span className="font-bold text-zinc-300">13% Govt VAT</span></div></div>
-                <div className="p-12 rounded-[3.5rem] text-black text-center shadow-xl transition-all" style={{ background: `linear-gradient(135deg, ${themeColor}, ${activeMetal === 'gold' ? '#b8860b' : '#4b5563'})` }}>
+                <div className="p-12 rounded-[3.5rem] text-black text-center shadow-2xl transition-all" style={{ background: `linear-gradient(135deg, ${themeColor}, ${activeMetal === 'gold' ? '#b8860b' : '#4b5563'})` }}>
+                   <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">Estimated Total</p>
                    <h3 className="text-5xl font-black tracking-tighter">{formatRS(( ( (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192 ) * (priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal]) + (Number(calc.making)||0) ) * (calc.vat ? 1.13 : 1))}</h3>
                 </div>
               </div>
             ) : (
-              /* --- CURRENCY CONVERTER (REFINED FIX) --- */
+              /* --- CURRENCY CONVERTER (CLEAN NPR UI) --- */
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="bg-black/40 rounded-[3rem] p-7 border border-white/10 space-y-8">
                     
-                    <div className="flex items-center justify-between px-2">
-                        {/* LEFT COLUMN */}
-                        <div className="flex-1 flex flex-col gap-1.5 transition-all duration-300">
-                            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">YOU SEND</p>
-                            <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between px-1">
+                        {/* Always on the left role side */}
+                        <div className="flex-1 flex flex-col gap-2">
+                            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">{currCalc.isSwapped ? 'RECEIVER GETS' : 'YOU SEND'}</p>
+                            <div className="flex items-center gap-3">
                                 {currCalc.isSwapped ? (
                                     <><span className="text-3xl leading-none">🇳🇵</span><span className="text-lg font-black text-white">NPR</span></>
                                 ) : (
@@ -278,17 +295,17 @@ export default function App() {
                             </div>
                         </div>
 
-                        {/* CENTER BUTTON */}
-                        <div className="flex-shrink-0 px-4">
+                        {/* Centered Trigger */}
+                        <div className="px-4">
                             <button onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})} className="p-4 bg-green-500/20 rounded-2xl active:rotate-180 transition-all duration-500 border border-green-500/20">
                                 <ArrowRightLeft className="w-5 h-5 text-green-500" />
                             </button>
                         </div>
 
-                        {/* RIGHT COLUMN */}
-                        <div className="flex-1 flex flex-col items-end gap-1.5 transition-all duration-300">
-                            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">RECEIVER GETS</p>
-                            <div className="flex items-center gap-2 justify-end">
+                        {/* Always on the right role side */}
+                        <div className="flex-1 flex flex-col items-end gap-2 text-right">
+                            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">{currCalc.isSwapped ? 'YOU SEND' : 'RECEIVER GETS'}</p>
+                            <div className="flex items-center gap-3 justify-end">
                                 {currCalc.isSwapped ? (
                                     <>
                                         <select className="bg-transparent font-black text-lg text-white outline-none text-right" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
@@ -309,15 +326,15 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-br from-green-500 to-green-700 p-12 rounded-[3.5rem] text-black text-center shadow-xl relative overflow-hidden group">
+                  <div className="bg-gradient-to-br from-green-500 to-green-700 p-12 rounded-[3.5rem] text-black text-center shadow-2xl relative overflow-hidden group">
                      <div className="absolute top-4 right-6 text-7xl opacity-10 font-bold pointer-events-none">{currCalc.isSwapped ? currencyList.find(c => c.code === currCalc.source)?.flag : '🇳🇵'}</div>
                      <div className="flex flex-col items-center gap-2 mb-2 relative z-10">
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-black/10 rounded-full border border-black/5">
-                            <span className="text-[10px] font-black">{currCalc.isSwapped ? '🇳🇵 NPR' : `${currencyList.find(c => c.code === currCalc.source)?.flag} ${currCalc.source}`}</span>
+                            <span className="text-[10px] font-black">{currCalc.isSwapped ? '🇳🇵 NPR' : currencyList.find(c => c.code === currCalc.source)?.flag}</span>
                             <ArrowDown className="w-3 h-3 opacity-40" />
-                            <span className="text-[10px] font-black bg-white/20 px-2 rounded-md">{currCalc.isSwapped ? `${currencyList.find(c => c.code === currCalc.source)?.flag} ${currCalc.source}` : '🇳🇵 NPR'}</span>
+                            <span className="text-[10px] font-black bg-white/30 px-2 rounded-md">{currCalc.isSwapped ? currencyList.find(c => c.code === currCalc.source)?.flag : '🇳🇵 NPR'}</span>
                         </div>
-                        <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-60">Estimated Payout</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-60">Payout Estimate</p>
                      </div>
                      <h3 className="text-5xl font-black tracking-tighter relative z-10">
                         {(() => {
@@ -326,8 +343,15 @@ export default function App() {
                           const rawRate = parseFloat(rateData?.buy || 133);
                           const unit = parseInt(rateData?.currency?.unit || 1);
                           const amt = Number(currCalc.amount) || 0;
-                          if (currCalc.isSwapped) return ((amt / rawRate) * unit).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                          return formatRS((amt / unit) * rawRate); })()}
+                          
+                          if (currCalc.isSwapped) {
+                              const res = (amt / rawRate) * unit;
+                              return res.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                          } else {
+                              const res = (amt / unit) * rawRate;
+                              return formatRS(res);
+                          }
+                        })()}
                      </h3>
                      <p className="text-[8px] font-bold mt-4 opacity-40 uppercase tracking-widest relative z-10">Live NRB Official Buying Rate</p>
                   </div>
@@ -337,16 +361,18 @@ export default function App() {
         </main>
       </div>
 
+      {/* FOOTER NAVIGATION */}
       <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-2xl">
-        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'dashboard' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`} style={view === 'dashboard' ? { backgroundColor: themeColor } : {}}>
+        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'dashboard' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`} style={view === 'dashboard' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
           <LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} />
           <span className="text-[9px] font-black uppercase tracking-widest">Market</span>
         </button>
-        <button onClick={() => { setView('calculator'); if(activeMetal === 'usd') setActiveMetal('gold'); }} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'calculator' ? 'text-black' : 'text-zinc-500'}`} style={view === 'calculator' ? { backgroundColor: themeColor } : {}}>
+        <button onClick={() => { setView('calculator'); if(activeMetal === 'usd') setActiveMetal('gold'); }} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'calculator' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`} style={view === 'calculator' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
           <Calculator className={`w-6 h-6 ${view === 'calculator' ? 'fill-black' : ''}`} />
           <span className="text-[9px] font-black uppercase tracking-widest">Calculator</span>
         </button>
       </nav>
+
       <Analytics />
     </div>
   );
