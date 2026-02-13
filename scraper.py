@@ -4,77 +4,78 @@ import datetime
 import os
 import re
 from bs4 import BeautifulSoup
+import urllib3
+
+# Disable annoying SSL warnings for the FENEGOSIDA site
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def clean_and_find_prices(raw_html, metal_type):
-    """
-    Stricter extraction to avoid years (2082/2083) and 
-    ensure we get 'Fine Gold' instead of 'Tejabi'.
-    """
-    # Remove Rupee symbol, commas, and normalize spaces
+    # Remove Rupee symbol, commas, and simplify spaces
     text = raw_html.replace('रु', '').replace(',', '').replace('\n', ' ')
     
-    # Avoid picking up years as prices
-    current_year = datetime.datetime.now().year
-    blacklisted_numbers = [2082, 2083, 2084, current_year, current_year + 1]
+    # Avoid years being mistaken for prices
+    blacklisted = [2081, 2082, 2083, 2084, 2024, 2025, 2026]
 
     if metal_type == "gold":
-        # Look specifically for 'Fine' or 'Hallmark' to avoid Tajabi
-        # Must be 6 digits (e.g., 306500)
-        pattern = r"(?:FINE|Hallmark|छापावाल).*?(\d{6})"
-        min_val, max_val = 150000, 500000
-    else:
-        # Silver must be between 3500 and 10000 (to avoid picking up the year 2083)
-        pattern = r"(?:SILVER|Silver|चाँदी).*?(\d{4,5})"
-        min_val, max_val = 3500, 10000
+        # Strategy: Find 'Fine' or 'Hallmark', but EXCLUDE 'Tejabi/Tajabi'
+        # We look for the 6-digit number that appears after 'Fine' or 'Hallmark'
+        gold_patterns = [
+            r"(?:Fine|Hallmark|छापावाल).*?(\d{6})",
+            r"(\d{6})" 
+        ]
+        
+        # Remove Tajabi sections from text entirely to prevent accidental matching
+        clean_text = re.sub(r"(?:Tejabi|Tajabi|तेजावी).*?\d+", "", text, flags=re.IGNORECASE)
+        
+        for pattern in gold_patterns:
+            matches = re.findall(pattern, clean_text, re.IGNORECASE | re.DOTALL)
+            valid = [int(m) for m in matches if int(m) not in blacklisted and 150000 <= int(m) <= 500000]
+            if valid:
+                return max(valid) # Return the highest (Fine Gold)
 
-    matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
-    
-    valid_prices = []
-    for m in matches:
-        val = int(m)
-        if val in blacklisted_numbers:
-            continue
-        if min_val <= val <= max_val:
-            valid_prices.append(val)
-            
-    # If we found multiple, Gold should be the highest (Fine), 
-    # Silver should be the first one found near the label
-    if not valid_prices: return 0
-    return max(valid_prices) if metal_type == "gold" else valid_prices[0]
+    else:
+        # Silver Strategy: Look for the number after 'Silver'
+        # We use a tighter range (4000-9000) to avoid years or 10-gram prices
+        silver_patterns = [
+            r"(?:Silver|चाँदी).*?(\d{4,5})",
+            r"(\d{4,5})"
+        ]
+        for pattern in silver_patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
+            valid = [int(m) for m in matches if int(m) not in blacklisted and 4000 <= int(m) <= 9000]
+            if valid:
+                return valid[0] # Return the first valid one near the label
+
+    return 0
 
 def get_live_prices():
+    # Using 'https://fenegosida.org/' (no www) is often more stable for their SSL
     sources = [
-        {"name": "FENEGOSIDA", "url": "https://www.fenegosida.org/"},
+        {"name": "FENEGOSIDA", "url": "https://fenegosida.org/"},
         {"name": "Ashesh", "url": "https://www.ashesh.com.np/gold/"}
     ]
     
-    # Modern headers to prevent 403 Forbidden/Scrape errors
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
     }
 
     for source in sources:
         try:
-            # Use a session to handle cookies/headers like a real browser
-            session = requests.Session()
-            r = session.get(source['url'], headers=headers, timeout=25)
+            # verify=False fixes the SSL/Hostname mismatch error
+            r = requests.get(source['url'], headers=headers, timeout=20, verify=False)
             r.raise_for_status()
             
             soup = BeautifulSoup(r.text, 'html.parser')
-            # Extract only the body text to reduce header/footer noise
-            page_content = soup.find('body').get_text(separator=' ') if soup.find('body') else soup.get_text(separator=' ')
+            # Focus on the visible text
+            page_content = soup.get_text(separator=' ')
             
             gold = clean_and_find_prices(page_content, "gold")
             silver = clean_and_find_prices(page_content, "silver")
 
-            if gold > 0 and silver > 0:
+            if gold > 100000 and silver > 3000:
                 return gold, silver, source['name']
         except Exception as e:
-            print(f"Source {source['name']} failed: {e}")
+            print(f"Source {source['name']} skipped: {e}")
             continue
             
     return 0, 0, "Failed"
@@ -89,16 +90,15 @@ def update():
             with open(file, 'r') as f: history = json.load(f)
         except: pass
 
-    # Fallback to history if current scrape failed
+    # Recovery logic
     if (new_gold == 0 or new_silver == 0) and history:
         new_gold = history[-1]['gold']
         new_silver = history[-1]['silver']
         src = f"Recovery (Last Known)"
     elif new_gold == 0:
-        # Hard fallback to recent rates if everything fails
         new_gold, new_silver, src = 306500, 5340, "Hard Fallback"
 
-    # Nepal Time (UTC+5:45)
+    # Set Nepal Time
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
     
     entry = {
@@ -114,11 +114,10 @@ def update():
     else:
         history.append(entry)
 
-    # Save last 100 entries
     with open(file, 'w') as f:
         json.dump(history[-100:], f, indent=4)
     
-    print(f"Verified Update: Gold {new_gold}, Silver {new_silver} from {src}")
+    print(f"Final Result -> Gold: {new_gold}, Silver: {new_silver} ({src})")
 
 if __name__ == "__main__":
     update()
