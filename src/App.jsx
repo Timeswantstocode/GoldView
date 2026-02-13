@@ -381,11 +381,19 @@ export default function App() {
           <span className="text-[9px] font-black uppercase tracking-widest">Calculator</span>
         </button>
       </nav>
-
-      <footer className="mt-12 px-8 pb-12 text-zinc-600 text-[10px] leading-relaxed border-t border-white/5 pt-10 text-center">
-        <h2 className="text-zinc-400 font-black mb-2 uppercase tracking-widest">Live Market Rates Nepal</h2>
-        <p>Real-time 24K Gold, Silver and official NRB Forex exchange rates for Nepal.</p>
-      </footer>
+<footer className="mt-12 px-8 pb-32 text-zinc-600 text-[10px] leading-relaxed border-t border-white/5 pt-10 text-center">
+  <h2 className="text-zinc-400 font-black mb-2 uppercase tracking-widest">Live Market Rates Nepal</h2>
+  <p className="max-w-xs mx-auto">Real-time 24K Gold, Silver and official NRB Forex exchange rates. Accurate jewelry and remittance calculators for Nepal.</p>
+  <a 
+    href="https://github.com/Timeswantstocode" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="mt-10 flex flex-col items-center gap-2 transition-all duration-300 hover:opacity-100 opacity-30 group"
+  >
+    <Github className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+    <p className="font-bold tracking-[0.3em] uppercase text-[9px]">Made by @Timeswantstocode</p>
+  </a>
+</footer>
 
       <Analytics />
     </div>
