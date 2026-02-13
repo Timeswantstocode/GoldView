@@ -6,7 +6,7 @@ import {
 } from 'chart.js';
 import { 
   LayoutDashboard, Calculator, RefreshCcw, TrendingUp, 
-  X, Calendar, Zap, Activity, Coins, ArrowRightLeft, Globe, ArrowDown
+  X, Calendar, Zap, Activity, Coins, ArrowRightLeft, Globe, ArrowDown , Github
 } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
