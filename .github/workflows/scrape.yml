@@ -2,35 +2,30 @@ name: Scrape Gold Data
 on:
   schedule:
     # Nepal Time (NPT) to UTC Conversion (-5h 45m)
-    # 10:00 AM Hour NPT
     - cron: '20 4 * * *'  # 10:05 AM NPT
     - cron: '30 4 * * *'  # 10:15 AM NPT
     - cron: '45 4 * * *'  # 10:30 AM NPT
     - cron: '0 5 * * *'   # 10:45 AM NPT
-    
-    # 11:00 AM Hour NPT
     - cron: '20 5 * * *'  # 11:05 AM NPT
     - cron: '30 5 * * *'  # 11:15 AM NPT
     - cron: '45 5 * * *'  # 11:30 AM NPT
-    
-    # 12:00 PM & 1:00 PM NPT
     - cron: '15 6 * * *'  # 12:00 PM NPT
     - cron: '15 7 * * *'  # 01:00 PM NPT
     
-  workflow_dispatch: # Manual trigger for testing
+  workflow_dispatch: 
 
 jobs:
   scrape-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # This line replaces the need for any PAT keys
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.PAT }}
+          # Token line removed entirely - it now uses the default internal token
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -55,6 +50,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          # [skip ci] is vital to prevent Vercel from using up your deployment limits
-          git commit -m "Auto-update gold data: $(date +'%Y-%m-%d %H:%M:%S UTC') [skip ci]"
+          git commit -m "Auto-update gold data [skip ci]"
           git push
