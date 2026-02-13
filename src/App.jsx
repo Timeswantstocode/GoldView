@@ -6,63 +6,93 @@ import {
 } from 'chart.js';
 import { 
   LayoutDashboard, Calculator, RefreshCcw, TrendingUp, 
-  X, Calendar, Info, Zap, ChevronRight, Activity, Coins
+  X, Calendar, Zap, Activity, Coins, ArrowRightLeft
 } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
 
 ChartJS.register(...registerables, Filler, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
 
 const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json";
+// On Vercel, we use a relative path to avoid CORS issues with NRB
+const FOREX_PROXY_URL = "/api/forex"; 
+
+const SUPPORTED_CURRENCIES = [
+  { code: 'USD', name: 'US Dollar', flag: '🇺🇸' },
+  { code: 'GBP', name: 'UK Pound', flag: '🇬🇧' },
+  { code: 'AUD', name: 'AUS Dollar', flag: '🇦🇺' },
+  { code: 'JPY', name: 'Japan Yen', flag: '🇯🇵' },
+  { code: 'KRW', name: 'S. Korean Won', flag: '🇰🇷' },
+  { code: 'AED', name: 'UAE Dirham', flag: '🇦🇪' },
+  { code: 'CAD', name: 'Canada Dollar', flag: '🇨🇦' },
+  { code: 'EUR', name: 'Euro', flag: '🇪🇺' },
+  { code: 'MYR', name: 'Malay Ringgit', flag: '🇲🇾' },
+];
 
 export default function App() {
   const [priceData, setPriceData] = useState([]);
+  const [forexData, setForexData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('dashboard');
-  const [activeMetal, setActiveMetal] = useState('gold');
+  const [activeMetal, setActiveMetal] = useState('gold'); // gold, silver, usd
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [timeframe, setTimeframe] = useState(7);
+  const [calcMode, setCalcMode] = useState('jewelry'); // jewelry, currency
   const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
+  const [currCalc, setCurrCalc] = useState({ amount: '', activeCurr: 'USD', isNprToForeign: false });
   
   const chartRef = useRef(null);
 
-  useEffect(() => {
-    fetch(`${DATA_URL}?t=${Date.now()}`)
-      .then(res => res.json())
-      .then(json => {
-        setPriceData(Array.isArray(json) ? json : []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+  const fetchData = useCallback(async () => {
+    try {
+      const goldRes = await fetch(`${DATA_URL}?t=${Date.now()}`).then(res => res.json());
+      setPriceData(Array.isArray(goldRes) ? goldRes : []);
+      
+      // Fetch Forex via Vercel API Proxy
+      const forexRes = await fetch(FOREX_PROXY_URL).then(res => res.json());
+      setForexData(forexRes?.data?.payload || []);
+      
+      setLoading(false);
+    } catch (e) {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
   
-  const filteredData = useMemo(() => priceData.slice(-timeframe), [priceData, timeframe]);
-  const current = useMemo(() => priceData[priceData.length - 1] || {}, [priceData]);
-  const yesterday = useMemo(() => priceData[priceData.length - 2] || current, [priceData, current]);
+  const filteredData = useMemo(() => {
+    if (activeMetal === 'usd') {
+      return forexData.slice(-timeframe).map(d => ({
+        date: d.date,
+        price: parseFloat(d.rates.find(r => r.currency.iso3 === 'USD')?.buy || 0)
+      })).filter(p => p.price > 0);
+    }
+    return priceData.slice(-timeframe).map(d => ({ date: d.date, price: Number(d[activeMetal]) || 0 }));
+  }, [priceData, forexData, timeframe, activeMetal]);
 
-  const getDayDiff = (metal) => {
-    const diff = (current[metal] || 0) - (yesterday[metal] || 0);
-    const sign = diff >= 0 ? '+' : '';
-    return { val: `Rs. ${sign}${diff.toLocaleString()}`, isUp: diff >= 0 };
+  const current = useMemo(() => priceData[priceData.length - 1] || {}, [priceData]);
+  const currentUSD = useMemo(() => forexData[forexData.length - 1]?.rates.find(r => r.currency.iso3 === 'USD')?.buy || 0, [forexData]);
+  const yesterdayUSD = useMemo(() => forexData[forexData.length - 2]?.rates.find(r => r.currency.iso3 === 'USD')?.buy || currentUSD, [forexData, currentUSD]);
+
+  const getDayDiff = (type) => {
+    let curr, prev;
+    if (type === 'usd') { curr = parseFloat(currentUSD); prev = parseFloat(yesterdayUSD); }
+    else { curr = current[type] || 0; prev = priceData[priceData.length - 2]?.[type] || curr; }
+    const diff = curr - prev;
+    return { val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {maximumFractionDigits: 2})}`, isUp: diff >= 0 };
   };
 
-  const currentStats = useMemo(() => {
-    const values = filteredData.map(d => Number(d[activeMetal]) || 0);
-    if (values.length === 0) return { low: 0, high: 0, change: "0.00" };
-    const low = Math.min(...values);
-    const high = Math.max(...values);
-    const change = values.length > 1 ? (((values[values.length-1] - values[0]) / values[0]) * 100).toFixed(2) : "0.00";
-    return { low, high, change };
-  }, [filteredData, activeMetal]);
-
-  const accentColor = activeMetal === 'gold' ? '#D4AF37' : '#94a3b8';
+  const accentColor = useMemo(() => {
+    if (activeMetal === 'gold') return '#D4AF37';
+    if (activeMetal === 'silver') return '#94a3b8';
+    return '#22c55e'; // Green for USD
+  }, [activeMetal]);
 
   const chartData = useMemo(() => ({
     labels: filteredData.map(d => d.date),
     datasets: [{
-      label: activeMetal,
-      data: filteredData.map(d => Number(d[activeMetal]) || 0),
+      data: filteredData.map(d => d.price),
       borderColor: accentColor,
       borderWidth: 4,
       fill: true,
@@ -73,11 +103,10 @@ export default function App() {
       pointBorderColor: accentColor,
       pointBorderWidth: 4,
       backgroundColor: (context) => {
-        const chart = context.chart;
-        const {ctx, chartArea} = chart;
+        const {ctx, chartArea} = context.chart;
         if (!chartArea) return null;
         const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-        gradient.addColorStop(0, activeMetal === 'gold' ? 'rgba(212, 175, 55, 0.25)' : 'rgba(148, 163, 184, 0.2)');
+        gradient.addColorStop(0, `${accentColor}44`);
         gradient.addColorStop(1, 'transparent');
         return gradient;
       },
@@ -87,10 +116,6 @@ export default function App() {
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    animation: {
-      duration: 600,
-      easing: 'easeOutQuart'
-    },
     hover: { mode: 'index', intersect: false },
     interaction: { mode: 'index', intersect: false },
     plugins: { 
@@ -98,92 +123,45 @@ export default function App() {
         tooltip: { 
             enabled: true,
             backgroundColor: 'rgba(10, 10, 10, 0.9)',
-            titleFont: { size: 10, weight: '700' },
-            bodyFont: { size: 13, weight: '900' },
-            padding: 12,
-            cornerRadius: 15,
-            displayColors: false,
             callbacks: {
                 label: (context) => `रू ${context.raw.toLocaleString()}`,
-                title: (items) => {
-                    const d = new Date(items[0].label.replace(' ', 'T'));
-                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                }
+                title: (items) => new Date(items[0].label).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             }
         } 
     },
     scales: {
-      x: {
-        display: true,
-        grid: {
-          display: true,
-          color: 'rgba(255, 255, 255, 0.05)',
-          drawTicks: false,
-          borderDash: [6, 6],
-        },
-        ticks: {
-          color: 'rgba(255, 255, 255, 0.3)',
-          font: { size: 9, weight: '700' },
-          padding: 10,
-          autoSkip: timeframe > 7, // Show all 7 days for 7D timeframe
-          maxTicksLimit: timeframe === 7 ? 7 : 8,
-          callback: function(val, index) {
-            const dateStr = filteredData[index]?.date;
-            if (!dateStr) return '';
-            const d = new Date(dateStr.replace(' ', 'T'));
-            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          }
-        }
-      },
-      y: { 
-        display: true,
-        position: 'right',
-        grid: {
-          display: true,
-          color: 'rgba(255, 255, 255, 0.08)', // Horizontal lines for price range
-          borderDash: [5, 5],
-          drawBorder: false,
-          drawTicks: false,
-        },
-        ticks: { display: false } // Keep visuals clean by hiding axis numbers
-      }
+      x: { grid: { display: false }, ticks: { color: 'rgba(255, 255, 255, 0.2)', font: { size: 9 } } },
+      y: { display: true, position: 'right', grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { display: false } }
     },
     onClick: (e, elements) => {
       if (elements.length > 0) {
         const index = elements[0].index;
-        const point = filteredData[index];
-        setSelectedPoint({ index, date: point.date, price: point[activeMetal] });
+        setSelectedPoint({ index, date: filteredData[index].date, price: filteredData[index].price });
       }
     }
-  }), [filteredData, activeMetal, timeframe]);
+  }), [filteredData]);
 
-  if (loading) return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-      <RefreshCcw className="w-10 h-10 text-[#D4AF37] animate-spin" />
-    </div>
-  );
+  if (loading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><RefreshCcw className="w-10 h-10 text-[#D4AF37] animate-spin" /></div>;
 
   return (
     <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-40 overflow-x-hidden relative">
       
-      <div className={`fixed inset-0 pointer-events-none transition-opacity duration-700 z-0 ${activeMetal === 'gold' ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="absolute top-[-5%] left-[-5%] w-[60%] h-[50%] bg-[#D4AF37]/8 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[10%] right-[-5%] w-[50%] h-[50%] bg-[#b8860b]/5 blur-[100px] rounded-full" />
-      </div>
-      <div className={`fixed inset-0 pointer-events-none transition-opacity duration-700 z-0 ${activeMetal === 'silver' ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="absolute top-[-5%] left-[-5%] w-[60%] h-[50%] bg-blue-600/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[10%] right-[-5%] w-[50%] h-[50%] bg-zinc-500/5 blur-[100px] rounded-full" />
+      {/* Background Ambient Glows */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className={`absolute top-[-5%] left-[-5%] w-[60%] h-[50%] blur-[120px] rounded-full transition-all duration-700 ${
+          activeMetal === 'gold' ? 'bg-[#D4AF37]/10' : activeMetal === 'silver' ? 'bg-blue-600/5' : 'bg-green-500/10'
+        }`} />
       </div>
 
       <header className="p-8 pt-16 flex justify-between items-end relative z-10">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_12px_rgba(34,197,94,0.5)] animate-pulse"></div>
-            <p className="text-[#D4AF37] text-[10px] font-black uppercase tracking-[0.4em]">Market Update</p>
+            <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_12px_green] animate-pulse" />
+            <p className="text-[#D4AF37] text-[10px] font-black uppercase tracking-[0.4em]">Official Market Rates</p>
           </div>
           <h1 className="text-4xl font-black tracking-tighter text-white">GoldView</h1>
         </div>
-        <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all">
+        <button onClick={fetchData} className="p-4 bg-white/5 rounded-3xl border border-white/10 active:scale-90 transition-all">
           <RefreshCcw className="w-5 h-5 text-[#D4AF37]" />
         </button>
       </header>
@@ -193,8 +171,9 @@ export default function App() {
           
           <div className="space-y-4">
             {[
-              { id: 'gold', label: '24K Chhapawal Gold', grad: 'from-[#D4AF37]/25 to-[#D4AF37]/5', border: 'border-[#D4AF37]/30' },
-              { id: 'silver', label: 'Pure Silver Tola', grad: 'from-zinc-400/15 to-zinc-600/5', border: 'border-zinc-500/20' }
+              { id: 'gold', label: '24K Chhapawal Gold', sub: 'per tola', grad: 'from-[#D4AF37]/25 to-transparent', border: 'border-[#D4AF37]/30', val: current.gold },
+              { id: 'silver', label: 'Pure Silver', sub: 'per tola', grad: 'from-zinc-400/15 to-transparent', border: 'border-zinc-500/20', val: current.silver },
+              { id: 'usd', label: 'USD to NPR', sub: 'Official Buy Rate', grad: 'from-green-500/20 to-transparent', border: 'border-green-500/30', val: currentUSD }
             ].map((item) => {
               const isActive = activeMetal === item.id;
               const diff = getDayDiff(item.id);
@@ -207,15 +186,16 @@ export default function App() {
                   }`}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-white' : 'text-zinc-500'}`}>{item.label}</span>
-                    <div className={`px-2.5 py-1 rounded-xl text-[9px] font-black border backdrop-blur-md ${
-                      diff.isUp ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
-                    }`}>
+                    <div>
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-white' : 'text-zinc-500'}`}>{item.label}</span>
+                        <p className="text-[9px] font-bold opacity-60 text-zinc-400 mt-0.5">{item.sub}</p>
+                    </div>
+                    <div className={`px-2.5 py-1 rounded-xl text-[9px] font-black border ${diff.isUp ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
                       {diff.val}
                     </div>
                   </div>
                   <div className="flex justify-between items-end">
-                    <h2 className={`text-4xl font-black tracking-tighter ${isActive ? 'text-white' : 'text-zinc-400'}`}>{formatRS(current[item.id])}</h2>
+                    <h2 className="text-4xl font-black tracking-tighter text-white">{item.id === 'usd' ? `रू ${item.val}` : formatRS(item.val)}</h2>
                     {isActive && <TrendingUp className={`w-5 h-5 ${diff.isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
                   </div>
                 </div>
@@ -223,73 +203,40 @@ export default function App() {
             })}
           </div>
 
-          <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-3xl shadow-xl">
+          <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-3xl">
             <div className="flex justify-between items-center mb-8 px-1">
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3">
-                <Activity className="w-5 h-5 text-[#D4AF37]" /> Price Trend
+                <Activity className={`w-5 h-5`} style={{color: accentColor}} /> {activeMetal.toUpperCase()} Trend
               </h3>
-              
               <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
-                {[
-                  { label: '7D', val: 7 },
-                  { label: '1M', val: 30 },
-                  { label: '3M', val: 90 }
-                ].map((t) => (
-                  <button
-                    key={t.label}
-                    onClick={() => { setTimeframe(t.val); setSelectedPoint(null); }}
-                    className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all tracking-tighter ${
-                      timeframe === t.val ? `bg-[#D4AF37] text-black shadow-lg` : 'text-zinc-500'
-                    }`}
-                  >
-                    {t.label}
+                {[7, 30, 90].map(t => (
+                  <button key={t} onClick={() => { setTimeframe(t); setSelectedPoint(null); }} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === t ? 'bg-white text-black' : 'text-zinc-500'}`}>
+                    {t === 7 ? '7D' : t === 30 ? '1M' : '3M'}
                   </button>
                 ))}
               </div>
             </div>
             
             <div className="h-64 relative">
-              <Line ref={chartRef} data={chartData} options={chartOptions} redraw={false} />
-            </div>
-
-            <div className="flex justify-between mt-10 pt-8 border-t border-white/10">
-              <div className="text-center">
-                <p className="text-[9px] font-black text-zinc-600 uppercase mb-2 tracking-widest">Low</p>
-                <p className="text-base font-black text-blue-400">{formatRS(currentStats.low)}</p>
-              </div>
-              <div className="text-center px-8 border-x border-white/10">
-                <p className="text-[9px] font-black text-zinc-600 uppercase mb-2 tracking-widest">Change</p>
-                <p className={`text-base font-black ${Number(currentStats.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>{currentStats.change}%</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[9px] font-black text-zinc-600 uppercase mb-2 tracking-widest">High</p>
-                <p className="text-base font-black text-green-500">{formatRS(currentStats.high)}</p>
-              </div>
+              <Line ref={chartRef} data={chartData} options={chartOptions} />
             </div>
 
             {selectedPoint && (
-              <div className="mt-8 bg-black/80 border-2 border-[#D4AF37]/50 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-2 duration-200 backdrop-blur-3xl min-w-fit shadow-2xl">
-                <div className="flex items-center gap-5 flex-1 min-w-[220px]">
-                  <div className="w-14 h-14 bg-[#D4AF37]/20 rounded-3xl flex items-center justify-center border border-[#D4AF37]/30 shrink-0">
-                    <Calendar className="w-7 h-7 text-[#D4AF37]" />
+              <div className="mt-8 bg-black/80 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-2 backdrop-blur-3xl shadow-2xl" style={{borderColor: `${accentColor}55`}}>
+                <div className="flex items-center gap-5">
+                  <div className="w-14 h-14 rounded-3xl flex items-center justify-center border" style={{backgroundColor: `${accentColor}22`, borderColor: `${accentColor}44`}}>
+                    <Calendar className="w-7 h-7" style={{color: accentColor}} />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-[#D4AF37] uppercase tracking-[0.3em] mb-1">Historical Price</p>
-                    <p className="text-lg font-black text-white leading-tight">
-                      {new Date(selectedPoint.date.replace(' ', 'T')).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1" style={{color: accentColor}}>Historical Point</p>
+                    <p className="text-lg font-black text-white leading-tight">{new Date(selectedPoint.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-8">
                   <div className="text-right">
-                    <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Market Rate</p>
-                    <p className="text-3xl font-black bg-gradient-to-r from-[#D4AF37] to-yellow-600 bg-clip-text text-transparent leading-none tracking-tighter">
-                      {formatRS(selectedPoint.price)}
-                    </p>
+                    <p className="text-3xl font-black text-white tracking-tighter">{formatRS(selectedPoint.price)}</p>
                   </div>
-                  <button onClick={() => setSelectedPoint(null)} className="p-3 bg-zinc-800 rounded-full active:scale-90 transition-all">
-                    <X className="w-5 h-5 text-zinc-400" />
-                  </button>
+                  <button onClick={() => setSelectedPoint(null)} className="p-3 bg-zinc-800 rounded-full"><X className="w-5 h-5 text-zinc-400" /></button>
                 </div>
               </div>
             )}
@@ -298,90 +245,72 @@ export default function App() {
       ) : (
         <main className="px-6 relative z-10 animate-in zoom-in-95 duration-500">
           <div className="bg-white/5 border border-white/10 rounded-[4rem] p-10 backdrop-blur-3xl shadow-xl">
-            <div className={`mb-10 p-6 rounded-[2.2rem] border-2 flex items-center justify-between transition-all duration-700 ${
-              activeMetal === 'gold' ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-zinc-700 bg-zinc-400/10'
-            }`}>
-              <div className="flex items-center gap-4">
-                <Coins className={`w-8 h-8 ${activeMetal === 'gold' ? 'text-[#D4AF37]' : 'text-zinc-400'}`} />
-                <div>
-                  <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Pricing Mode</p>
-                  <p className="text-xl font-black uppercase text-white tracking-tight">{activeMetal === 'gold' ? '24K Chhapawal' : 'Pure Silver'}</p>
+            
+            <div className="flex bg-black/40 p-1.5 rounded-full mb-8 border border-white/5">
+                <button onClick={() => setCalcMode('jewelry')} className={`flex-1 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${calcMode === 'jewelry' ? 'bg-[#D4AF37] text-black shadow-lg' : 'text-zinc-500'}`}>Jewelry</button>
+                <button onClick={() => setCalcMode('currency')} className={`flex-1 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${calcMode === 'currency' ? 'bg-green-500 text-black shadow-lg' : 'text-zinc-500'}`}>Currency</button>
+            </div>
+
+            {calcMode === 'jewelry' ? (
+              <div className="animate-in fade-in slide-in-from-top-4">
+                <div className="grid grid-cols-3 gap-4 mb-8">
+                  {['tola', 'aana', 'lal'].map((unit) => (
+                    <div key={unit}>
+                      <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3">{unit}</label>
+                      <input type="number" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-2xl outline-none focus:border-[#D4AF37] text-white" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} />
+                    </div>
+                  ))}
+                </div>
+                <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none focus:border-[#D4AF37] text-white mb-6" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
+                <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] cursor-pointer mb-10">
+                    <span className="font-bold text-zinc-300">13% Govt VAT</span>
+                    <div className={`w-12 h-6 rounded-full relative transition-all ${calc.vat ? 'bg-[#D4AF37]' : 'bg-zinc-700'}`}><div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${calc.vat ? 'right-1' : 'left-1'}`} /></div>
+                </div>
+                <div className="bg-gradient-to-br from-[#D4AF37] to-yellow-700 p-10 rounded-[3.5rem] text-black text-center shadow-xl">
+                  <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">Estimated Total</p>
+                  <h3 className="text-4xl font-black tracking-tighter">{formatRS(( ( (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192 ) * (activeMetal === 'usd' ? current.gold : current[activeMetal]) + (Number(calc.making)||0) ) * (calc.vat ? 1.13 : 1))}</h3>
                 </div>
               </div>
-              <div className="text-right text-[10px] font-black text-zinc-500 uppercase">{formatRS(current[activeMetal])}</div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              {['tola', 'aana', 'lal'].map((unit) => (
-                <div key={unit}>
-                  <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{unit}</label>
-                  <input 
-                    type="number" 
-                    className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-2xl outline-none focus:border-[#D4AF37] transition-all text-white"
-                    value={calc[unit]}
-                    onChange={(e) => setCalc({...calc, [unit]: e.target.value})}
-                  />
+            ) : (
+              <div className="animate-in fade-in slide-in-from-bottom-4">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-6 mb-4">
+                  {SUPPORTED_CURRENCIES.map(c => (
+                    <button key={c.code} onClick={() => setCurrCalc({...currCalc, activeCurr: c.code})} className={`px-5 py-3 rounded-2xl border flex items-center gap-2 whitespace-nowrap transition-all ${currCalc.activeCurr === c.code ? 'bg-green-500 border-green-400 text-black' : 'bg-white/5 border-white/10 text-zinc-400'}`}>
+                      <span className="text-lg">{c.flag}</span><span className="text-[10px] font-black">{c.code}</span>
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-
-            <div className="space-y-6 mb-12">
-              <input 
-                type="number" 
-                placeholder="Making Charges (Rs)"
-                className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none focus:border-[#D4AF37] text-white"
-                value={calc.making}
-                onChange={(e) => setCalc({...calc, making: e.target.value})}
-              />
-              <div 
-                onClick={() => setCalc({...calc, vat: !calc.vat})}
-                className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer active:scale-[0.98] transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${calc.vat ? 'border-[#D4AF37] bg-[#D4AF37]' : 'border-zinc-800'}`}>
-                    {calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}
-                  </div>
-                  <span className="font-bold text-zinc-300">13% Govt VAT</span>
+                <div className="relative mb-8">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-4">{currCalc.isNprToForeign ? 'Amount in NPR' : `Amount in ${currCalc.activeCurr}`}</label>
+                  <input type="number" placeholder="0.00" className="w-full bg-black/60 border-2 border-zinc-800 p-8 rounded-[2.5rem] font-black text-3xl outline-none focus:border-green-500 text-white" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
+                  <button onClick={() => setCurrCalc({...currCalc, isNprToForeign: !currCalc.isNprToForeign})} className="absolute right-6 top-[55px] p-4 bg-green-500 rounded-2xl shadow-lg active:scale-90 transition-all text-black"><ArrowRightLeft className="w-5 h-5" /></button>
+                </div>
+                <div className="bg-green-500 p-10 rounded-[3.5rem] text-black text-center shadow-xl">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] mb-2 opacity-70">{currCalc.isNprToForeign ? `Estimated ${currCalc.activeCurr}` : 'Estimated NPR Equivalent'}</p>
+                  <h3 className="text-4xl font-black tracking-tighter">
+                    {(() => {
+                        const latest = forexData[forexData.length - 1];
+                        const rateObj = latest?.rates.find(r => r.currency.iso3 === currCalc.activeCurr);
+                        if (!rateObj || !currCalc.amount) return '0.00';
+                        const rate = parseFloat(rateObj.buy) / parseFloat(rateObj.currency.unit);
+                        return currCalc.isNprToForeign ? (currCalc.amount / rate).toFixed(2) : `रू ${(currCalc.amount * rate).toLocaleString(undefined, {maximumFractionDigits: 2})}`;
+                    })()}
+                  </h3>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-[#D4AF37] via-yellow-500 to-yellow-600 p-12 rounded-[3.5rem] text-black text-center shadow-[0_30px_70px_rgba(212,175,55,0.3)] relative overflow-hidden group">
-               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-               <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">Estimated Total</p>
-               <h3 className="text-5xl font-black tracking-tighter">
-                  {formatRS(( ( (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192 ) * current[activeMetal] + (Number(calc.making)||0) ) * (calc.vat ? 1.13 : 1))}
-               </h3>
-            </div>
+            )}
           </div>
         </main>
       )}
 
       <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-2xl">
-        <button 
-          onClick={() => { setView('dashboard'); setSelectedPoint(null); }}
-          className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-500 ${
-            view === 'dashboard' 
-            ? `text-black shadow-[0_0_40px_rgba(212,175,55,0.3)] ${activeMetal === 'gold' ? 'bg-[#D4AF37]' : 'bg-zinc-400'}` 
-            : 'text-zinc-500'
-          }`}
-        >
-          <LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} />
-          <span className="text-[9px] font-black uppercase tracking-widest">Market</span>
+        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-500 ${view === 'dashboard' ? 'bg-white text-black' : 'text-zinc-500'}`}>
+          <LayoutDashboard className="w-6 h-6" /><span className="text-[9px] font-black uppercase tracking-widest">Market</span>
         </button>
-        <button 
-          onClick={() => { setView('calculator'); setSelectedPoint(null); }}
-          className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-500 ${
-            view === 'calculator' 
-            ? `text-black shadow-[0_0_40px_rgba(212,175,55,0.3)] ${activeMetal === 'gold' ? 'bg-[#D4AF37]' : 'bg-zinc-400'}` 
-            : 'text-zinc-500'
-          }`}
-        >
-          <Calculator className={`w-6 h-6 ${view === 'calculator' ? 'fill-black' : ''}`} />
-          <span className="text-[9px] font-black uppercase tracking-widest">Calculator</span>
+        <button onClick={() => setView('calculator')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-500 ${view === 'calculator' ? 'bg-white text-black' : 'text-zinc-500'}`}>
+          <Calculator className="w-6 h-6" /><span className="text-[9px] font-black uppercase tracking-widest">Calculator</span>
         </button>
       </nav>
-
       <Analytics />
     </div>
   );
