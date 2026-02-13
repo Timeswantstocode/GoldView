@@ -16,13 +16,12 @@ const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/ma
 const FOREX_PROXY = "/api/forex";
 
 export default function App() {
-  // Try to recover last known data from localStorage for instant boot
+  // Caching for instant load
   const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('cache_metal') || '[]'));
   const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('cache_forex') || '[]'));
   
-  // Only show full-screen loader if we have absolutely no cached data
   const [loading, setLoading] = useState(priceData.length === 0);
-  const [forexLoading, setForexLoading] = useState(forexHistory.length === 0);
+  const [forexLoading, setForexLoading] = useState(true);
   
   const [view, setView] = useState('dashboard');
   const [calcMode, setCalcMode] = useState('jewelry'); 
@@ -42,20 +41,17 @@ export default function App() {
     { code: 'EUR', flag: '🇪🇺' }
   ];
 
-  // Load Metal Data (Fast)
   useEffect(() => {
+    // Fetch Metal Data
     fetch(`${DATA_URL}?t=${Date.now()}`)
       .then(res => res.json())
       .then(json => {
         setPriceData(json);
         localStorage.setItem('cache_metal', JSON.stringify(json));
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+      }).catch(() => setLoading(false));
 
-  // Load Forex Data (Slow - Background)
-  useEffect(() => {
+    // Fetch Forex Data (Background)
     fetch(FOREX_PROXY)
       .then(res => res.json())
       .then(json => {
@@ -68,8 +64,7 @@ export default function App() {
         setForexHistory(transformed);
         localStorage.setItem('cache_forex', JSON.stringify(transformed));
         setForexLoading(false);
-      })
-      .catch(() => setForexLoading(false));
+      }).catch(() => setForexLoading(false));
   }, []);
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
@@ -82,44 +77,32 @@ export default function App() {
     return priceData[priceData.length - 1] || {};
   }, [priceData, forexHistory, activeMetal]);
 
-  const yesterday = useMemo(() => {
-    if (activeMetal === 'usd') return { usd: forexHistory[forexHistory.length - 2]?.usdRate || 0 };
-    return priceData[priceData.length - 2] || current;
-  }, [priceData, forexHistory, current, activeMetal]);
-
   const getDayDiff = (id) => {
     const source = id === 'usd' ? forexHistory : priceData;
     if (source.length < 2) return { val: 'Rs. 0', isUp: true };
-    
     const currVal = id === 'usd' ? source[source.length - 1].usdRate : source[source.length - 1][id];
     const prevVal = id === 'usd' ? source[source.length - 2].usdRate : source[source.length - 2][id];
     const diff = currVal - prevVal;
-    
-    return { 
-        val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, 
-        isUp: diff >= 0 
-    };
+    return { val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, isUp: diff >= 0 };
   };
 
   const currentStats = useMemo(() => {
     const values = filteredData.map(d => activeMetal === 'usd' ? d.usdRate : Number(d[activeMetal]) || 0);
     if (values.length === 0) return { low: 0, high: 0, change: "0.00" };
-    const low = Math.min(...values);
-    const high = Math.max(...values);
-    const change = values.length > 1 ? (((values[values.length-1] - values[0]) / values[0]) * 100).toFixed(2) : "0.00";
-    return { low, high, change };
+    return { 
+        low: Math.min(...values), 
+        high: Math.max(...values), 
+        change: values.length > 1 ? (((values[values.length-1] - values[0]) / values[0]) * 100).toFixed(2) : "0.00" 
+    };
   }, [filteredData, activeMetal]);
 
-  const accentColor = useMemo(() => {
-    if (activeMetal === 'gold') return '#D4AF37';
-    if (activeMetal === 'silver') return '#94a3b8';
-    return '#22c55e';
-  }, [activeMetal]);
+  const accentColor = activeMetal === 'gold' ? '#D4AF37' : activeMetal === 'silver' ? '#94a3b8' : '#22c55e';
 
+  // RESTORED: Original High-Detail Chart Logic
   const chartData = useMemo(() => ({
-    labels: filteredData.map(d => d.date),
+    labels: filteredData.map(d => d.date.split(' ')[0]),
     datasets: [{
-      label: activeMetal.toUpperCase(),
+      label: activeMetal,
       data: filteredData.map(d => activeMetal === 'usd' ? d.usdRate : Number(d[activeMetal]) || 0),
       borderColor: accentColor,
       borderWidth: 4,
@@ -133,10 +116,10 @@ export default function App() {
       backgroundColor: (context) => {
         const {ctx, chartArea} = context.chart;
         if (!chartArea) return null;
-        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-        gradient.addColorStop(0, `${accentColor}40`);
-        gradient.addColorStop(1, 'transparent');
-        return gradient;
+        const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+        g.addColorStop(0, `${accentColor}40`);
+        g.addColorStop(1, 'transparent');
+        return g;
       },
     }]
   }), [filteredData, activeMetal, selectedPoint, accentColor]);
@@ -151,6 +134,10 @@ export default function App() {
             backgroundColor: 'rgba(10, 10, 10, 0.9)',
             callbacks: {
                 label: (context) => `रू ${context.raw.toLocaleString(undefined, {minimumFractionDigits: activeMetal === 'usd' ? 2 : 0})}`,
+                title: (items) => {
+                    const d = new Date(items[0].label.replace(' ', 'T'));
+                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                }
             }
         } 
     },
@@ -158,7 +145,7 @@ export default function App() {
       x: {
         display: true,
         grid: { display: true, color: 'rgba(255, 255, 255, 0.05)', drawTicks: false, borderDash: [6, 6] },
-        ticks: { color: 'rgba(255, 255, 255, 0.3)', font: { size: 9, weight: '700' }, padding: 10 }
+        ticks: { color: 'rgba(255, 255, 255, 0.3)', font: { size: 9, weight: '700' }, padding: 10, maxTicksLimit: 8 }
       },
       y: { 
         display: true, position: 'right', 
@@ -186,13 +173,13 @@ export default function App() {
       <header className="p-8 pt-16 flex justify-between items-end relative z-10">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full shadow-[0_0_12px_rgba(255,255,255,0.4)] animate-pulse" style={{ backgroundColor: accentColor }}></div>
+            <div className="w-2 h-2 rounded-full animate-pulse shadow-lg" style={{ backgroundColor: accentColor }}></div>
             <p className="text-[10px] font-black uppercase tracking-[0.4em]" style={{ color: accentColor }}>Market Update</p>
           </div>
           <h1 className="text-4xl font-black tracking-tighter text-white">GoldView</h1>
         </div>
-        <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all">
-          <RefreshCcw className="w-5 h-5" style={{ color: accentColor }} />
+        <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10">
+          <RefreshCcw className={`w-5 h-5 ${forexLoading ? 'animate-spin' : ''}`} style={{ color: accentColor }} />
         </button>
       </header>
 
@@ -202,7 +189,7 @@ export default function App() {
             {[
               { id: 'gold', label: '24K Chhapawal Gold', sub: 'per tola', grad: 'from-[#D4AF37]/50 to-[#D4AF37]/15', border: 'border-[#D4AF37]/40' },
               { id: 'silver', label: 'Pure Silver', sub: 'per tola', grad: 'from-zinc-400/40 to-zinc-600/15', border: 'border-zinc-500/30' },
-              { id: 'usd', label: 'USD to NPR', sub: 'Source: NRB Official', grad: 'from-[#22c55e]/45 to-[#22c55e]/15', border: 'border-[#22c55e]/40' }
+              { id: 'usd', label: 'USD to NPR', sub: 'Source: NRB Official (Receiver Gets)', grad: 'from-[#22c55e]/45 to-[#22c55e]/15', border: 'border-[#22c55e]/40' }
             ].map((item) => {
               const isActive = activeMetal === item.id;
               const isUSD = item.id === 'usd';
@@ -219,15 +206,19 @@ export default function App() {
                         <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-white' : 'text-zinc-500'}`}>{item.label}</span>
                         <p className="text-[8px] font-bold opacity-50 uppercase mt-0.5 tracking-tighter">{item.sub}</p>
                     </div>
-                    {!forexLoading || !isUSD ? (
-                        <div className={`px-2.5 py-1 rounded-xl text-[9px] font-black border backdrop-blur-md ${diff.isUp ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                            {diff.val}
+                    {isUSD && forexLoading ? (
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white/5 border border-white/10">
+                            <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /><span className="text-[8px] font-black uppercase text-zinc-500">Live</span>
                         </div>
-                    ) : <div className="w-12 h-4 bg-white/5 animate-pulse rounded-lg"/>}
+                    ) : (
+                        <div className={`px-2.5 py-1 rounded-xl text-[9px] font-black border backdrop-blur-md ${diff.isUp ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                          {diff.val}
+                        </div>
+                    )}
                   </div>
                   <div className="flex justify-between items-end">
                     <h2 className={`text-4xl font-black tracking-tighter ${isActive ? 'text-white' : 'text-zinc-400'}`}>
-                        {isUSD && forexLoading && val === 0 ? "..." : (isUSD ? `रू ${val.toFixed(2)}` : formatRS(val))}
+                        {isUSD && val === 0 ? "..." : (isUSD ? `रू ${val.toFixed(2)}` : formatRS(val))}
                     </h2>
                     {isActive && <TrendingUp className={`w-5 h-5 ${diff.isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
                   </div>
@@ -238,62 +229,37 @@ export default function App() {
 
           <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-3xl shadow-xl">
             <div className="flex justify-between items-center mb-8 px-1">
-              <h3 className="text-xl font-black tracking-tight flex items-center gap-3">
-                <Activity className="w-5 h-5" style={{ color: accentColor }} /> Price Trend
-              </h3>
+              <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: accentColor }} /> Price Trend</h3>
               <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
                 {[7, 30, 90].map((t) => (
                   <button key={t} onClick={() => { setTimeframe(t); setSelectedPoint(null); }}
-                    className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all tracking-tighter ${timeframe === t ? `text-black shadow-lg` : 'text-zinc-500'}`}
-                    style={timeframe === t ? { backgroundColor: accentColor } : {}}>
-                    {t === 7 ? '7D' : t === 30 ? '1M' : '3M'}
-                  </button>
+                    className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === t ? `text-black` : 'text-zinc-500'}`}
+                    style={timeframe === t ? { backgroundColor: accentColor } : {}}>{t === 7 ? '7D' : t === 30 ? '1M' : '3M'}</button>
                 ))}
               </div>
             </div>
-            
-            <div className="h-64 relative">
+            <div className="h-64 relative w-full flex justify-center">
               <Line ref={chartRef} data={chartData} options={chartOptions} redraw={false} />
             </div>
-
             <div className="flex justify-between mt-10 pt-8 border-t border-white/10">
-              <div className="text-center">
-                <p className="text-[9px] font-black text-zinc-600 uppercase mb-2 tracking-widest">Low</p>
-                <p className="text-base font-black text-blue-400">{activeMetal === 'usd' ? currentStats.low.toFixed(2) : formatRS(currentStats.low)}</p>
-              </div>
-              <div className="text-center px-8 border-x border-white/10">
-                <p className="text-[9px] font-black text-zinc-600 uppercase mb-2 tracking-widest">Change</p>
-                <p className={`text-base font-black ${Number(currentStats.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>{currentStats.change}%</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[9px] font-black text-zinc-600 uppercase mb-2 tracking-widest">High</p>
-                <p className="text-base font-black text-green-500">{activeMetal === 'usd' ? currentStats.high.toFixed(2) : formatRS(currentStats.high)}</p>
-              </div>
+              <div className="text-center"><p className="text-[9px] font-black text-zinc-600 uppercase mb-2">Low</p>
+                <p className="text-base font-black text-blue-400">{activeMetal === 'usd' ? currentStats.low.toFixed(2) : formatRS(currentStats.low)}</p></div>
+              <div className="text-center px-8 border-x border-white/10"><p className="text-[9px] font-black text-zinc-600 uppercase mb-2">Change</p>
+                <p className={`text-base font-black ${Number(currentStats.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>{currentStats.change}%</p></div>
+              <div className="text-center"><p className="text-[9px] font-black text-zinc-600 uppercase mb-2">High</p>
+                <p className="text-base font-black text-green-500">{activeMetal === 'usd' ? currentStats.high.toFixed(2) : formatRS(currentStats.high)}</p></div>
             </div>
-
             {selectedPoint && (
-              <div className="mt-8 bg-black/80 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-2 duration-200 backdrop-blur-3xl shadow-2xl" style={{ borderColor: `${accentColor}80` }}>
+              <div className="mt-8 bg-black/80 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-2 shadow-2xl" style={{ borderColor: `${accentColor}80` }}>
                 <div className="flex items-center gap-5 flex-1 min-w-[220px]">
-                  <div className="w-14 h-14 rounded-3xl flex items-center justify-center border shrink-0" style={{ backgroundColor: `${accentColor}20`, borderColor: `${accentColor}30` }}>
-                    <Calendar className="w-7 h-7" style={{ color: accentColor }} />
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1" style={{ color: accentColor }}>Historical Point</p>
-                    <p className="text-lg font-black text-white leading-tight">
-                      {new Date(selectedPoint.date.replace(' ', 'T')).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </p>
-                  </div>
+                  <div className="w-14 h-14 rounded-3xl flex items-center justify-center border shrink-0" style={{ backgroundColor: `${accentColor}20`, borderColor: `${accentColor}30` }}><Calendar className="w-7 h-7" style={{ color: accentColor }} /></div>
+                  <div><p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1" style={{ color: accentColor }}>Historical Point</p>
+                  <p className="text-lg font-black text-white leading-tight">{new Date(selectedPoint.date.replace(' ', 'T')).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p></div>
                 </div>
                 <div className="flex items-center gap-8">
-                  <div className="text-right">
-                    <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Rate</p>
-                    <p className="text-3xl font-black leading-none tracking-tighter text-white">
-                      {activeMetal === 'usd' ? `रू ${selectedPoint.price.toFixed(2)}` : formatRS(selectedPoint.price)}
-                    </p>
-                  </div>
-                  <button onClick={() => setSelectedPoint(null)} className="p-3 bg-zinc-800 rounded-full active:scale-90 transition-all">
-                    <X className="w-5 h-5 text-zinc-400" />
-                  </button>
+                  <div className="text-right"><p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Rate</p>
+                  <p className="text-3xl font-black text-white">{activeMetal === 'usd' ? `रू ${selectedPoint.price.toFixed(2)}` : formatRS(selectedPoint.price)}</p></div>
+                  <button onClick={() => setSelectedPoint(null)} className="p-3 bg-zinc-800 rounded-full active:scale-90 transition-all"><X className="w-5 h-5 text-zinc-400" /></button>
                 </div>
               </div>
             )}
@@ -303,96 +269,44 @@ export default function App() {
         <main className="px-6 relative z-10 animate-in zoom-in-95 duration-500">
           <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-3xl shadow-xl">
             <div className="flex p-1 bg-black/40 rounded-3xl mb-10 border border-white/5">
-                <button onClick={() => setCalcMode('jewelry')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${calcMode === 'jewelry' ? 'bg-[#D4AF37] text-black shadow-lg shadow-[#D4AF37]/20' : 'text-zinc-500'}`}>Jewelry</button>
-                <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${calcMode === 'currency' ? 'bg-[#22c55e] text-black shadow-lg shadow-[#22c55e]/20' : 'text-zinc-500'}`}>Currency</button>
+                <button onClick={() => setCalcMode('jewelry')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${calcMode === 'jewelry' ? 'bg-[#D4AF37] text-black shadow-lg shadow-[#D4AF37]/20' : 'text-zinc-500'}`}>Jewelry</button>
+                <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${calcMode === 'currency' ? 'bg-[#22c55e] text-black shadow-lg shadow-[#22c55e]/20' : 'text-zinc-500'}`}>Currency</button>
             </div>
-
             {calcMode === 'jewelry' ? (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="space-y-6">
                 <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto">
-                    {['gold', 'silver'].map(metal => (
-                        <button key={metal} onClick={() => setActiveMetal(metal)}
-                          className={`px-8 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeMetal === metal ? (metal === 'gold' ? 'bg-[#D4AF37] text-black' : 'bg-zinc-400 text-black') : 'text-zinc-500'}`}>
-                          {metal}
-                        </button>
-                    ))}
+                    {['gold', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} className={`px-8 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? (metal === 'gold' ? 'bg-[#D4AF37] text-black' : 'bg-zinc-400 text-black') : 'text-zinc-500'}`}>{metal}</button>))}
                 </div>
-
-                <div className={`mb-8 p-6 rounded-[2.2rem] border-2 flex items-center justify-between transition-all duration-700 ${
-                  activeMetal === 'gold' ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-zinc-700 bg-zinc-400/10'
-                }`}>
-                  <div className="flex items-center gap-4">
-                    <Coins className={`w-8 h-8 ${activeMetal === 'gold' ? 'text-[#D4AF37]' : 'text-zinc-400'}`} />
-                    <div>
-                      <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Pricing Mode</p>
-                      <p className="text-xl font-black uppercase text-white tracking-tight">{activeMetal === 'gold' ? '24K Chhapawal' : 'Pure Silver'}</p>
-                    </div>
-                  </div>
-                  <div className="text-right text-[10px] font-black text-zinc-500 uppercase">{formatRS(priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal])}</div>
+                <div className={`mb-8 p-6 rounded-[2.2rem] border-2 flex items-center justify-between ${activeMetal === 'gold' ? 'border-[#D4AF37] bg-[#D4AF37]/10' : 'border-zinc-700 bg-zinc-400/10'}`}>
+                  <div className="flex items-center gap-4"><Coins className={`w-8 h-8 ${activeMetal === 'gold' ? 'text-[#D4AF37]' : 'text-zinc-400'}`} /><p className="text-xl font-black uppercase text-white">{activeMetal === 'gold' ? '24K Chhapawal' : 'Pure Silver'}</p></div>
+                  <div className="text-right text-[10px] font-black text-zinc-500">{formatRS(priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal])}</div>
                 </div>
-
                 <div className="grid grid-cols-3 gap-4 mb-8">
-                  {['tola', 'aana', 'lal'].map((unit) => (
-                    <div key={unit}>
-                      <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{unit}</label>
-                      <input type="number" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-2xl outline-none focus:border-[#D4AF37] transition-all text-white"
-                        value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} />
-                    </div>
-                  ))}
+                  {['tola', 'aana', 'lal'].map((u) => (<div key={u}><label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3">{u}</label>
+                  <input type="number" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-2xl text-white outline-none focus:border-[#D4AF37]" value={calc[u]} onChange={(e) => setCalc({...calc, [u]: e.target.value})} /></div>))}
                 </div>
-
-                <div className="space-y-6 mb-12">
-                  <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none focus:border-[#D4AF37] text-white"
-                    value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
-                  <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer active:scale-[0.98] transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${calc.vat ? 'border-[#D4AF37] bg-[#D4AF37]' : 'border-zinc-800'}`}>
-                        {calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}
-                      </div>
-                      <span className="font-bold text-zinc-300">13% Govt VAT</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-[#D4AF37] via-yellow-500 to-yellow-600 p-12 rounded-[3.5rem] text-black text-center shadow-xl">
-                   <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">Estimated Total</p>
-                   <h3 className="text-5xl font-black tracking-tighter">
-                      {formatRS(( ( (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192 ) * (priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal]) + (Number(calc.making)||0) ) * (calc.vat ? 1.13 : 1))}
-                   </h3>
+                <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none focus:border-[#D4AF37] text-white" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
+                <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer"><div className="flex items-center gap-3">
+                    <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center ${calc.vat ? 'border-[#D4AF37] bg-[#D4AF37]' : 'border-zinc-800'}`}>{calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}</div>
+                    <span className="font-bold text-zinc-300">13% Govt VAT</span></div></div>
+                <div className="bg-gradient-to-br from-[#D4AF37] to-yellow-600 p-12 rounded-[3.5rem] text-black text-center shadow-xl">
+                   <h3 className="text-5xl font-black tracking-tighter">{formatRS(( ( (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192 ) * (priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal]) + (Number(calc.making)||0) ) * (calc.vat ? 1.13 : 1))}</h3>
                 </div>
               </div>
             ) : (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-                  <div className="flex items-center gap-4 bg-black/60 p-6 rounded-[2.5rem] border-2 border-zinc-800">
-                    <Globe className="w-8 h-8 text-green-500" />
-                    <div className="flex-1">
-                      <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Source Currency</p>
-                      <select className="bg-transparent font-black text-xl text-white outline-none w-full" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
-                        {currencyList.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.flag} {c.code}</option>)}
-                      </select>
-                    </div>
-                    <button onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})} className="p-4 bg-green-500/20 rounded-2xl active:rotate-180 transition-all duration-500">
-                      <ArrowRightLeft className="w-5 h-5 text-green-500" />
-                    </button>
-                    <div className="flex-1 text-right">
-                      <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Destination</p>
-                      <p className="font-black text-xl text-white">🇳🇵 NPR</p>
-                    </div>
-                  </div>
-                  <input type="number" placeholder="Enter Amount" className="w-full bg-black/60 border-2 border-zinc-800 p-8 rounded-[2.5rem] font-black text-4xl outline-none focus:border-green-500 text-white text-center"
-                    value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
+              <div className="space-y-8">
+                  <div className="flex items-center gap-4 bg-black/60 p-6 rounded-[2.5rem] border-2 border-zinc-800"><Globe className="w-8 h-8 text-green-500" /><div className="flex-1"><p className="text-[9px] font-black text-zinc-500 uppercase mb-1">Source</p>
+                      <select className="bg-transparent font-black text-xl text-white outline-none w-full" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>{currencyList.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.flag} {c.code}</option>)}</select></div>
+                    <button onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})} className="p-4 bg-green-500/20 rounded-2xl active:rotate-180 transition-all duration-500"><ArrowRightLeft className="w-5 h-5 text-green-500" /></button>
+                    <div className="flex-1 text-right"><p className="text-[9px] font-black text-zinc-500 uppercase mb-1">Target</p><p className="font-black text-xl text-white">🇳🇵 NPR</p></div></div>
+                  <input type="number" placeholder="Enter Amount" className="w-full bg-black/60 border-2 border-zinc-800 p-8 rounded-[2.5rem] font-black text-4xl outline-none focus:border-green-500 text-white text-center" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
                   <div className="bg-gradient-to-br from-green-500 to-green-700 p-12 rounded-[3.5rem] text-black text-center shadow-xl">
-                     <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">{currCalc.isSwapped ? `NPR to ${currCalc.source}` : `${currCalc.source} to NPR`}</p>
-                     <h3 className="text-5xl font-black tracking-tighter">
-                        {(() => {
-                          const latestRates = forexHistory[forexHistory.length - 1]?.rates || [];
-                          const rateData = latestRates.find(r => r.currency.iso3 === currCalc.source);
-                          const rate = parseFloat(rateData?.buy || 133);
-                          const amt = Number(currCalc.amount) || 0;
-                          const res = currCalc.isSwapped ? (amt / rate) : (amt * rate);
-                          return currCalc.isSwapped ? res.toFixed(2) : formatRS(res);
-                        })()}
-                     </h3>
+                     <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">{currCalc.isSwapped ? `NPR to ${currCalc.source}` : `${currCalc.source} to NPR (Receiver Gets)`}</p>
+                     <h3 className="text-5xl font-black tracking-tighter">{(() => {
+                        const rate = parseFloat(forexHistory[forexHistory.length - 1]?.rates.find(r => r.currency.iso3 === currCalc.source)?.buy || 133);
+                        const res = currCalc.isSwapped ? (Number(currCalc.amount) / rate) : (Number(currCalc.amount) * rate);
+                        return currCalc.isSwapped ? res.toFixed(2) : formatRS(res); })()}</h3>
+                     <p className="text-[8px] font-bold mt-4 opacity-50 uppercase tracking-widest">NRB Official Buying Rate</p>
                   </div>
               </div>
             )}
@@ -400,17 +314,11 @@ export default function App() {
         </main>
       )}
 
-      <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-2xl">
-        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-500 ${view === 'dashboard' ? 'text-black' : 'text-zinc-500'}`}
-          style={view === 'dashboard' ? { backgroundColor: accentColor, boxShadow: `0 0 40px ${accentColor}40` } : {}}>
-          <LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} />
-          <span className="text-[9px] font-black uppercase tracking-widest">Market</span>
-        </button>
-        <button onClick={() => { setView('calculator'); if(activeMetal === 'usd') setActiveMetal('gold'); }} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-500 ${view === 'calculator' ? 'text-black' : 'text-zinc-500'}`}
-          style={view === 'calculator' ? { backgroundColor: accentColor, boxShadow: `0 0 40px ${accentColor}40` } : {}}>
-          <Calculator className={`w-6 h-6 ${view === 'calculator' ? 'fill-black' : ''}`} />
-          <span className="text-[9px] font-black uppercase tracking-widest">Calculator</span>
-        </button>
+      <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-50">
+        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-500 ${view === 'dashboard' ? 'text-black' : 'text-zinc-500'}`} style={view === 'dashboard' ? { backgroundColor: accentColor, boxShadow: `0 0 40px ${accentColor}40` } : {}}>
+          <LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} /><span className="text-[9px] font-black uppercase tracking-widest">Market</span></button>
+        <button onClick={() => { setView('calculator'); if(activeMetal === 'usd') setActiveMetal('gold'); }} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-500 ${view === 'calculator' ? 'text-black' : 'text-zinc-500'}`} style={view === 'calculator' ? { backgroundColor: accentColor, boxShadow: `0 0 40px ${accentColor}40` } : {}}>
+          <Calculator className={`w-6 h-6 ${view === 'calculator' ? 'fill-black' : ''}`} /><span className="text-[9px] font-black uppercase tracking-widest">Calculator</span></button>
       </nav>
       <Analytics />
     </div>
