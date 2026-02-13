@@ -16,9 +16,14 @@ const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/ma
 const FOREX_PROXY = "/api/forex";
 
 export default function App() {
-  const [priceData, setPriceData] = useState([]);
-  const [forexHistory, setForexHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Try to recover last known data from localStorage for instant boot
+  const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('cache_metal') || '[]'));
+  const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('cache_forex') || '[]'));
+  
+  // Only show full-screen loader if we have absolutely no cached data
+  const [loading, setLoading] = useState(priceData.length === 0);
+  const [forexLoading, setForexLoading] = useState(forexHistory.length === 0);
+  
   const [view, setView] = useState('dashboard');
   const [calcMode, setCalcMode] = useState('jewelry'); 
   const [activeMetal, setActiveMetal] = useState('gold'); 
@@ -37,31 +42,34 @@ export default function App() {
     { code: 'EUR', flag: '🇪🇺' }
   ];
 
+  // Load Metal Data (Fast)
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [metalRes, forexRes] = await Promise.all([
-          fetch(`${DATA_URL}?t=${Date.now()}`).then(res => res.json()),
-          fetch(FOREX_PROXY).then(res => res.json())
-        ]);
+    fetch(`${DATA_URL}?t=${Date.now()}`)
+      .then(res => res.json())
+      .then(json => {
+        setPriceData(json);
+        localStorage.setItem('cache_metal', JSON.stringify(json));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-        setPriceData(Array.isArray(metalRes) ? metalRes : []);
-        
-        // Ensure we handle the NRB payload correctly to get the latest 145+ rates
-        const rawForex = forexRes.data.payload;
-        const transformedForex = rawForex.map(day => ({
+  // Load Forex Data (Slow - Background)
+  useEffect(() => {
+    fetch(FOREX_PROXY)
+      .then(res => res.json())
+      .then(json => {
+        const transformed = json.data.payload.map(day => ({
           date: day.date,
           usdRate: parseFloat(day.rates.find(r => r.currency.iso3 === 'USD')?.buy || 0),
           rates: day.rates
-        })).sort((a, b) => new Date(a.date) - new Date(b.date)); // Ensure chronological order for chart
+        })).sort((a, b) => new Date(a.date) - new Date(b.date));
         
-        setForexHistory(transformedForex);
-        setLoading(false);
-      } catch (err) {
-        setLoading(false);
-      }
-    };
-    fetchData();
+        setForexHistory(transformed);
+        localStorage.setItem('cache_forex', JSON.stringify(transformed));
+        setForexLoading(false);
+      })
+      .catch(() => setForexLoading(false));
   }, []);
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
@@ -80,10 +88,17 @@ export default function App() {
   }, [priceData, forexHistory, current, activeMetal]);
 
   const getDayDiff = (id) => {
-    const currVal = id === 'usd' ? (forexHistory[forexHistory.length - 1]?.usdRate || 0) : (priceData[priceData.length - 1]?.[id] || 0);
-    const prevVal = id === 'usd' ? (forexHistory[forexHistory.length - 2]?.usdRate || 0) : (priceData[priceData.length - 2]?.[id] || 0);
+    const source = id === 'usd' ? forexHistory : priceData;
+    if (source.length < 2) return { val: 'Rs. 0', isUp: true };
+    
+    const currVal = id === 'usd' ? source[source.length - 1].usdRate : source[source.length - 1][id];
+    const prevVal = id === 'usd' ? source[source.length - 2].usdRate : source[source.length - 2][id];
     const diff = currVal - prevVal;
-    return { val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, isUp: diff >= 0 };
+    
+    return { 
+        val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, 
+        isUp: diff >= 0 
+    };
   };
 
   const currentStats = useMemo(() => {
@@ -129,25 +144,13 @@ export default function App() {
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    animation: { duration: 600, easing: 'easeOutQuart' },
-    hover: { mode: 'index', intersect: false },
-    interaction: { mode: 'index', intersect: false },
     plugins: { 
         legend: false, 
         tooltip: { 
             enabled: true,
             backgroundColor: 'rgba(10, 10, 10, 0.9)',
-            titleFont: { size: 10, weight: '700' },
-            bodyFont: { size: 13, weight: '900' },
-            padding: 12,
-            cornerRadius: 15,
-            displayColors: false,
             callbacks: {
                 label: (context) => `रू ${context.raw.toLocaleString(undefined, {minimumFractionDigits: activeMetal === 'usd' ? 2 : 0})}`,
-                title: (items) => {
-                    const d = new Date(items[0].label.replace(' ', 'T'));
-                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                }
             }
         } 
     },
@@ -155,23 +158,10 @@ export default function App() {
       x: {
         display: true,
         grid: { display: true, color: 'rgba(255, 255, 255, 0.05)', drawTicks: false, borderDash: [6, 6] },
-        ticks: {
-          color: 'rgba(255, 255, 255, 0.3)',
-          font: { size: 9, weight: '700' },
-          padding: 10,
-          autoSkip: timeframe > 7,
-          maxTicksLimit: timeframe === 7 ? 7 : 8,
-          callback: function(val, index) {
-            const dateStr = filteredData[index]?.date;
-            if (!dateStr) return '';
-            const d = new Date(dateStr.replace(' ', 'T'));
-            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          }
-        }
+        ticks: { color: 'rgba(255, 255, 255, 0.3)', font: { size: 9, weight: '700' }, padding: 10 }
       },
       y: { 
-        display: true, 
-        position: 'right', 
+        display: true, position: 'right', 
         grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5], drawBorder: false, drawTicks: false }, 
         ticks: { display: false } 
       }
@@ -180,11 +170,7 @@ export default function App() {
       if (elements.length > 0) {
         const index = elements[0].index;
         const point = filteredData[index];
-        setSelectedPoint({ 
-            index, 
-            date: point.date, 
-            price: activeMetal === 'usd' ? point.usdRate : point[activeMetal] 
-        });
+        setSelectedPoint({ index, date: point.date, price: activeMetal === 'usd' ? point.usdRate : point[activeMetal] });
       }
     }
   }), [filteredData, activeMetal, timeframe]);
@@ -219,8 +205,10 @@ export default function App() {
               { id: 'usd', label: 'USD to NPR', sub: 'Source: NRB Official', grad: 'from-[#22c55e]/45 to-[#22c55e]/15', border: 'border-[#22c55e]/40' }
             ].map((item) => {
               const isActive = activeMetal === item.id;
+              const isUSD = item.id === 'usd';
               const diff = getDayDiff(item.id);
-              const val = item.id === 'usd' ? (forexHistory[forexHistory.length-1]?.usdRate || 0) : (priceData[priceData.length-1]?.[item.id] || 0);
+              const val = isUSD ? (forexHistory[forexHistory.length-1]?.usdRate || 0) : (priceData[priceData.length-1]?.[item.id] || 0);
+              
               return (
                 <div key={item.id} onClick={() => { setActiveMetal(item.id); setSelectedPoint(null); }}
                   className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-500 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden ${
@@ -231,13 +219,15 @@ export default function App() {
                         <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-white' : 'text-zinc-500'}`}>{item.label}</span>
                         <p className="text-[8px] font-bold opacity-50 uppercase mt-0.5 tracking-tighter">{item.sub}</p>
                     </div>
-                    <div className={`px-2.5 py-1 rounded-xl text-[9px] font-black border backdrop-blur-md ${diff.isUp ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                      {diff.val}
-                    </div>
+                    {!forexLoading || !isUSD ? (
+                        <div className={`px-2.5 py-1 rounded-xl text-[9px] font-black border backdrop-blur-md ${diff.isUp ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                            {diff.val}
+                        </div>
+                    ) : <div className="w-12 h-4 bg-white/5 animate-pulse rounded-lg"/>}
                   </div>
                   <div className="flex justify-between items-end">
                     <h2 className={`text-4xl font-black tracking-tighter ${isActive ? 'text-white' : 'text-zinc-400'}`}>
-                        {item.id === 'usd' ? `रू ${val.toFixed(2)}` : formatRS(val)}
+                        {isUSD && forexLoading && val === 0 ? "..." : (isUSD ? `रू ${val.toFixed(2)}` : formatRS(val))}
                     </h2>
                     {isActive && <TrendingUp className={`w-5 h-5 ${diff.isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
                   </div>
@@ -252,15 +242,11 @@ export default function App() {
                 <Activity className="w-5 h-5" style={{ color: accentColor }} /> Price Trend
               </h3>
               <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
-                {[
-                  { label: '7D', val: 7 },
-                  { label: '1M', val: 30 },
-                  { label: '3M', val: 90 }
-                ].map((t) => (
-                  <button key={t.label} onClick={() => { setTimeframe(t.val); setSelectedPoint(null); }}
-                    className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all tracking-tighter ${timeframe === t.val ? `text-black shadow-lg` : 'text-zinc-500'}`}
-                    style={timeframe === t.val ? { backgroundColor: accentColor } : {}}>
-                    {t.label}
+                {[7, 30, 90].map((t) => (
+                  <button key={t} onClick={() => { setTimeframe(t); setSelectedPoint(null); }}
+                    className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all tracking-tighter ${timeframe === t ? `text-black shadow-lg` : 'text-zinc-500'}`}
+                    style={timeframe === t ? { backgroundColor: accentColor } : {}}>
+                    {t === 7 ? '7D' : t === 30 ? '1M' : '3M'}
                   </button>
                 ))}
               </div>
@@ -285,7 +271,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* RESTORED: Historical Detailed Selection Box */}
             {selectedPoint && (
               <div className="mt-8 bg-black/80 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-2 duration-200 backdrop-blur-3xl shadow-2xl" style={{ borderColor: `${accentColor}80` }}>
                 <div className="flex items-center gap-5 flex-1 min-w-[220px]">
@@ -324,7 +309,6 @@ export default function App() {
 
             {calcMode === 'jewelry' ? (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {/* Internal Selector: Defaults to dash selection but allows switching */}
                 <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto">
                     {['gold', 'silver'].map(metal => (
                         <button key={metal} onClick={() => setActiveMetal(metal)}
@@ -409,7 +393,6 @@ export default function App() {
                           return currCalc.isSwapped ? res.toFixed(2) : formatRS(res);
                         })()}
                      </h3>
-                     <p className="text-[8px] font-bold mt-4 opacity-50 uppercase tracking-widest">Source: NRB Official</p>
                   </div>
               </div>
             )}
