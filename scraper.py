@@ -10,72 +10,91 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def get_candidates(url, metal):
-    """
-    Scrapes a URL and returns a list of all numbers fitting the criteria.
-    """
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0'}
-    # Blacklist non-price numbers (Purity, weight, years)
-    blacklist = [999, 9999, 1166, 11664, 2082, 2083, 2084, 2025, 2026]
+    
+    # 1. THE ULTIMATE BLACKLIST
+    # Purity levels
+    purity = [999, 9999, 9990, 9167, 9583, 916, 750]
+    # Conversion weights (1 Tola = 11.66g)
+    weights = [1166, 11664, 10, 100, 11]
+    # Known Phone/Office Numbers (from FENEGOSIDA footer)
+    office_nums = [453227, 453228, 4532270]
+    # Calendar Years (Covers 2000-2100 for both AD and BS)
+    years = list(range(2000, 2101))
+    
+    blacklist = set(purity + weights + office_nums + years)
     
     try:
-        # verify=False is used for FENEGOSIDA's certificate issues
         r = requests.get(url, headers=headers, timeout=25, verify=False)
         r.raise_for_status()
         
-        # 1. Clean the text: remove commas and merge Rupee symbol gaps (306 रु 500 -> 306500)
-        raw_text = r.text.replace(',', '')
-        raw_text = re.sub(r'(\d+)\s*रु\s*(\d+)', r'\1\2', raw_text)
+        # Clean text: remove commas and merge Rupee symbol gaps (e.g. 306 रु 500)
+        raw_html = r.text.replace(',', '')
+        raw_html = re.sub(r'(\d+)\s*रु\s*(\d+)', r'\1\2', raw_html)
         
-        # 2. Extract visible text
-        soup = BeautifulSoup(raw_text, 'html.parser')
+        soup = BeautifulSoup(raw_html, 'html.parser')
+        # Remove junk tags that contain irrelevant numbers
+        for junk in soup(["script", "style", "footer", "header"]):
+            junk.decompose()
+            
         content = soup.get_text(separator=' ')
 
+        # 2. PROXIMITY ANCHOR LOGIC
+        # We look for a price ONLY if it follows a keyword within 50 characters.
+        # This prevents picking up dates from the top or phone numbers from the bottom.
         if metal == "gold":
-            pattern = r"(\d{6})" # Target 6-digit numbers
-            min_p, max_p = 150000, 600000
+            # Focus on 6-digit numbers near "Fine" or "Tola"
+            pattern = r"(?:FINE|Hallmark|Tola|छापावाल).{0,50}?(\d{6})"
+            min_p, max_p = 100000, 1000000
         else:
-            pattern = r"(\d{4,5})" # Target 4-5 digit numbers
-            min_p, max_p = 2000, 20000 # Min 4800 ignores 10-gram price (~4200)
+            # Focus on 4-5 digit numbers near "Silver" or "Tola"
+            pattern = r"(?:SILVER|Tola|चाँदी).{0,50}?(\d{4,5})"
+            min_p, max_p = 2000, 50000
 
-        matches = re.findall(pattern, content)
-        valid = [int(m) for m in matches if int(m) not in blacklist and min_p <= int(m) <= max_p]
+        matches = re.findall(pattern, content, re.IGNORECASE | re.DOTALL)
+        
+        # 3. Validation
+        valid = []
+        for m in matches:
+            val = int(m)
+            if val in blacklist:
+                continue
+            if min_p <= val <= max_p:
+                valid.append(val)
+        
         return valid
-    except Exception as e:
-        # Return empty list on failure so the failover logic can kick in
+    except:
         return []
 
 def update():
     file = 'data.json'
     
-    # 1. Scrape Candidates
+    # Scrape both
     f_gold = get_candidates("https://fenegosida.org/", "gold")
     f_silver = get_candidates("https://fenegosida.org/", "silver")
-    
     a_gold = get_candidates("https://www.ashesh.com.np/gold/", "gold")
     a_silver = get_candidates("https://www.ashesh.com.np/gold/", "silver")
 
-    # 2. Log findings for GitHub console
+    # LOG FINDINGS (Check these in your GitHub Actions Log)
     print(f"DEBUG - FENEGOSIDA: Gold {f_gold}, Silver {f_silver}")
     print(f"DEBUG - Ashesh: Gold {a_gold}, Silver {a_silver}")
 
-    # 3. Combine and pick Absolute Maximum
+    # COMBINE & PICK MAX (Guarantees Tola price over 10g price)
     all_gold = f_gold + a_gold
     all_silver = f_silver + a_silver
-
+    
     final_gold = max(all_gold) if all_gold else 0
     final_silver = max(all_silver) if all_silver else 0
 
-    # 4. Determine Source (Priority Logic)
-    source_info = "Failed"
+    # PRIORITY SOURCE LOGIC
+    source_info = "None"
     if final_gold > 0:
-        # If the highest price found exists on FENEGOSIDA, credit them first
         if final_gold in f_gold:
-            source_info = "FENEGOSIDA"
-        # If it only exists on Ashesh (because FENEGOSIDA failed or had a lower price)
+            source_info = "FENEGOSIDA" # Priority
         else:
             source_info = "Ashesh (Backup)"
 
-    # 5. History / Carry-Over Logic
+    # RECOVERY FROM JSON
     history = []
     if os.path.exists(file):
         try:
@@ -86,13 +105,10 @@ def update():
         final_gold = final_gold or history[-1]['gold']
         final_silver = final_silver or history[-1]['silver']
         source_info = f"Recovery (Last Known)"
-    elif final_gold == 0:
-        # Emergency default if first time run and all sites fail
-        final_gold, final_silver, source_info = 303500, 5340, "Hard Fallback"
 
-    # 6. Save final result
-    # Nepal Time (UTC+5:45)
+    # TIME SETUP
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
+    today_str = now.strftime("%Y-%m-%d")
     
     new_entry = {
         "date": now.strftime("%Y-%m-%d %H:%M"),
@@ -101,8 +117,7 @@ def update():
         "source": source_info
     }
 
-    # If today's data already exists, update it. Else append.
-    today_str = now.strftime("%Y-%m-%d")
+    # Update or Append
     if history and history[-1]['date'].startswith(today_str):
         history[-1] = new_entry
     else:
@@ -111,7 +126,7 @@ def update():
     with open(file, 'w') as f:
         json.dump(history[-100:], f, indent=4)
     
-    print(f"FINAL RESULT: Gold {final_gold}, Silver {final_silver} via {source_info}")
+    print(f"SUCCESS: Gold {final_gold}, Silver {final_silver} via {source_info}")
 
 if __name__ == "__main__":
     update()
