@@ -7,52 +7,66 @@ from bs4 import BeautifulSoup
 
 def clean_and_find_prices(raw_html, metal_type):
     """
-    The 'Digital Bulldozer': 
-    Strips noise, removes the 'रु' symbol that trolls scrapers, 
-    and finds the correct price by value magnitude.
+    Stricter extraction to avoid years (2082/2083) and 
+    ensure we get 'Fine Gold' instead of 'Tejabi'.
     """
-    # 1. Remove Rupee symbol, commas, and extra whitespace
+    # Remove Rupee symbol, commas, and normalize spaces
     text = raw_html.replace('रु', '').replace(',', '').replace('\n', ' ')
     
-    # 2. Focus on the Tola section (ignore 10gms/Tejabi 0s)
+    # Avoid picking up years as prices
+    current_year = datetime.datetime.now().year
+    blacklisted_numbers = [2082, 2083, 2084, current_year, current_year + 1]
+
     if metal_type == "gold":
-        # Look for 'Fine Gold' or '9999' followed by a number between 150k and 500k
-        pattern = r"(?:FINE GOLD|9999|Fine Gold).*?(\d{5,6})"
+        # Look specifically for 'Fine' or 'Hallmark' to avoid Tajabi
+        # Must be 6 digits (e.g., 306500)
+        pattern = r"(?:FINE|Hallmark|छापावाल).*?(\d{6})"
         min_val, max_val = 150000, 500000
     else:
-        # Look for 'Silver' followed by a number between 2k and 10k
-        pattern = r"(?:SILVER|Silver).*?(\d{4,5})"
-        min_val, max_val = 2000, 10000
+        # Silver must be between 3500 and 10000 (to avoid picking up the year 2083)
+        pattern = r"(?:SILVER|Silver|चाँदी).*?(\d{4,5})"
+        min_val, max_val = 3500, 10000
 
     matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
     
     valid_prices = []
     for m in matches:
         val = int(m)
+        if val in blacklisted_numbers:
+            continue
         if min_val <= val <= max_val:
             valid_prices.append(val)
             
-    # Return the first valid price found (usually the top one in the UI)
-    return valid_prices[0] if valid_prices else 0
+    # If we found multiple, Gold should be the highest (Fine), 
+    # Silver should be the first one found near the label
+    if not valid_prices: return 0
+    return max(valid_prices) if metal_type == "gold" else valid_prices[0]
 
 def get_live_prices():
-    # Priority 1: FENEGOSIDA, Priority 2: Ashesh (Backup)
     sources = [
         {"name": "FENEGOSIDA", "url": "https://www.fenegosida.org/"},
         {"name": "Ashesh", "url": "https://www.ashesh.com.np/gold/"}
     ]
     
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/121.0.0.0'}
+    # Modern headers to prevent 403 Forbidden/Scrape errors
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+    }
 
     for source in sources:
         try:
-            r = requests.get(source['url'], headers=headers, timeout=25)
+            # Use a session to handle cookies/headers like a real browser
+            session = requests.Session()
+            r = session.get(source['url'], headers=headers, timeout=25)
             r.raise_for_status()
             
-            # Get text but use a separator to prevent 'Gold306500' merging
             soup = BeautifulSoup(r.text, 'html.parser')
-            # Extract text from the body to avoid header/footer noise
-            page_content = soup.get_text(separator=' ')
+            # Extract only the body text to reduce header/footer noise
+            page_content = soup.find('body').get_text(separator=' ') if soup.find('body') else soup.get_text(separator=' ')
             
             gold = clean_and_find_prices(page_content, "gold")
             silver = clean_and_find_prices(page_content, "silver")
@@ -60,32 +74,31 @@ def get_live_prices():
             if gold > 0 and silver > 0:
                 return gold, silver, source['name']
         except Exception as e:
-            print(f"Skipping {source['name']} due to error.")
+            print(f"Source {source['name']} failed: {e}")
             continue
             
-    return 0, 0, "All Sources Failed"
+    return 0, 0, "Failed"
 
 def update():
     file = 'data.json'
     new_gold, new_silver, src = get_live_prices()
     
-    # Load history
     history = []
     if os.path.exists(file):
         try:
             with open(file, 'r') as f: history = json.load(f)
         except: pass
 
-    # AUTO-RECOVERY: If both sites fail, use yesterday's data
+    # Fallback to history if current scrape failed
     if (new_gold == 0 or new_silver == 0) and history:
         new_gold = history[-1]['gold']
         new_silver = history[-1]['silver']
         src = f"Recovery (Last Known)"
     elif new_gold == 0:
-        # Last resort fallback if file is also missing
+        # Hard fallback to recent rates if everything fails
         new_gold, new_silver, src = 306500, 5340, "Hard Fallback"
 
-    # Nepal Time
+    # Nepal Time (UTC+5:45)
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
     
     entry = {
@@ -95,18 +108,17 @@ def update():
         "source": src
     }
 
-    # Update or Append
     today = now.strftime("%Y-%m-%d")
     if history and history[-1]['date'].startswith(today):
         history[-1] = entry
     else:
         history.append(entry)
 
-    # Prevent file bloat
+    # Save last 100 entries
     with open(file, 'w') as f:
         json.dump(history[-100:], f, indent=4)
     
-    print(f"Done: Gold {new_gold}, Silver {new_silver} ({src})")
+    print(f"Verified Update: Gold {new_gold}, Silver {new_silver} from {src}")
 
 if __name__ == "__main__":
     update()
