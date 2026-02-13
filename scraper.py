@@ -6,100 +6,76 @@ import re
 from bs4 import BeautifulSoup
 import urllib3
 
-# Suppress SSL warnings for sites with broken certificates
+# Suppress SSL warnings for FENEGOSIDA
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def extract_from_text(text, metal):
+def get_candidates(url, metal):
     """
-    Finds potential prices using keywords and broad ranges.
+    Scrapes a URL and returns a list of all numbers fitting the criteria.
     """
-    # Blacklist common non-price numbers (Purity, Grams, Years)
-    blacklist = [999, 9999, 1166, 11664, 2081, 2082, 2083, 2084, 2025, 2026]
-    
-    # 1. Clean the text (remove commas, handle Rupee symbol gaps)
-    text = text.replace(',', '')
-    text = re.sub(r'(\d)\s+रु\s+(\d)', r'\1\2', text) # Merge "306 रु 500"
-    text = text.replace('रु', ' ')
-
-    if metal == "gold":
-        # Look for Hallmark/Fine to avoid Tejabi. 
-        # Range: 100k to 1 Million (Future proofing)
-        patterns = [r"(?:Fine|Hallmark|छापावाल).{0,50}?(\d{6})", r"(\d{6})"]
-        min_p, max_p = 100000, 1000000
-    else:
-        # Range: 1k to 50k (Future proofing)
-        patterns = [r"(?:Silver|चाँदी).{0,50}?(\d{4,5})", r"(\d{4,5})"]
-        min_p, max_p = 1000, 50000
-
-    found_values = []
-    for pattern in patterns:
-        matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
-        for m in matches:
-            val = int(m)
-            if val in blacklist: continue
-            if min_p <= val <= max_p:
-                found_values.append(val)
-    
-    # Return the first one found near a keyword, or the highest if multiple
-    return found_values[0] if found_values else 0
-
-def get_data_from_url(url, name):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0'}
+    # Blacklist non-price numbers (Purity, weight, years)
+    blacklist = [999, 9999, 1166, 11664, 2082, 2083, 2084, 2025, 2026]
+    
     try:
-        r = requests.get(url, headers=headers, timeout=20, verify=False)
+        # verify=False is used for FENEGOSIDA's certificate issues
+        r = requests.get(url, headers=headers, timeout=25, verify=False)
         r.raise_for_status()
-        soup = BeautifulSoup(r.text, 'html.parser')
-        # Clean script/styles to avoid noise
-        for s in soup(["script", "style"]): s.decompose()
-        content = " ".join(soup.get_text(separator=' ').split())
         
-        g = extract_from_text(content, "gold")
-        s = extract_from_text(content, "silver")
-        return g, s
+        # 1. Clean the text: remove commas and merge Rupee symbol gaps (306 रु 500 -> 306500)
+        raw_text = r.text.replace(',', '')
+        raw_text = re.sub(r'(\d+)\s*रु\s*(\d+)', r'\1\2', raw_text)
+        
+        # 2. Extract visible text
+        soup = BeautifulSoup(raw_text, 'html.parser')
+        content = soup.get_text(separator=' ')
+
+        if metal == "gold":
+            pattern = r"(\d{6})" # Target 6-digit numbers
+            min_p, max_p = 150000, 600000
+        else:
+            pattern = r"(\d{4,5})" # Target 4-5 digit numbers
+            min_p, max_p = 2000, 20000 # Min 4800 ignores 10-gram price (~4200)
+
+        matches = re.findall(pattern, content)
+        valid = [int(m) for m in matches if int(m) not in blacklist and min_p <= int(m) <= max_p]
+        return valid
     except Exception as e:
-        print(f"Log: {name} connection failed.")
-        return 0, 0
+        # Return empty list on failure so the failover logic can kick in
+        return []
 
 def update():
     file = 'data.json'
     
-    # 1. Scrape both sources
-    f_gold, f_silver = get_data_from_url("https://fenegosida.org/", "FENEGOSIDA")
-    a_gold, a_silver = get_data_from_url("https://www.ashesh.com.np/gold/", "Ashesh")
+    # 1. Scrape Candidates
+    f_gold = get_candidates("https://fenegosida.org/", "gold")
+    f_silver = get_candidates("https://fenegosida.org/", "silver")
     
-    # 2. Log findings for transparency
-    print(f"Log - FENEGOSIDA Findings: Gold={f_gold}, Silver={f_silver}")
-    print(f"Log - Ashesh Findings: Gold={a_gold}, Silver={a_silver}")
+    a_gold = get_candidates("https://www.ashesh.com.np/gold/", "gold")
+    a_silver = get_candidates("https://www.ashesh.com.np/gold/", "silver")
 
-    # 3. Decision Logic (Cross-Check)
-    final_gold, final_silver = 0, 0
-    source_info = ""
+    # 2. Log findings for GitHub console
+    print(f"DEBUG - FENEGOSIDA: Gold {f_gold}, Silver {f_silver}")
+    print(f"DEBUG - Ashesh: Gold {a_gold}, Silver {a_silver}")
 
-    # Gold Cross-Check
-    if f_gold > 0 and a_gold > 0:
-        # If they are within 5% of each other, they are likely correct
-        if abs(f_gold - a_gold) / max(f_gold, a_gold) < 0.05:
-            final_gold = f_gold
-            source_info = "Verified (Both)"
+    # 3. Combine and pick Absolute Maximum
+    all_gold = f_gold + a_gold
+    all_silver = f_silver + a_silver
+
+    final_gold = max(all_gold) if all_gold else 0
+    final_silver = max(all_silver) if all_silver else 0
+
+    # 4. Determine Source (Priority Logic)
+    source_info = "Failed"
+    if final_gold > 0:
+        # If the highest price found exists on FENEGOSIDA, credit them first
+        if final_gold in f_gold:
+            source_info = "FENEGOSIDA"
+        # If it only exists on Ashesh (because FENEGOSIDA failed or had a lower price)
         else:
-            final_gold = max(f_gold, a_gold) # Usually the Tola price
-            source_info = "Price Mismatch (Used Max)"
-    else:
-        final_gold = f_gold or a_gold
-        source_info = "Single Source"
+            source_info = "Ashesh (Backup)"
 
-    # Silver Cross-Check
-    if f_silver > 0 and a_silver > 0:
-        if abs(f_silver - a_silver) / max(f_silver, a_silver) < 0.10:
-            final_silver = f_silver
-        else:
-            # Avoid picking 2083 or 9999 by checking common silver bounds
-            # If one is in the 'likely' range (~5k) and other isn't, pick likely
-            final_silver = f_silver if 4500 < f_silver < 8000 else a_silver
-    else:
-        final_silver = f_silver or a_silver
-
-    # 4. History Recovery
+    # 5. History / Carry-Over Logic
     history = []
     if os.path.exists(file):
         try:
@@ -109,28 +85,33 @@ def update():
     if (final_gold == 0 or final_silver == 0) and history:
         final_gold = final_gold or history[-1]['gold']
         final_silver = final_silver or history[-1]['silver']
-        source_info = "Recovery (Carry Over)"
+        source_info = f"Recovery (Last Known)"
     elif final_gold == 0:
-        final_gold, final_silver, source_info = 306500, 5340, "Emergency Fallback"
+        # Emergency default if first time run and all sites fail
+        final_gold, final_silver, source_info = 303500, 5340, "Hard Fallback"
 
-    # 5. Save Data
+    # 6. Save final result
+    # Nepal Time (UTC+5:45)
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
-    entry = {
+    
+    new_entry = {
         "date": now.strftime("%Y-%m-%d %H:%M"),
         "gold": final_gold,
         "silver": final_silver,
         "source": source_info
     }
 
-    if history and history[-1]['date'].startswith(now.strftime("%Y-%m-%d")):
-        history[-1] = entry
+    # If today's data already exists, update it. Else append.
+    today_str = now.strftime("%Y-%m-%d")
+    if history and history[-1]['date'].startswith(today_str):
+        history[-1] = new_entry
     else:
-        history.append(entry)
+        history.append(new_entry)
 
     with open(file, 'w') as f:
         json.dump(history[-100:], f, indent=4)
     
-    print(f"FINAL VERIFIED RESULT: Gold {final_gold}, Silver {final_silver} ({source_info})")
+    print(f"FINAL RESULT: Gold {final_gold}, Silver {final_silver} via {source_info}")
 
 if __name__ == "__main__":
     update()
