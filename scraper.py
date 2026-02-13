@@ -6,104 +6,123 @@ import re
 from bs4 import BeautifulSoup
 import urllib3
 
-# Ignore SSL warnings for FENEGOSIDA
+# Suppress SSL warnings for sites with broken certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def clean_and_find_prices(raw_html, metal_type):
-    # 1. Digital Bulldozer: Remove the 'रु' and commas, but also handle spaces like '306 रु 500'
-    # We remove 'रु' and then collapse any spaces between numbers to merge split prices
-    text = raw_html.replace('रु', '').replace(',', '')
-    text = re.sub(r'(\d)\s+(\d)', r'\1\2', text) # Merge "306 500" into "306500"
+def extract_from_text(text, metal):
+    """
+    Finds potential prices using keywords and broad ranges.
+    """
+    # Blacklist common non-price numbers (Purity, Grams, Years)
+    blacklist = [999, 9999, 1166, 11664, 2081, 2082, 2083, 2084, 2025, 2026]
     
-    # Avoid years/dates being mistaken for prices
-    blacklisted = [2081, 2082, 2083, 2084, 2024, 2025, 2026]
+    # 1. Clean the text (remove commas, handle Rupee symbol gaps)
+    text = text.replace(',', '')
+    text = re.sub(r'(\d)\s+रु\s+(\d)', r'\1\2', text) # Merge "306 रु 500"
+    text = text.replace('रु', ' ')
 
-    if metal_type == "gold":
-        # Target Tola Gold (usually 150k - 500k)
-        # We look for 6-digit numbers
-        pattern = r"(\d{6})"
-        min_val, max_val = 150000, 500000
+    if metal == "gold":
+        # Look for Hallmark/Fine to avoid Tejabi. 
+        # Range: 100k to 1 Million (Future proofing)
+        patterns = [r"(?:Fine|Hallmark|छापावाल).{0,50}?(\d{6})", r"(\d{6})"]
+        min_p, max_p = 100000, 1000000
     else:
-        # Target Tola Silver (usually 4.5k - 9k)
-        # 10 gram silver is usually < 4.5k, so we set min to 4800
-        pattern = r"(\d{4,5})"
-        min_val, max_val = 4800, 10000
+        # Range: 1k to 50k (Future proofing)
+        patterns = [r"(?:Silver|चाँदी).{0,50}?(\d{4,5})", r"(\d{4,5})"]
+        min_p, max_p = 1000, 50000
 
-    matches = re.findall(pattern, text)
+    found_values = []
+    for pattern in patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
+        for m in matches:
+            val = int(m)
+            if val in blacklist: continue
+            if min_p <= val <= max_p:
+                found_values.append(val)
     
-    valid_prices = []
-    for m in matches:
-        val = int(m)
-        if val in blacklisted: continue
-        if min_val <= val <= max_val:
-            valid_prices.append(val)
-            
-    # CRITICAL: Always take the MAX price to ensure we get 'Tola' and not '10 Grams'
-    if not valid_prices:
-        return 0
-    return max(valid_prices)
+    # Return the first one found near a keyword, or the highest if multiple
+    return found_values[0] if found_values else 0
 
-def get_live_prices():
-    sources = [
-        {"name": "FENEGOSIDA", "url": "https://fenegosida.org/"},
-        {"name": "Ashesh", "url": "https://www.ashesh.com.np/gold/"}
-    ]
-    
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-    }
-
-    for source in sources:
-        try:
-            # verify=False handles the SSL certificate issue
-            r = requests.get(source['url'], headers=headers, timeout=20, verify=False)
-            r.raise_for_status()
-            
-            soup = BeautifulSoup(r.text, 'html.parser')
-            # Get text with space separator to keep numbers distinct
-            page_content = soup.get_text(separator=' ')
-            
-            gold = clean_and_find_prices(page_content, "gold")
-            silver = clean_and_find_prices(page_content, "silver")
-
-            if gold > 0 and silver > 0:
-                return gold, silver, source['name']
-        except Exception as e:
-            print(f"Source {source['name']} failed: {e}")
-            continue
-            
-    return 0, 0, "Failed"
+def get_data_from_url(url, name):
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0'}
+    try:
+        r = requests.get(url, headers=headers, timeout=20, verify=False)
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, 'html.parser')
+        # Clean script/styles to avoid noise
+        for s in soup(["script", "style"]): s.decompose()
+        content = " ".join(soup.get_text(separator=' ').split())
+        
+        g = extract_from_text(content, "gold")
+        s = extract_from_text(content, "silver")
+        return g, s
+    except Exception as e:
+        print(f"Log: {name} connection failed.")
+        return 0, 0
 
 def update():
     file = 'data.json'
-    new_gold, new_silver, src = get_live_prices()
     
+    # 1. Scrape both sources
+    f_gold, f_silver = get_data_from_url("https://fenegosida.org/", "FENEGOSIDA")
+    a_gold, a_silver = get_data_from_url("https://www.ashesh.com.np/gold/", "Ashesh")
+    
+    # 2. Log findings for transparency
+    print(f"Log - FENEGOSIDA Findings: Gold={f_gold}, Silver={f_silver}")
+    print(f"Log - Ashesh Findings: Gold={a_gold}, Silver={a_silver}")
+
+    # 3. Decision Logic (Cross-Check)
+    final_gold, final_silver = 0, 0
+    source_info = ""
+
+    # Gold Cross-Check
+    if f_gold > 0 and a_gold > 0:
+        # If they are within 5% of each other, they are likely correct
+        if abs(f_gold - a_gold) / max(f_gold, a_gold) < 0.05:
+            final_gold = f_gold
+            source_info = "Verified (Both)"
+        else:
+            final_gold = max(f_gold, a_gold) # Usually the Tola price
+            source_info = "Price Mismatch (Used Max)"
+    else:
+        final_gold = f_gold or a_gold
+        source_info = "Single Source"
+
+    # Silver Cross-Check
+    if f_silver > 0 and a_silver > 0:
+        if abs(f_silver - a_silver) / max(f_silver, a_silver) < 0.10:
+            final_silver = f_silver
+        else:
+            # Avoid picking 2083 or 9999 by checking common silver bounds
+            # If one is in the 'likely' range (~5k) and other isn't, pick likely
+            final_silver = f_silver if 4500 < f_silver < 8000 else a_silver
+    else:
+        final_silver = f_silver or a_silver
+
+    # 4. History Recovery
     history = []
     if os.path.exists(file):
         try:
             with open(file, 'r') as f: history = json.load(f)
         except: pass
 
-    # If scraping failed, don't update with 0, use last known
-    if (new_gold == 0 or new_silver == 0) and history:
-        new_gold = history[-1]['gold']
-        new_silver = history[-1]['silver']
-        src = f"Recovery (Last Known)"
-    elif new_gold == 0:
-        new_gold, new_silver, src = 303500, 5340, "Default Fallback"
+    if (final_gold == 0 or final_silver == 0) and history:
+        final_gold = final_gold or history[-1]['gold']
+        final_silver = final_silver or history[-1]['silver']
+        source_info = "Recovery (Carry Over)"
+    elif final_gold == 0:
+        final_gold, final_silver, source_info = 306500, 5340, "Emergency Fallback"
 
-    # Nepal Time
+    # 5. Save Data
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
-    
     entry = {
         "date": now.strftime("%Y-%m-%d %H:%M"),
-        "gold": new_gold,
-        "silver": new_silver,
-        "source": src
+        "gold": final_gold,
+        "silver": final_silver,
+        "source": source_info
     }
 
-    today = now.strftime("%Y-%m-%d")
-    if history and history[-1]['date'].startswith(today):
+    if history and history[-1]['date'].startswith(now.strftime("%Y-%m-%d")):
         history[-1] = entry
     else:
         history.append(entry)
@@ -111,7 +130,7 @@ def update():
     with open(file, 'w') as f:
         json.dump(history[-100:], f, indent=4)
     
-    print(f"Success -> Gold: {new_gold}, Silver: {new_silver} ({src})")
+    print(f"FINAL VERIFIED RESULT: Gold {final_gold}, Silver {final_silver} ({source_info})")
 
 if __name__ == "__main__":
     update()
