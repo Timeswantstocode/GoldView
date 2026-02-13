@@ -6,50 +6,44 @@ import re
 from bs4 import BeautifulSoup
 import urllib3
 
-# Disable annoying SSL warnings for the FENEGOSIDA site
+# Ignore SSL warnings for FENEGOSIDA
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def clean_and_find_prices(raw_html, metal_type):
-    # Remove Rupee symbol, commas, and simplify spaces
-    text = raw_html.replace('रु', '').replace(',', '').replace('\n', ' ')
+    # 1. Digital Bulldozer: Remove the 'रु' and commas, but also handle spaces like '306 रु 500'
+    # We remove 'रु' and then collapse any spaces between numbers to merge split prices
+    text = raw_html.replace('रु', '').replace(',', '')
+    text = re.sub(r'(\d)\s+(\d)', r'\1\2', text) # Merge "306 500" into "306500"
     
-    # Avoid years being mistaken for prices
+    # Avoid years/dates being mistaken for prices
     blacklisted = [2081, 2082, 2083, 2084, 2024, 2025, 2026]
 
     if metal_type == "gold":
-        # Strategy: Find 'Fine' or 'Hallmark', but EXCLUDE 'Tejabi/Tajabi'
-        # We look for the 6-digit number that appears after 'Fine' or 'Hallmark'
-        gold_patterns = [
-            r"(?:Fine|Hallmark|छापावाल).*?(\d{6})",
-            r"(\d{6})" 
-        ]
-        
-        # Remove Tajabi sections from text entirely to prevent accidental matching
-        clean_text = re.sub(r"(?:Tejabi|Tajabi|तेजावी).*?\d+", "", text, flags=re.IGNORECASE)
-        
-        for pattern in gold_patterns:
-            matches = re.findall(pattern, clean_text, re.IGNORECASE | re.DOTALL)
-            valid = [int(m) for m in matches if int(m) not in blacklisted and 150000 <= int(m) <= 500000]
-            if valid:
-                return max(valid) # Return the highest (Fine Gold)
-
+        # Target Tola Gold (usually 150k - 500k)
+        # We look for 6-digit numbers
+        pattern = r"(\d{6})"
+        min_val, max_val = 150000, 500000
     else:
-        # Silver Strategy: Look for the number after 'Silver'
-        # We use a tighter range (4000-9000) to avoid years or 10-gram prices
-        silver_patterns = [
-            r"(?:Silver|चाँदी).*?(\d{4,5})",
-            r"(\d{4,5})"
-        ]
-        for pattern in silver_patterns:
-            matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
-            valid = [int(m) for m in matches if int(m) not in blacklisted and 4000 <= int(m) <= 9000]
-            if valid:
-                return valid[0] # Return the first valid one near the label
+        # Target Tola Silver (usually 4.5k - 9k)
+        # 10 gram silver is usually < 4.5k, so we set min to 4800
+        pattern = r"(\d{4,5})"
+        min_val, max_val = 4800, 10000
 
-    return 0
+    matches = re.findall(pattern, text)
+    
+    valid_prices = []
+    for m in matches:
+        val = int(m)
+        if val in blacklisted: continue
+        if min_val <= val <= max_val:
+            valid_prices.append(val)
+            
+    # CRITICAL: Always take the MAX price to ensure we get 'Tola' and not '10 Grams'
+    if not valid_prices:
+        return 0
+    return max(valid_prices)
 
 def get_live_prices():
-    # Using 'https://fenegosida.org/' (no www) is often more stable for their SSL
     sources = [
         {"name": "FENEGOSIDA", "url": "https://fenegosida.org/"},
         {"name": "Ashesh", "url": "https://www.ashesh.com.np/gold/"}
@@ -61,21 +55,21 @@ def get_live_prices():
 
     for source in sources:
         try:
-            # verify=False fixes the SSL/Hostname mismatch error
+            # verify=False handles the SSL certificate issue
             r = requests.get(source['url'], headers=headers, timeout=20, verify=False)
             r.raise_for_status()
             
             soup = BeautifulSoup(r.text, 'html.parser')
-            # Focus on the visible text
+            # Get text with space separator to keep numbers distinct
             page_content = soup.get_text(separator=' ')
             
             gold = clean_and_find_prices(page_content, "gold")
             silver = clean_and_find_prices(page_content, "silver")
 
-            if gold > 100000 and silver > 3000:
+            if gold > 0 and silver > 0:
                 return gold, silver, source['name']
         except Exception as e:
-            print(f"Source {source['name']} skipped: {e}")
+            print(f"Source {source['name']} failed: {e}")
             continue
             
     return 0, 0, "Failed"
@@ -90,15 +84,15 @@ def update():
             with open(file, 'r') as f: history = json.load(f)
         except: pass
 
-    # Recovery logic
+    # If scraping failed, don't update with 0, use last known
     if (new_gold == 0 or new_silver == 0) and history:
         new_gold = history[-1]['gold']
         new_silver = history[-1]['silver']
         src = f"Recovery (Last Known)"
     elif new_gold == 0:
-        new_gold, new_silver, src = 306500, 5340, "Hard Fallback"
+        new_gold, new_silver, src = 303500, 5340, "Default Fallback"
 
-    # Set Nepal Time
+    # Nepal Time
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
     
     entry = {
@@ -117,7 +111,7 @@ def update():
     with open(file, 'w') as f:
         json.dump(history[-100:], f, indent=4)
     
-    print(f"Final Result -> Gold: {new_gold}, Silver: {new_silver} ({src})")
+    print(f"Success -> Gold: {new_gold}, Silver: {new_silver} ({src})")
 
 if __name__ == "__main__":
     update()
