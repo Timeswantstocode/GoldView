@@ -49,7 +49,6 @@ export default function App() {
 
   // 2. DATA FETCHING
   useEffect(() => {
-    // Metal Data Fetch
     fetch(`${DATA_URL}?t=${Date.now()}`)
       .then(res => res.json())
       .then(json => {
@@ -58,13 +57,11 @@ export default function App() {
         setLoading(false);
       }).catch(() => setLoading(false));
 
-    // Forex Data Fetch
     fetch(FOREX_PROXY)
       .then(res => res.json())
       .then(json => {
         const transformed = json.data.payload.map(day => ({
           date: day.date,
-          // Buy Rate: 145.xx accuracy
           usdRate: parseFloat(day.rates.find(r => r.currency.iso3 === 'USD')?.buy || 0),
           rates: day.rates
         })).sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -134,7 +131,7 @@ export default function App() {
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false }, // Critical for easy clicking
+    interaction: { mode: 'index', intersect: false }, 
     plugins: { 
         legend: false, 
         tooltip: { 
@@ -287,15 +284,55 @@ export default function App() {
             {calcMode === 'jewelry' ? (
               <div className="space-y-6">
                 <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto">
-                    {['gold', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} className={`px-8 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? (metal === 'gold' ? 'bg-[#D4AF37] text-black' : 'bg-zinc-400 text-black') : 'text-zinc-500'}`}>{metal}</button>))}
+                    {['gold', 'silver'].map(metal => (
+                        <button key={metal} onClick={() => setActiveMetal(metal)} 
+                          style={{ backgroundColor: activeMetal === metal ? accentColor : 'transparent' }}
+                          className={`px-8 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black shadow-md' : 'text-zinc-500'}`}>
+                          {metal}
+                        </button>
+                    ))}
+                </div>
+                <div className="mb-8 p-6 rounded-[2.2rem] border-2 flex items-center justify-between transition-all"
+                     style={{ borderColor: `${accentColor}80`, backgroundColor: `${accentColor}10` }}>
+                  <div className="flex items-center gap-4">
+                    <Coins className="w-8 h-8" style={{ color: accentColor }} />
+                    <p className="text-xl font-black uppercase text-white">{activeMetal === 'gold' ? '24K Chhapawal' : 'Pure Silver'}</p>
+                  </div>
+                  <div className="text-right text-[10px] font-black text-zinc-500">{formatRS(priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal])}</div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                  {['tola', 'aana', 'lal'].map((unit) => (<div key={unit}><label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{unit}</label>
-                  <input type="number" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-2xl text-white outline-none focus:border-[#D4AF37]" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} /></div>))}
+                  {['tola', 'aana', 'lal'].map((unit) => (
+                    <div key={unit}>
+                      <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{unit}</label>
+                      <input type="number" 
+                        style={{ caretColor: accentColor }}
+                        className={`w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-2xl text-white outline-none transition-all focus:border-[${accentColor}]`} 
+                        onFocus={(e) => e.target.style.borderColor = accentColor}
+                        onBlur={(e) => e.target.style.borderColor = '#27272a'}
+                        value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} 
+                      />
+                    </div>
+                  ))}
                 </div>
-                <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none focus:border-[#D4AF37] text-white" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
-                <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer active:scale-[0.98] transition-all"><div className="flex items-center gap-3"><div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${calc.vat ? 'border-[#D4AF37] bg-[#D4AF37]' : 'border-zinc-800'}`}>{calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}</div><span className="font-bold text-zinc-300">13% Govt VAT</span></div></div>
-                <div className="bg-gradient-to-br from-[#D4AF37] to-yellow-600 p-12 rounded-[3.5rem] text-black text-center shadow-xl"><h3 className="text-5xl font-black tracking-tighter">{formatRS(( ( (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192 ) * (priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal]) + (Number(calc.making)||0) ) * (calc.vat ? 1.13 : 1))}</h3></div>
+                <input type="number" placeholder="Making Charges (Rs)" 
+                  className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none text-white transition-all" 
+                  onFocus={(e) => e.target.style.borderColor = accentColor}
+                  onBlur={(e) => e.target.style.borderColor = '#27272a'}
+                  value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} 
+                />
+                <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer active:scale-[0.98] transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all"
+                           style={{ borderColor: calc.vat ? accentColor : '#27272a', backgroundColor: calc.vat ? accentColor : 'transparent' }}>
+                        {calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}
+                      </div>
+                      <span className="font-bold text-zinc-300">13% Govt VAT</span>
+                    </div>
+                </div>
+                <div className="p-12 rounded-[3.5rem] text-black text-center shadow-xl transition-all"
+                     style={{ background: `linear-gradient(135deg, ${accentColor}, ${activeMetal === 'gold' ? '#b8860b' : '#4b5563'})` }}>
+                   <h3 className="text-5xl font-black tracking-tighter">{formatRS(( ( (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192 ) * (priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal]) + (Number(calc.making)||0) ) * (calc.vat ? 1.13 : 1))}</h3>
+                </div>
               </div>
             ) : (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -305,7 +342,8 @@ export default function App() {
                   <div className="flex-1 text-right"><p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Target</p><p className="font-black text-xl text-white">🇳🇵 NPR</p></div></div>
                   <input type="number" placeholder="Enter Amount" className="w-full bg-black/60 border-2 border-zinc-800 p-8 rounded-[2.5rem] font-black text-4xl outline-none focus:border-green-500 text-white text-center" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
                   <div className="bg-gradient-to-br from-green-500 to-green-700 p-12 rounded-[3.5rem] text-black text-center shadow-xl"><p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">{currCalc.isSwapped ? `NPR to ${currCalc.source}` : `${currCalc.source} to NPR (Receiver Gets)`}</p><h3 className="text-5xl font-black tracking-tighter">{(() => {
-                        const rate = parseFloat(forexHistory[forexHistory.length - 1]?.rates.find(r => r.currency.iso3 === currCalc.source)?.buy || 133);
+                        const latest = forexHistory[forexHistory.length - 1]?.rates || [];
+                        const rate = parseFloat(latest.find(r => r.currency.iso3 === currCalc.source)?.buy || 133);
                         const res = currCalc.isSwapped ? (Number(currCalc.amount) / rate) : (Number(currCalc.amount) * rate);
                         return currCalc.isSwapped ? res.toFixed(2) : formatRS(res);
                       })()}</h3><p className="text-[8px] font-bold mt-4 opacity-50 uppercase tracking-widest">NRB Official Buying Rate</p></div>
