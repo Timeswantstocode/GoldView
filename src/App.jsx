@@ -16,15 +16,9 @@ const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/ma
 const FOREX_PROXY = "/api/forex";
 
 export default function App() {
-  // 1. STATE & INSTANT CACHE BOOT
-  const [priceData, setPriceData] = useState(() => {
-    const cached = localStorage.getItem('gv_metal_v5');
-    return cached ? JSON.parse(cached) : [];
-  });
-  const [forexHistory, setForexHistory] = useState(() => {
-    const cached = localStorage.getItem('gv_forex_v5');
-    return cached ? JSON.parse(cached) : [];
-  });
+  // 1. STATE & CACHE INITIALIZATION
+  const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('gv_metals_cache') || '[]'));
+  const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('gv_forex_cache') || '[]'));
   
   const [loading, setLoading] = useState(priceData.length === 0);
   const [forexLoading, setForexLoading] = useState(true);
@@ -41,28 +35,21 @@ export default function App() {
   const chartRef = useRef(null);
 
   const currencyList = [
-    { code: 'USD', flag: '🇺🇸', name: 'US Dollar' },
-    { code: 'GBP', flag: '🇬🇧', name: 'UK Pound' },
-    { code: 'AUD', flag: '🇦🇺', name: 'Aust. Dollar' },
-    { code: 'JPY', flag: '🇯🇵', name: 'Japanese Yen' },
-    { code: 'KRW', flag: '🇰🇷', name: 'Korean Won' },
-    { code: 'AED', flag: '🇦🇪', name: 'UAE Dirham' },
-    { code: 'EUR', flag: '🇪🇺', name: 'Euro' }
+    { code: 'USD', flag: '🇺🇸' }, { code: 'GBP', flag: '🇬🇧' },
+    { code: 'AUD', flag: '🇦🇺' }, { code: 'JPY', flag: '🇯🇵' },
+    { code: 'KRW', flag: '🇰🇷' }, { code: 'AED', flag: '🇦🇪' },
+    { code: 'EUR', flag: '🇪🇺' }
   ];
 
   // 2. DATA FETCHING
   useEffect(() => {
-    fetch(`${DATA_URL}?t=${Date.now()}`)
-      .then(res => res.json())
-      .then(json => {
+    fetch(`${DATA_URL}?t=${Date.now()}`).then(res => res.json()).then(json => {
         setPriceData(json);
-        localStorage.setItem('gv_metal_v5', JSON.stringify(json));
+        localStorage.setItem('gv_metals_cache', JSON.stringify(json));
         setLoading(false);
-      }).catch(() => setLoading(false));
+    }).catch(() => setLoading(false));
 
-    fetch(FOREX_PROXY)
-      .then(res => res.json())
-      .then(json => {
+    fetch(FOREX_PROXY).then(res => res.json()).then(json => {
         const transformed = json.data.payload.map(day => ({
           date: day.date,
           usdRate: parseFloat(day.rates.find(r => r.currency.iso3 === 'USD')?.buy || 0),
@@ -70,9 +57,9 @@ export default function App() {
         })).sort((a, b) => new Date(a.date) - new Date(b.date));
         
         setForexHistory(transformed);
-        localStorage.setItem('gv_forex_v5', JSON.stringify(transformed));
+        localStorage.setItem('gv_forex_cache', JSON.stringify(transformed));
         setForexLoading(false);
-      }).catch(() => setForexLoading(false));
+    }).catch(() => setForexLoading(false));
   }, []);
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
@@ -87,23 +74,16 @@ export default function App() {
     const curr = id === 'usd' ? source[source.length - 1].usdRate : source[source.length - 1][id];
     const prev = id === 'usd' ? source[source.length - 2].usdRate : source[source.length - 2][id];
     const diff = curr - prev;
-    return { 
-        val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, 
-        isUp: diff >= 0 
-    };
+    return { val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, isUp: diff >= 0 };
   };
 
   const currentStats = useMemo(() => {
     const values = filteredData.map(d => activeMetal === 'usd' ? d.usdRate : Number(d[activeMetal]) || 0);
     if (values.length === 0) return { low: 0, high: 0, change: "0.00" };
-    return { 
-        low: Math.min(...values), 
-        high: Math.max(...values), 
-        change: values.length > 1 ? (((values[values.length-1] - values[0]) / values[0]) * 100).toFixed(2) : "0.00" 
-    };
+    return { low: Math.min(...values), high: Math.max(...values), change: values.length > 1 ? (((values[values.length-1] - values[0]) / values[0]) * 100).toFixed(2) : "0.00" };
   }, [filteredData, activeMetal]);
 
-  // 3. CHART SETUP
+  // 3. CHART & TOOLTIP CONFIGURATION
   const chartData = useMemo(() => ({
     labels: filteredData.map(d => {
         const date = new Date(d.date.replace(' ', 'T'));
@@ -115,11 +95,10 @@ export default function App() {
       borderWidth: 4,
       fill: true,
       tension: 0.4,
-      pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 10 : 0),
-      pointHoverRadius: 12,
+      pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 8 : 0),
+      pointHoverRadius: 10,
       pointBackgroundColor: '#fff',
-      pointBorderColor: accentColor,
-      pointBorderWidth: 4,
+      pointBorderWidth: 3,
       backgroundColor: (context) => {
         const {ctx, chartArea} = context.chart;
         if (!chartArea) return null;
@@ -134,12 +113,20 @@ export default function App() {
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false }, 
+    interaction: { mode: 'index', intersect: false },
     plugins: { 
         legend: false, 
         tooltip: { 
             enabled: true,
-            backgroundColor: 'rgba(10, 10, 10, 0.9)',
+            backgroundColor: 'rgba(20, 20, 20, 0.7)',
+            backdropBlur: 10,
+            titleFont: { size: 10, weight: '700' },
+            bodyFont: { size: 12, weight: '900' },
+            padding: 10,
+            cornerRadius: 12,
+            displayColors: false,
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
             callbacks: {
                 label: (ctx) => `रू ${ctx.raw.toLocaleString(undefined, {minimumFractionDigits: activeMetal === 'usd' ? 2 : 0})}`,
                 title: (items) => items[0].label
@@ -148,15 +135,10 @@ export default function App() {
     },
     scales: {
       x: {
-        display: true,
         grid: { display: true, color: 'rgba(255, 255, 255, 0.05)', borderDash: [6, 6], drawTicks: false },
-        ticks: { color: 'rgba(255, 255, 255, 0.3)', font: { size: 9, weight: '700' }, padding: 10, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 8 }
+        ticks: { color: 'rgba(255, 255, 255, 0.3)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 6 }
       },
-      y: { 
-        display: true, position: 'right', 
-        grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5], drawBorder: false, drawTicks: false }, 
-        ticks: { display: false } 
-      }
+      y: { position: 'right', grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5] }, ticks: { display: false } }
     },
     onClick: (e, elements) => {
       if (elements.length > 0) {
@@ -183,14 +165,14 @@ export default function App() {
           </div>
           <h1 className="text-4xl font-black tracking-tighter text-white">GoldView</h1>
         </div>
-        <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10">
+        <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all">
           <RefreshCcw className={`w-5 h-5 ${forexLoading ? 'animate-spin' : ''}`} style={{ color: accentColor }} />
         </button>
       </header>
 
       {/* DASHBOARD VIEW */}
       <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
-        <main className="px-6 space-y-6 relative z-10 animate-in fade-in duration-700">
+        <main className="px-6 space-y-6 relative z-10 animate-in fade-in duration-500">
           <div className="space-y-4">
             {/* GOLD CARD */}
             <div onClick={() => { setActiveMetal('gold'); setSelectedPoint(null); }}
@@ -201,8 +183,8 @@ export default function App() {
                 <div>24K Chhapawal Gold<p className="text-[8px] opacity-50 mt-0.5">per tola</p></div>
                 <div className={`px-2.5 py-1 rounded-xl border ${getDayDiff('gold').isUp ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>{getDayDiff('gold').val}</div>
               </div>
-              <div className="flex justify-between items-end">
-                <h2 className="text-4xl font-black tracking-tighter">{formatRS(priceData[priceData.length-1]?.gold)}</h2>
+              <div className="flex justify-between items-end text-4xl font-black tracking-tighter">
+                <h2>{formatRS(priceData[priceData.length-1]?.gold)}</h2>
                 {activeMetal === 'gold' && <TrendingUp className={`w-5 h-5 ${getDayDiff('gold').isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
               </div>
             </div>
@@ -216,8 +198,8 @@ export default function App() {
                 <div>Pure Silver<p className="text-[8px] opacity-50 mt-0.5">per tola</p></div>
                 <div className={`px-2.5 py-1 rounded-xl border ${getDayDiff('silver').isUp ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>{getDayDiff('silver').val}</div>
               </div>
-              <div className="flex justify-between items-end">
-                <h2 className="text-4xl font-black tracking-tighter">{formatRS(priceData[priceData.length-1]?.silver)}</h2>
+              <div className="flex justify-between items-end text-4xl font-black tracking-tighter">
+                <h2>{formatRS(priceData[priceData.length-1]?.silver)}</h2>
                 {activeMetal === 'silver' && <TrendingUp className={`w-5 h-5 ${getDayDiff('silver').isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
               </div>
             </div>
@@ -229,11 +211,11 @@ export default function App() {
               }`}>
               <div className="flex justify-between items-start mb-2 text-[10px] font-black uppercase tracking-widest">
                 <div>USD to NPR<p className="text-[8px] opacity-50 mt-0.5">Source: NRB Official</p></div>
-                {forexLoading ? <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10"><RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /><span className="text-[8px] text-zinc-500 uppercase">Updating</span></div> : 
+                {forexLoading ? <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 animate-pulse"><RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /><span className="text-[8px] text-zinc-500 uppercase">Updating</span></div> : 
                 <div className={`px-2.5 py-1 rounded-xl border ${getDayDiff('usd').isUp ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>{getDayDiff('usd').val}</div>}
               </div>
-              <div className="flex justify-between items-end">
-                <h2 className="text-4xl font-black tracking-tighter">{forexHistory.length > 0 ? `रू ${forexHistory[forexHistory.length-1].usdRate.toFixed(2)}` : "..."}</h2>
+              <div className="flex justify-between items-end text-4xl font-black tracking-tighter">
+                <h2>{forexHistory.length > 0 ? `रू ${forexHistory[forexHistory.length-1].usdRate.toFixed(2)}` : "..."}</h2>
                 {activeMetal === 'usd' && <TrendingUp className={`w-5 h-5 ${getDayDiff('usd').isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
               </div>
             </div>
@@ -245,7 +227,7 @@ export default function App() {
               <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
                 {[7, 30, 90].map((t) => (
                   <button key={t} onClick={() => { setTimeframe(t); setSelectedPoint(null); }}
-                    className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === t ? `text-black` : 'text-zinc-500'}`}
+                    className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === t ? `text-black shadow-lg` : 'text-zinc-500'}`}
                     style={timeframe === t ? { backgroundColor: accentColor } : {}}>{t === 7 ? '7D' : t === 30 ? '1M' : '3M'}</button>
                 ))}
               </div>
@@ -260,7 +242,7 @@ export default function App() {
             </div>
 
             {selectedPoint && (
-              <div className="mt-8 bg-black/80 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-2 shadow-2xl w-full" style={{ borderColor: `${accentColor}80` }}>
+              <div className="mt-8 bg-black/80 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center animate-in slide-in-from-bottom-2 shadow-2xl w-full border-white/10" style={{ borderColor: `${accentColor}80` }}>
                 <div className="flex items-center gap-5 flex-1 min-w-[220px]">
                   <div className="w-14 h-14 rounded-3xl flex items-center justify-center border shrink-0" style={{ backgroundColor: `${accentColor}20`, borderColor: `${accentColor}30` }}><Calendar className="w-7 h-7" style={{ color: accentColor }} /></div>
                   <div><p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1" style={{ color: accentColor }}>Historical Point</p>
@@ -340,33 +322,20 @@ export default function App() {
                     
                     {/* PHYSICAL UI SWAP LOGIC */}
                     <div className={`flex-1 ${currCalc.isSwapped ? 'text-right order-3' : 'text-left order-1'}`}>
-                      <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">
-                        {currCalc.isSwapped ? 'Target' : 'Source'}
-                      </p>
-                      {currCalc.isSwapped ? (
-                         <p className="font-black text-xl text-white">🇳🇵 NPR</p>
-                      ) : (
+                      <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">{currCalc.isSwapped ? 'Target' : 'Source'}</p>
+                      {currCalc.isSwapped ? <p className="font-black text-xl text-white">🇳🇵 NPR</p> : 
                         <select className="bg-transparent font-black text-xl text-white outline-none w-full" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
                           {currencyList.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.flag} {c.code}</option>)}
-                        </select>
-                      )}
+                        </select>}
                     </div>
 
-                    <button onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})} className="p-4 bg-green-500/20 rounded-2xl active:rotate-180 transition-all duration-500 order-2">
-                        <ArrowRightLeft className="w-5 h-5 text-green-500" />
-                    </button>
+                    <button onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})} className="p-4 bg-green-500/20 rounded-2xl active:rotate-180 transition-all duration-500 order-2"><ArrowRightLeft className="w-5 h-5 text-green-500" /></button>
 
                     <div className={`flex-1 ${currCalc.isSwapped ? 'text-left order-1' : 'text-right order-3'}`}>
-                      <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest mb-1">
-                        {currCalc.isSwapped ? 'Source' : 'Target'}
-                      </p>
-                      {currCalc.isSwapped ? (
-                        <select className="bg-transparent font-black text-xl text-white outline-none w-full" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
+                      <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest mb-1">{currCalc.isSwapped ? 'Source' : 'Target'}</p>
+                      {currCalc.isSwapped ? <select className="bg-transparent font-black text-xl text-white outline-none w-full" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
                           {currencyList.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.flag} {c.code}</option>)}
-                        </select>
-                      ) : (
-                        <p className="font-black text-xl text-white">🇳🇵 NPR</p>
-                      )}
+                        </select> : <p className="font-black text-xl text-white">🇳🇵 NPR</p>}
                     </div>
                   </div>
 
@@ -374,26 +343,20 @@ export default function App() {
                   
                   <div className="bg-gradient-to-br from-green-500 to-green-700 p-12 rounded-[3.5rem] text-black text-center shadow-xl">
                      <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">
-                        {currCalc.isSwapped ? `NPR to ${currCalc.source}` : `${currCalc.source} to NPR (Receiver Gets)`}
+                        {currCalc.isSwapped ? `🇳🇵 NPR to ${currencyList.find(c => c.code === currCalc.source)?.flag} ${currCalc.source}` : `${currencyList.find(c => c.code === currCalc.source)?.flag} ${currCalc.source} to 🇳🇵 NPR (Receiver Gets)`}
                      </p>
                      <h3 className="text-5xl font-black tracking-tighter">
                         {(() => {
                           const latestRates = forexHistory[forexHistory.length - 1]?.rates || [];
                           const rateData = latestRates.find(r => r.currency.iso3 === currCalc.source);
-                          
-                          // MATH FIX: Account for currencies with unit = 100 (JPY, KRW)
                           const rawRate = parseFloat(rateData?.buy || 133);
                           const unit = parseInt(rateData?.currency?.unit || 1);
-                          const ratePerUnit = rawRate / unit;
-
                           const amt = Number(currCalc.amount) || 0;
                           
                           if (currCalc.isSwapped) {
-                              // NPR to Foreign: (NPR / Rate) * Unit
                               const res = (amt / rawRate) * unit;
                               return res.toFixed(2);
                           } else {
-                              // Foreign to NPR: (Amt / Unit) * Rate
                               const res = (amt / unit) * rawRate;
                               return formatRS(res);
                           }
@@ -409,7 +372,7 @@ export default function App() {
 
       <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-2xl">
         <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'dashboard' ? 'text-black' : 'text-zinc-500'}`} style={view === 'dashboard' ? { backgroundColor: accentColor, boxShadow: `0 0 40px ${accentColor}40` } : {}}><LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} /><span className="text-[9px] font-black uppercase tracking-widest">Market</span></button>
-        <button onClick={() => { setView('calculator'); if(activeMetal === 'usd') setActiveMetal('gold'); }} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-500 ${view === 'calculator' ? 'text-black' : 'text-zinc-500'}`} style={view === 'calculator' ? { backgroundColor: accentColor, boxShadow: `0 0 40px ${accentColor}40` } : {}}><Calculator className={`w-6 h-6 ${view === 'calculator' ? 'fill-black' : ''}`} /><span className="text-[9px] font-black uppercase tracking-widest">Calculator</span></button>
+        <button onClick={() => { setView('calculator'); if(activeMetal === 'usd') setActiveMetal('gold'); }} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'calculator' ? 'text-black' : 'text-zinc-500'}`} style={view === 'calculator' ? { backgroundColor: accentColor, boxShadow: `0 0 40px ${accentColor}40` } : {}}><Calculator className={`w-6 h-6 ${view === 'calculator' ? 'fill-black' : ''}`} /><span className="text-[9px] font-black uppercase tracking-widest">Calculator</span></button>
       </nav>
       <Analytics />
     </div>
