@@ -16,15 +16,15 @@ ChartJS.register(...registerables, Filler, Tooltip, Legend, CategoryScale, Linea
 const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json";
 const FOREX_PROXY = "/api/forex";
 
-// Custom HTML Tooltip Handler for "Glassy" effect
+// Custom HTML Tooltip Handler - Compact Glassy Design
 const getOrCreateTooltip = (chart) => {
   let tooltipEl = chart.canvas.parentNode.querySelector('div');
   if (!tooltipEl) {
     tooltipEl = document.createElement('div');
     tooltipEl.style.background = 'rgba(255, 255, 255, 0.08)';
-    tooltipEl.style.backdropFilter = 'blur(12px)';
-    tooltipEl.style.WebkitBackdropFilter = 'blur(12px)';
-    tooltipEl.style.borderRadius = '16px';
+    tooltipEl.style.backdropFilter = 'blur(10px)';
+    tooltipEl.style.WebkitBackdropFilter = 'blur(10px)';
+    tooltipEl.style.borderRadius = '12px'; // Smaller radius
     tooltipEl.style.color = 'white';
     tooltipEl.style.opacity = 1;
     tooltipEl.style.pointerEvents = 'none';
@@ -32,7 +32,7 @@ const getOrCreateTooltip = (chart) => {
     tooltipEl.style.transform = 'translate(-50%, 0)';
     tooltipEl.style.transition = 'all .1s ease';
     tooltipEl.style.border = '1px solid rgba(255, 255, 255, 0.1)';
-    tooltipEl.style.padding = '10px 14px';
+    tooltipEl.style.padding = '6px 10px'; // Reduced padding
     tooltipEl.style.zIndex = '100';
     chart.canvas.parentNode.appendChild(tooltipEl);
   }
@@ -55,21 +55,21 @@ const externalTooltipHandler = (context) => {
     const div = document.createElement('div');
     titleLines.forEach(title => {
       const span = document.createElement('span');
-      span.style.fontSize = '10px';
+      span.style.fontSize = '8px'; // Smaller title
       span.style.fontWeight = '800';
       span.style.textTransform = 'uppercase';
       span.style.display = 'block';
-      span.style.marginBottom = '2px';
-      span.style.opacity = '0.6';
+      span.style.marginBottom = '1px';
+      span.style.opacity = '0.5';
       span.innerText = title;
       div.appendChild(span);
     });
 
     bodyLines.forEach((body) => {
       const span = document.createElement('span');
-      span.style.fontSize = '16px';
+      span.style.fontSize = '13px'; // Smaller body text
       span.style.fontWeight = '900';
-      span.style.letterSpacing = '-0.025em';
+      span.style.letterSpacing = '-0.01em';
       span.innerText = body;
       div.appendChild(span);
     });
@@ -81,7 +81,7 @@ const externalTooltipHandler = (context) => {
   const {offsetLeft: positionX, offsetTop: positionY} = chart.canvas;
   tooltipEl.style.opacity = 1;
   tooltipEl.style.left = positionX + tooltip.caretX + 'px';
-  tooltipEl.style.top = positionY + tooltip.caretY - 70 + 'px';
+  tooltipEl.style.top = positionY + tooltip.caretY - 55 + 'px'; // Adjusted offset for smaller box
 };
 
 export default function App() {
