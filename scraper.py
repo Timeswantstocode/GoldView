@@ -12,53 +12,48 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def get_candidates(url, metal):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0'}
     
-    # 1. THE ULTIMATE BLACKLIST
-    # Purity levels
+    # Blacklist non-price numbers
     purity = [999, 9999, 9990, 9167, 9583, 916, 750]
-    # Conversion weights (1 Tola = 11.66g)
-    weights = [1166, 11664, 10, 100, 11]
-    # Known Phone/Office Numbers (from FENEGOSIDA footer)
+    weights = [1166, 11664]
     office_nums = [453227, 453228, 4532270]
-    # Calendar Years (Covers 2000-2100 for both AD and BS)
     years = list(range(2000, 2101))
-    
     blacklist = set(purity + weights + office_nums + years)
     
     try:
         r = requests.get(url, headers=headers, timeout=25, verify=False)
         r.raise_for_status()
         
-        # Clean text: remove commas and merge Rupee symbol gaps (e.g. 306 रु 500)
+        # Merge split Rupee symbols
         raw_html = r.text.replace(',', '')
         raw_html = re.sub(r'(\d+)\s*रु\s*(\d+)', r'\1\2', raw_html)
         
         soup = BeautifulSoup(raw_html, 'html.parser')
-        # Remove junk tags that contain irrelevant numbers
+        # Filter out junk
         for junk in soup(["script", "style", "footer", "header"]):
             junk.decompose()
             
         content = soup.get_text(separator=' ')
 
-        # 2. PROXIMITY ANCHOR LOGIC
-        # We look for a price ONLY if it follows a keyword within 50 characters.
-        # This prevents picking up dates from the top or phone numbers from the bottom.
         if metal == "gold":
-            # Focus on 6-digit numbers near "Fine" or "Tola"
+            # Gold range: 150k to 1M
             pattern = r"(?:FINE|Hallmark|Tola|छापावाल).{0,50}?(\d{6})"
-            min_p, max_p = 100000, 1000000
+            min_p, max_p = 150000, 1000000
         else:
-            # Focus on 4-5 digit numbers near "Silver" or "Tola"
+            # Silver range: 2k to 15k (Prevents picking up partial gold prices like 30350)
             pattern = r"(?:SILVER|Tola|चाँदी).{0,50}?(\d{4,5})"
-            min_p, max_p = 2000, 50000
+            min_p, max_p = 2000, 15000
 
         matches = re.findall(pattern, content, re.IGNORECASE | re.DOTALL)
         
-        # 3. Validation
+        # Fallback to raw numbers if no keywords found
+        if not matches:
+            raw_p = r"(\d{6})" if metal == "gold" else r"(\d{4,5})"
+            matches = re.findall(raw_p, content)
+
         valid = []
         for m in matches:
             val = int(m)
-            if val in blacklist:
-                continue
+            if val in blacklist: continue
             if min_p <= val <= max_p:
                 valid.append(val)
         
@@ -69,32 +64,39 @@ def get_candidates(url, metal):
 def update():
     file = 'data.json'
     
-    # Scrape both
+    # 1. Scrape Candidates
     f_gold = get_candidates("https://fenegosida.org/", "gold")
     f_silver = get_candidates("https://fenegosida.org/", "silver")
     a_gold = get_candidates("https://www.ashesh.com.np/gold/", "gold")
     a_silver = get_candidates("https://www.ashesh.com.np/gold/", "silver")
 
-    # LOG FINDINGS (Check these in your GitHub Actions Log)
+    # 2. Log Findings
     print(f"DEBUG - FENEGOSIDA: Gold {f_gold}, Silver {f_silver}")
     print(f"DEBUG - Ashesh: Gold {a_gold}, Silver {a_silver}")
 
-    # COMBINE & PICK MAX (Guarantees Tola price over 10g price)
+    # 3. Combine and pick Max
+    # Max rule ensures we get Tola price over 10g price
     all_gold = f_gold + a_gold
     all_silver = f_silver + a_silver
     
     final_gold = max(all_gold) if all_gold else 0
+    
+    # Safety Check: Remove any Silver candidates that look like partial Gold prices
+    if final_gold > 0:
+        partial_gold = final_gold // 10
+        all_silver = [s for s in all_silver if s != partial_gold]
+
     final_silver = max(all_silver) if all_silver else 0
 
-    # PRIORITY SOURCE LOGIC
+    # 4. Source Priority (FENEGOSIDA primary)
     source_info = "None"
     if final_gold > 0:
         if final_gold in f_gold:
-            source_info = "FENEGOSIDA" # Priority
+            source_info = "FENEGOSIDA"
         else:
             source_info = "Ashesh (Backup)"
 
-    # RECOVERY FROM JSON
+    # 5. Recovery
     history = []
     if os.path.exists(file):
         try:
@@ -106,7 +108,7 @@ def update():
         final_silver = final_silver or history[-1]['silver']
         source_info = f"Recovery (Last Known)"
 
-    # TIME SETUP
+    # 6. Save
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
     today_str = now.strftime("%Y-%m-%d")
     
@@ -117,7 +119,6 @@ def update():
         "source": source_info
     }
 
-    # Update or Append
     if history and history[-1]['date'].startswith(today_str):
         history[-1] = new_entry
     else:
