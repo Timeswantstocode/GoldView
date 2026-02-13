@@ -16,20 +16,84 @@ ChartJS.register(...registerables, Filler, Tooltip, Legend, CategoryScale, Linea
 const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json";
 const FOREX_PROXY = "/api/forex";
 
+// Custom HTML Tooltip Handler for "Glassy" effect
+const getOrCreateTooltip = (chart) => {
+  let tooltipEl = chart.canvas.parentNode.querySelector('div');
+  if (!tooltipEl) {
+    tooltipEl = document.createElement('div');
+    tooltipEl.style.background = 'rgba(255, 255, 255, 0.08)';
+    tooltipEl.style.backdropFilter = 'blur(12px)';
+    tooltipEl.style.WebkitBackdropFilter = 'blur(12px)';
+    tooltipEl.style.borderRadius = '16px';
+    tooltipEl.style.color = 'white';
+    tooltipEl.style.opacity = 1;
+    tooltipEl.style.pointerEvents = 'none';
+    tooltipEl.style.position = 'absolute';
+    tooltipEl.style.transform = 'translate(-50%, 0)';
+    tooltipEl.style.transition = 'all .1s ease';
+    tooltipEl.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+    tooltipEl.style.padding = '10px 14px';
+    tooltipEl.style.zIndex = '100';
+    chart.canvas.parentNode.appendChild(tooltipEl);
+  }
+  return tooltipEl;
+};
+
+const externalTooltipHandler = (context) => {
+  const {chart, tooltip} = context;
+  const tooltipEl = getOrCreateTooltip(chart);
+
+  if (tooltip.opacity === 0) {
+    tooltipEl.style.opacity = 0;
+    return;
+  }
+
+  if (tooltip.body) {
+    const titleLines = tooltip.title || [];
+    const bodyLines = tooltip.body.map(b => b.lines);
+
+    const div = document.createElement('div');
+    titleLines.forEach(title => {
+      const span = document.createElement('span');
+      span.style.fontSize = '10px';
+      span.style.fontWeight = '800';
+      span.style.textTransform = 'uppercase';
+      span.style.display = 'block';
+      span.style.marginBottom = '2px';
+      span.style.opacity = '0.6';
+      span.innerText = title;
+      div.appendChild(span);
+    });
+
+    bodyLines.forEach((body) => {
+      const span = document.createElement('span');
+      span.style.fontSize = '16px';
+      span.style.fontWeight = '900';
+      span.style.letterSpacing = '-0.025em';
+      span.innerText = body;
+      div.appendChild(span);
+    });
+
+    while (tooltipEl.firstChild) { tooltipEl.firstChild.remove(); }
+    tooltipEl.appendChild(div);
+  }
+
+  const {offsetLeft: positionX, offsetTop: positionY} = chart.canvas;
+  tooltipEl.style.opacity = 1;
+  tooltipEl.style.left = positionX + tooltip.caretX + 'px';
+  tooltipEl.style.top = positionY + tooltip.caretY - 70 + 'px';
+};
+
 export default function App() {
-  // 1. PERSISTENT CACHE & STATE
   const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('gv_v18_metal') || '[]'));
   const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('gv_v18_forex') || '[]'));
-  
   const [loading, setLoading] = useState(priceData.length === 0);
   const [forexLoading, setForexLoading] = useState(true);
-  
   const [view, setView] = useState('dashboard');
   const [calcMode, setCalcMode] = useState('jewelry'); 
   const [activeMetal, setActiveMetal] = useState('gold'); 
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [timeframe, setTimeframe] = useState(7);
-  
   const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
   const [currCalc, setCurrCalc] = useState({ amount: '1', source: 'USD', isSwapped: false });
 
@@ -42,7 +106,6 @@ export default function App() {
     { code: 'EUR', flag: '🇪🇺' }
   ];
 
-  // 2. DATA FETCHING (PARALLEL)
   useEffect(() => {
     fetch(`${DATA_URL}?t=${Date.now()}`).then(res => res.json()).then(json => {
         setPriceData(json);
@@ -56,7 +119,6 @@ export default function App() {
           usdRate: parseFloat(day.rates.find(r => r.currency.iso3 === 'USD')?.buy || 0),
           rates: day.rates
         })).sort((a, b) => new Date(a.date) - new Date(b.date));
-        
         setForexHistory(transformed);
         localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
         setForexLoading(false);
@@ -65,7 +127,6 @@ export default function App() {
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
 
-  // 3. COLOR THEME ENGINE
   const themeColor = useMemo(() => {
     if (view === 'calculator' && calcMode === 'currency') return '#22c55e';
     if (activeMetal === 'gold') return '#D4AF37';
@@ -85,13 +146,6 @@ export default function App() {
     return { val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, isUp: diff >= 0 };
   };
 
-  const currentStats = useMemo(() => {
-    const values = filteredData.map(d => activeMetal === 'usd' ? d.usdRate : Number(d[activeMetal]) || 0);
-    if (values.length === 0) return { low: 0, high: 0, change: "0.00" };
-    return { low: Math.min(...values), high: Math.max(...values), change: values.length > 1 ? (((values[values.length-1] - values[0]) / values[0]) * 100).toFixed(2) : "0.00" };
-  }, [filteredData, activeMetal]);
-
-  // 4. ADVANCED CHART CONFIGURATION
   const chartData = useMemo(() => ({
     labels: filteredData.map(d => {
         const date = new Date(d.date.replace(' ', 'T'));
@@ -125,15 +179,10 @@ export default function App() {
     plugins: { 
         legend: false, 
         tooltip: { 
-            enabled: true,
-            backgroundColor: 'rgba(15, 15, 15, 0.8)',
-            backdropFilter: 'blur(10px)',
-            cornerRadius: 12,
-            padding: 10,
-            displayColors: false,
+            enabled: false,
+            external: externalTooltipHandler,
             callbacks: {
                 label: (ctx) => `रू ${ctx.raw.toLocaleString(undefined, {minimumFractionDigits: activeMetal === 'usd' ? 2 : 0})}`,
-                title: (items) => items[0].label
             }
         } 
     },
@@ -141,20 +190,9 @@ export default function App() {
       x: {
         display: true,
         grid: { display: true, color: 'rgba(255, 255, 255, 0.04)', borderDash: [6, 6], drawTicks: false },
-        ticks: { 
-          color: 'rgba(255, 255, 255, 0.25)', 
-          font: { size: 9, weight: '700' }, 
-          maxRotation: 0, 
-          // Logic: 7D shows 7 dates, 1M/3M show 8 dates
-          maxTicksLimit: timeframe === 7 ? 7 : 8 
-        }
+        ticks: { color: 'rgba(255, 255, 255, 0.25)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 8 }
       },
-      y: { 
-        display: true, 
-        position: 'right', 
-        grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5], drawBorder: false }, 
-        ticks: { display: false } 
-      }
+      y: { display: true, position: 'right', grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5], drawBorder: false }, ticks: { display: false } }
     },
     onClick: (e, elements) => {
       if (elements.length > 0) {
@@ -179,7 +217,6 @@ export default function App() {
             <meta name="description" content="Check live gold, silver and dollar prices in Nepal. Official NRB exchange rates." />
         </Helmet>
 
-        {/* HEADER ENGINE */}
         <header className="p-8 pt-16 flex justify-between items-end relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -225,7 +262,6 @@ export default function App() {
               })}
             </div>
 
-            {/* GRAPH SECTION */}
             <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-3xl shadow-xl">
               <div className="flex justify-between items-center mb-8 px-1 w-full">
                 <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> Price Trend</h3>
@@ -235,10 +271,9 @@ export default function App() {
               </div>
               <div className="h-64 relative w-full"><Line ref={chartRef} data={chartData} options={chartOptions} redraw={false} /></div>
               
-              {/* --- ENHANCED HISTORICAL DETAIL BOX --- */}
               <div className={`mt-8 transition-all duration-500 overflow-hidden ${selectedPoint ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
                 {selectedPoint && (
-                  <div className="bg-white/5 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center shadow-2xl w-full border-white/5 backdrop-blur-3xl relative" style={{ borderColor: `${themeColor}40` }}>
+                  <div className="bg-white/10 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center w-full backdrop-blur-[40px] relative border-white/5" style={{ borderColor: `${themeColor}40` }}>
                     <div className="absolute inset-0 bg-white/[0.02] pointer-events-none" />
                     <div className="flex items-center gap-5 flex-1 min-w-[220px]">
                       <div className="w-14 h-14 rounded-3xl flex items-center justify-center border shrink-0 bg-white/[0.03]" style={{ borderColor: `${themeColor}30` }}>
@@ -270,11 +305,8 @@ export default function App() {
           <main className="px-6 relative z-10 animate-in zoom-in-95 duration-500">
             <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-3xl shadow-xl">
               <div className="flex p-1 bg-black/40 rounded-3xl mb-10 border border-white/5">
-                  <button onClick={() => setCalcMode('jewelry')} 
-                    style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}}
-                    className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'text-black' : 'text-zinc-500'}`}>Jewelry</button>
-                  <button onClick={() => setCalcMode('currency')} 
-                    className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black' : 'text-zinc-500'}`}>Currency</button>
+                  <button onClick={() => setCalcMode('jewelry')} style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'text-black' : 'text-zinc-500'}`}>Jewelry</button>
+                  <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black' : 'text-zinc-500'}`}>Currency</button>
               </div>
 
               {calcMode === 'jewelry' ? (
@@ -298,7 +330,6 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                /* --- REFINED CURRENCY --- */
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="bg-black/40 rounded-[3rem] p-7 border border-white/10 space-y-10">
                         <div className="flex items-start justify-between px-1">
@@ -358,7 +389,6 @@ export default function App() {
           </main>
         </div>
 
-        {/* --- NAVIGATION --- */}
         <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-2xl">
           <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'dashboard' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`} style={view === 'dashboard' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
             <LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} />
@@ -370,12 +400,14 @@ export default function App() {
           </button>
         </nav>
 
-        {/* SEO FOOTER */}
         <footer className="mt-12 px-8 pb-12 text-zinc-600 text-[10px] leading-relaxed border-t border-white/5 pt-10">
           <h2 className="text-zinc-400 font-black mb-2 uppercase tracking-widest">Live Gold and Silver Prices in Nepal</h2>
           <p>GoldView provides real-time updates for <strong>24K Chhapawal Gold</strong> and <strong>Pure Silver</strong> rates in Nepal based on market dealers.</p>
           <h2 className="text-zinc-400 font-black mt-6 mb-2 uppercase tracking-widest">NRB Official Exchange Rates</h2>
           <p>Get accurate <strong>USD to NPR</strong>, GBP to NPR and other foreign exchange rates directly from the official <strong>Nepal Rastra Bank (NRB)</strong> buying rates.</p>
+          <div className="mt-12 text-center">
+            <p className="font-black uppercase tracking-[0.3em] text-zinc-500">Made by @Timeswantstocode</p>
+          </div>
         </footer>
 
         <Analytics />
