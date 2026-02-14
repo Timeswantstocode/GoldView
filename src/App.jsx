@@ -123,16 +123,35 @@ export default function App() {
         setLoading(false);
     }).catch(() => setLoading(false));
 
-    fetch(FOREX_PROXY).then(res => res.json()).then(json => {
-        const transformed = json.data.payload.map(day => ({
-          date: day.date,
-          usdRate: parseFloat(day.rates.find(r => r.currency.iso3 === 'USD')?.buy || 0),
-          rates: day.rates
-        })).sort((a, b) => new Date(a.date) - new Date(b.date));
+    fetch(FOREX_PROXY).then(res => {
+        if (!res.ok) throw new Error(`Forex API returned ${res.status}`);
+        return res.json();
+    }).then(json => {
+        const payload = json?.data?.payload;
+        if (!payload || !Array.isArray(payload) || payload.length === 0) throw new Error('Empty forex payload');
+        const transformed = payload.map(day => {
+          const dayRates = day.rates || [];
+          // Handle both iso3 and ISO3 casing from NRB API
+          const usdEntry = dayRates.find(r => (r.currency?.iso3 || r.currency?.ISO3) === 'USD');
+          return {
+            date: day.date,
+            usdRate: parseFloat(usdEntry?.buy || 0),
+            rates: dayRates.map(r => ({
+              ...r,
+              currency: {
+                ...r.currency,
+                iso3: r.currency?.iso3 || r.currency?.ISO3 || '',
+              }
+            }))
+          };
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
         setForexHistory(transformed);
         localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
         setForexLoading(false);
-    }).catch(() => setForexLoading(false));
+    }).catch((err) => {
+        console.warn('Forex fetch failed:', err.message);
+        setForexLoading(false);
+    });
   }, []);
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
@@ -396,7 +415,7 @@ export default function App() {
                        <h3 className="text-5xl font-black tracking-tighter relative z-10">
                           {(() => {
                             const latestRates = forexHistory[forexHistory.length - 1]?.rates || [];
-                            const rateData = latestRates.find(r => r.currency.iso3 === currCalc.source);
+                            const rateData = latestRates.find(r => (r.currency?.iso3 || r.currency?.ISO3) === currCalc.source);
                             const rawRate = parseFloat(rateData?.buy || 133);
                             const unit = parseInt(rateData?.currency?.unit || 1);
                             const amt = Number(currCalc.amount) || 0;
