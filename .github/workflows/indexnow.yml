@@ -1,11 +1,17 @@
 name: IndexNow
-on: [push]
+on:
+  push:
+    branches:
+      - main  # Or 'master' if your repo uses master
+
 jobs:
   indexnow:
     runs-on: ubuntu-latest
     steps:
-      - name: IndexNow Action
-        uses: bojan88/indexnow-action@v2
-        with:
-          url: https://viewgold.vercel.app/
-          key: 5eb354c570e44005a618cbf7b0d2dad3
+      - name: Ping Bing IndexNow
+        run: |
+          curl -I "https://www.bing.com/indexnow?url=https://viewgold.vercel.app/&key=5eb354c570e44005a618cbf7b0d2dad3"
+      
+      - name: Ping Yandex IndexNow
+        run: |
+          curl -I "https://yandex.com/indexnow?url=https://viewgold.vercel.app/&key=5eb354c570e44005a618cbf7b0d2dad3"
