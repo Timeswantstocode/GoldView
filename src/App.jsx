@@ -6,7 +6,7 @@ import {
 } from 'chart.js';
 import { 
   LayoutDashboard, Calculator, RefreshCcw, TrendingUp, 
-  X, Calendar, Zap, Activity, Coins, ArrowRightLeft, Globe, ArrowDown, History
+  X, Calendar, Zap, Activity, Coins, ArrowRightLeft, Globe, ArrowDown
 } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
@@ -17,12 +17,11 @@ ChartJS.register(...registerables, Filler, Tooltip, Legend, CategoryScale, Linea
 const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json";
 const FOREX_PROXY = "/api/forex";
 
-// Custom HTML Tooltip Handler - Darker & Foggier
+// Custom HTML Tooltip Handler
 const getOrCreateTooltip = (chart) => {
   let tooltipEl = chart.canvas.parentNode.querySelector('div');
   if (!tooltipEl) {
     tooltipEl = document.createElement('div');
-    // Darker background (0.7 opacity) and Foggier (20px blur)
     tooltipEl.style.background = 'rgba(10, 10, 10, 0.7)';
     tooltipEl.style.backdropFilter = 'blur(20px)';
     tooltipEl.style.WebkitBackdropFilter = 'blur(20px)';
@@ -45,22 +44,14 @@ const getOrCreateTooltip = (chart) => {
 const externalTooltipHandler = (context) => {
   const {chart, tooltip} = context;
   const tooltipEl = getOrCreateTooltip(chart);
-
-  if (tooltip.opacity === 0) {
-    tooltipEl.style.opacity = 0;
-    return;
-  }
-
+  if (tooltip.opacity === 0) { tooltipEl.style.opacity = 0; return; }
   if (tooltip.body) {
     const titleLines = tooltip.title || [];
     const bodyLines = tooltip.body.map(b => b.lines);
-
     const div = document.createElement('div');
-    // Ensure the tooltip container doesn't shrink/wrap text
     div.style.display = 'flex';
     div.style.flexDirection = 'column';
     div.style.alignItems = 'center';
-
     titleLines.forEach(title => {
       const span = document.createElement('span');
       span.style.fontSize = '8px';
@@ -69,25 +60,22 @@ const externalTooltipHandler = (context) => {
       span.style.display = 'block';
       span.style.marginBottom = '2px';
       span.style.opacity = '0.5';
-      span.style.whiteSpace = 'nowrap'; // Fix: prevents vertical expansion
+      span.style.whiteSpace = 'nowrap';
       span.innerText = title;
       div.appendChild(span);
     });
-
     bodyLines.forEach((body) => {
       const span = document.createElement('span');
       span.style.fontSize = '14px';
       span.style.fontWeight = '900';
       span.style.letterSpacing = '-0.01em';
-      span.style.whiteSpace = 'nowrap'; // Fix: prevents vertical expansion
+      span.style.whiteSpace = 'nowrap';
       span.innerText = body;
       div.appendChild(span);
     });
-
     while (tooltipEl.firstChild) { tooltipEl.firstChild.remove(); }
     tooltipEl.appendChild(div);
   }
-
   const {offsetLeft: positionX, offsetTop: positionY} = chart.canvas;
   tooltipEl.style.opacity = 1;
   tooltipEl.style.left = positionX + tooltip.caretX + 'px';
@@ -140,6 +128,7 @@ export default function App() {
   const themeColor = useMemo(() => {
     if (view === 'calculator' && calcMode === 'currency') return '#22c55e';
     if (activeMetal === 'gold') return '#D4AF37';
+    if (activeMetal === 'tejabi') return '#CD7F32'; // Bronze/Amber Gold for Tejabi
     if (activeMetal === 'silver') return '#94a3b8';
     return '#22c55e'; 
   }, [activeMetal, view, calcMode]);
@@ -223,20 +212,8 @@ export default function App() {
     <HelmetProvider>
       <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-40 overflow-x-hidden relative">
         <Helmet>
-            <title>Gold Price Nepal Today | USD to NPR Rate - GoldView</title>
-            <meta name="description" content="Check live gold, silver and dollar prices in Nepal. Official NRB exchange rates." />
-            <link rel="canonical" href="https://viewgold.vercel.app/" />
-            <script type="application/ld+json">
-             {JSON.stringify({
-               "@context": "https://schema.org",
-               "@type": "WebApplication",
-               "name": "GoldView Nepal",
-               "url": "https://viewgold.vercel.app",
-               "description": "Live Gold and Silver prices in Nepal with NRB Currency Exchange rates.",
-               "applicationCategory": "FinanceApplication",
-               "operatingSystem": "All"
-                  })}
-          </script>
+            <title>Gold Price Nepal Today | 24K & 22K Gold Rate - GoldView</title>
+            <meta name="description" content="Check live 24K Chhapawal, 22K Tejabi gold, silver and dollar prices in Nepal." />
         </Helmet>
 
         <header className="p-8 pt-16 flex justify-between items-end relative z-10">
@@ -256,12 +233,13 @@ export default function App() {
         <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
           <main className="px-6 space-y-6 relative z-10 animate-in fade-in duration-500">
             <div className="space-y-4">
-              {['gold', 'silver', 'usd'].map((type) => {
+              {['gold', 'tejabi', 'silver', 'usd'].map((type) => {
                  const isActive = activeMetal === type;
                  const diff = getDayDiff(type);
                  const val = type === 'usd' ? (forexHistory[forexHistory.length-1]?.usdRate || 0) : (priceData[priceData.length-1]?.[type] || 0);
                  const meta = {
                    gold: { label: '24K Chhapawal Gold', sub: 'per tola', grad: 'from-[#D4AF37]/50 to-[#D4AF37]/15' },
+                   tejabi: { label: '22K Tejabi Gold', sub: 'per tola', grad: 'from-[#CD7F32]/50 to-[#CD7F32]/15' },
                    silver: { label: 'Pure Silver', sub: 'per tola', grad: 'from-zinc-400/40 to-zinc-600/15' },
                    usd: { label: 'USD to NPR', sub: 'Official Buying Rate', grad: 'from-[#22c55e]/45 to-[#22c55e]/15' }
                  }[type];
@@ -296,7 +274,6 @@ export default function App() {
               <div className={`mt-8 transition-all duration-500 overflow-hidden ${selectedPoint ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
                 {selectedPoint && (
                   <div className="bg-white/10 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center w-full backdrop-blur-[40px] relative border-white/5" style={{ borderColor: `${themeColor}40` }}>
-                    <div className="absolute inset-0 bg-white/[0.02] pointer-events-none" />
                     <div className="flex items-center gap-5 flex-1 min-w-[220px]">
                       <div className="w-14 h-14 rounded-3xl flex items-center justify-center border shrink-0 bg-white/[0.03]" style={{ borderColor: `${themeColor}30` }}>
                         <Calendar className="w-7 h-7" style={{ color: themeColor }} />
@@ -333,11 +310,11 @@ export default function App() {
 
               {calcMode === 'jewelry' ? (
                 <div className="space-y-6">
-                  <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto">
-                      {['gold', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (metal === 'gold' ? '#D4AF37' : '#94a3b8') : 'transparent' }} className={`px-8 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black' : 'text-zinc-500'}`}>{metal}</button>))}
+                  <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto gap-1">
+                      {['gold', 'tejabi', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (metal === 'gold' ? '#D4AF37' : metal === 'tejabi' ? '#CD7F32' : '#94a3b8') : 'transparent' }} className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black' : 'text-zinc-500'}`}>{metal}</button>))}
                   </div>
                   <div className="mb-8 p-6 rounded-[2.2rem] border-2 flex items-center justify-between" style={{ borderColor: `${themeColor}80`, backgroundColor: `${themeColor}10` }}>
-                    <div className="flex items-center gap-4"><Coins className="w-8 h-8" style={{ color: themeColor }} /><p className="text-xl font-black uppercase text-white">{activeMetal === 'gold' ? '24K Gold' : 'Pure Silver'}</p></div>
+                    <div className="flex items-center gap-4"><Coins className="w-8 h-8" style={{ color: themeColor }} /><p className="text-xl font-black uppercase text-white">{activeMetal === 'gold' ? '24K Gold' : activeMetal === 'tejabi' ? '22K Gold' : 'Pure Silver'}</p></div>
                     <div className="text-right text-[10px] font-black text-zinc-500">{formatRS(priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal])}</div>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
@@ -346,13 +323,14 @@ export default function App() {
                   </div>
                   <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none text-white focus:border-white/20" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
                   <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer"><div className="flex items-center gap-3"><div className="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all" style={{ borderColor: calc.vat ? themeColor : '#27272a', backgroundColor: calc.vat ? themeColor : 'transparent' }}>{calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}</div><span className="font-bold text-zinc-300">13% Govt VAT</span></div></div>
-                  <div className="p-12 rounded-[3.5rem] text-black text-center shadow-2xl transition-all" style={{ background: `linear-gradient(135deg, ${themeColor}, ${activeMetal === 'gold' ? '#b8860b' : '#4b5563'})` }}>
+                  <div className="p-12 rounded-[3.5rem] text-black text-center shadow-2xl transition-all" style={{ background: `linear-gradient(135deg, ${themeColor}, ${activeMetal === 'gold' ? '#b8860b' : activeMetal === 'tejabi' ? '#8B4513' : '#4b5563'})` }}>
                      <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">Estimated Total</p>
                      <h3 className="text-5xl font-black tracking-tighter">{formatRS(( ( (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192 ) * (priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal]) + (Number(calc.making)||0) ) * (calc.vat ? 1.13 : 1))}</h3>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  {/* Currency Calculator logic remains unchanged */}
                     <div className="bg-black/40 rounded-[3rem] p-7 border border-white/10 space-y-10">
                         <div className="flex items-start justify-between px-1">
                             <div className="flex-1 flex flex-col items-start gap-4">
@@ -424,9 +402,7 @@ export default function App() {
 
         <footer className="mt-12 px-8 pb-12 text-zinc-600 text-[10px] leading-relaxed border-t border-white/5 pt-10">
           <h2 className="text-zinc-400 font-black mb-2 uppercase tracking-widest">Live Gold and Silver Prices in Nepal</h2>
-          <p>GoldView provides real-time updates for <strong>24K Chhapawal Gold</strong> and <strong>Pure Silver</strong> rates in Nepal based on market dealers.</p>
-          <h2 className="text-zinc-400 font-black mt-6 mb-2 uppercase tracking-widest">NRB Official Exchange Rates</h2>
-          <p>Get accurate <strong>USD to NPR</strong>, GBP to NPR and other foreign exchange rates directly from the official <strong>Nepal Rastra Bank (NRB)</strong> buying rates.</p>
+          <p>GoldView provides real-time updates for <strong>24K Chhapawal Gold</strong>, <strong>22K Tejabi Gold</strong> and <strong>Pure Silver</strong> rates in Nepal.</p>
           <div className="mt-12 text-center">
             <p className="font-black uppercase tracking-[0.3em] text-zinc-500">Made by @Timeswantstocode</p>
           </div>
