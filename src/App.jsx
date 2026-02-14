@@ -89,6 +89,7 @@ export default function App() {
   const [forexLoading, setForexLoading] = useState(true);
   const [view, setView] = useState('dashboard');
   const [calcMode, setCalcMode] = useState('jewelry'); 
+  const [tradeMode, setTradeMode] = useState('buy'); // New State
   const [activeMetal, setActiveMetal] = useState('gold'); 
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [timeframe, setTimeframe] = useState(7);
@@ -127,11 +128,12 @@ export default function App() {
 
   const themeColor = useMemo(() => {
     if (view === 'calculator' && calcMode === 'currency') return '#22c55e';
+    if (view === 'calculator' && tradeMode === 'sell') return '#ef4444'; // Changes to Red on Sell
     if (activeMetal === 'gold') return '#D4AF37';
-    if (activeMetal === 'tejabi') return '#CD7F32'; // Bronze/Amber Gold for Tejabi
+    if (activeMetal === 'tejabi') return '#CD7F32'; 
     if (activeMetal === 'silver') return '#94a3b8';
     return '#22c55e'; 
-  }, [activeMetal, view, calcMode]);
+  }, [activeMetal, view, calcMode, tradeMode]);
 
   const activeDataList = useMemo(() => activeMetal === 'usd' ? forexHistory : priceData, [activeMetal, forexHistory, priceData]);
   const filteredData = useMemo(() => activeDataList.slice(-timeframe), [activeDataList, timeframe]);
@@ -310,8 +312,14 @@ export default function App() {
 
               {calcMode === 'jewelry' ? (
                 <div className="space-y-6">
+                  {/* BUY / SELL TOGGLE SECTION */}
+                  <div className="flex p-1 bg-black/40 rounded-[2rem] border border-white/5 mb-2">
+                     <button onClick={() => setTradeMode('buy')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 ${tradeMode === 'buy' ? 'text-black' : 'text-zinc-500'}`} style={tradeMode === 'buy' ? { backgroundColor: themeColor } : {}}>Purchase</button>
+                     <button onClick={() => setTradeMode('sell')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 ${tradeMode === 'sell' ? 'text-black' : 'text-zinc-500'}`} style={tradeMode === 'sell' ? { backgroundColor: themeColor } : {}}>Sell Back</button>
+                  </div>
+
                   <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto gap-1">
-                      {['gold', 'tejabi', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (metal === 'gold' ? '#D4AF37' : metal === 'tejabi' ? '#CD7F32' : '#94a3b8') : 'transparent' }} className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black' : 'text-zinc-500'}`}>{metal}</button>))}
+                      {['gold', 'tejabi', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (tradeMode === 'sell' ? '#ef4444' : (metal === 'gold' ? '#D4AF37' : metal === 'tejabi' ? '#CD7F32' : '#94a3b8')) : 'transparent' }} className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black' : 'text-zinc-500'}`}>{metal}</button>))}
                   </div>
                   <div className="mb-8 p-6 rounded-[2.2rem] border-2 flex items-center justify-between" style={{ borderColor: `${themeColor}80`, backgroundColor: `${themeColor}10` }}>
                     <div className="flex items-center gap-4"><Coins className="w-8 h-8" style={{ color: themeColor }} /><p className="text-xl font-black uppercase text-white">{activeMetal === 'gold' ? '24K Gold' : activeMetal === 'tejabi' ? '22K Gold' : 'Pure Silver'}</p></div>
@@ -321,16 +329,28 @@ export default function App() {
                     {['tola', 'aana', 'lal'].map((unit) => (<div key={unit}><label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{unit}</label>
                     <input type="number" style={{ caretColor: themeColor }} className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-2xl text-white outline-none focus:border-white/20" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} /></div>))}
                   </div>
-                  <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none text-white focus:border-white/20" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
-                  <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer"><div className="flex items-center gap-3"><div className="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all" style={{ borderColor: calc.vat ? themeColor : '#27272a', backgroundColor: calc.vat ? themeColor : 'transparent' }}>{calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}</div><span className="font-bold text-zinc-300">13% Govt VAT</span></div></div>
-                  <div className="p-12 rounded-[3.5rem] text-black text-center shadow-2xl transition-all" style={{ background: `linear-gradient(135deg, ${themeColor}, ${activeMetal === 'gold' ? '#b8860b' : activeMetal === 'tejabi' ? '#8B4513' : '#4b5563'})` }}>
-                     <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">Estimated Total</p>
-                     <h3 className="text-5xl font-black tracking-tighter">{formatRS(( ( (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192 ) * (priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal]) + (Number(calc.making)||0) ) * (calc.vat ? 1.13 : 1))}</h3>
+                  
+                  {tradeMode === 'buy' && (
+                    <>
+                      <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
+                      <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer animate-in fade-in slide-in-from-top-2"><div className="flex items-center gap-3"><div className="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all" style={{ borderColor: calc.vat ? themeColor : '#27272a', backgroundColor: calc.vat ? themeColor : 'transparent' }}>{calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}</div><span className="font-bold text-zinc-300">13% Govt VAT</span></div></div>
+                    </>
+                  )}
+
+                  <div className="p-12 rounded-[3.5rem] text-black text-center shadow-2xl transition-all" style={{ background: `linear-gradient(135deg, ${themeColor}, ${tradeMode === 'sell' ? '#991b1b' : (activeMetal === 'gold' ? '#b8860b' : activeMetal === 'tejabi' ? '#8B4513' : '#4b5563')})` }}>
+                     <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">{tradeMode === 'buy' ? 'Estimated Total' : 'Buyback Value'}</p>
+                     <h3 className="text-5xl font-black tracking-tighter">
+                        {(() => {
+                            const weight = (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192;
+                            const rate = priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal] || 0;
+                            if (tradeMode === 'sell') return formatRS(weight * rate);
+                            return formatRS((weight * rate + (Number(calc.making)||0)) * (calc.vat ? 1.13 : 1));
+                        })()}
+                     </h3>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  {/* Currency Calculator logic remains unchanged */}
                     <div className="bg-black/40 rounded-[3rem] p-7 border border-white/10 space-y-10">
                         <div className="flex items-start justify-between px-1">
                             <div className="flex-1 flex flex-col items-start gap-4">
