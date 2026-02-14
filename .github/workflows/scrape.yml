@@ -1,20 +1,25 @@
 name: Scrape Gold Data
+
 on:
   schedule:
-    - cron: '20 4 * * *'
-    - cron: '30 4 * * *'
-    - cron: '45 4 * * *'
-    - cron: '0 5 * * *'
-    - cron: '20 5 * * *'
-    - cron: '30 5 * * *'
-    - cron: '45 5 * * *'
-    - cron: '15 6 * * *'
-    - cron: '15 7 * * *'
-  workflow_dispatch: 
+    # Nepal Time (NPT) to UTC Conversion (-5h 45m)
+    - cron: '20 4 * * *'  # 10:05 AM NPT
+    - cron: '30 4 * * *'  # 10:15 AM NPT
+    - cron: '45 4 * * *'  # 10:30 AM NPT
+    - cron: '0 5 * * *'   # 10:45 AM NPT
+    - cron: '20 5 * * *'  # 11:05 AM NPT
+    - cron: '30 5 * * *'  # 11:15 AM NPT
+    - cron: '45 5 * * *'  # 11:30 AM NPT
+    - cron: '15 6 * * *'  # 12:00 PM NPT
+    - cron: '15 7 * * *'  # 01:00 PM NPT
+    
+  workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:
   scrape-and-deploy:
     runs-on: ubuntu-latest
+    
+    # Crucial for pushing the updated data.json back to the repo
     permissions:
       contents: write 
     
@@ -25,15 +30,17 @@ jobs:
           fetch-depth: 0
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
       
       - name: Install dependencies
-        run: pip install requests beautifulsoup4
+        run: |
+          pip install requests beautifulsoup4
       
       - name: Run scraper
-        # --- ADDED THIS ENV BLOCK ---
+        # --- UNCOMPROMISED SECRET INJECTION ---
+        # These pull from your Settings > Secrets > Actions
         env:
           ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
           ONESIGNAL_REST_KEY: ${{ secrets.ONESIGNAL_REST_KEY }}
@@ -42,6 +49,7 @@ jobs:
       - name: Check for changes
         id: verify_diff
         run: |
+          # If data.json hasn't changed, this avoids an empty commit error
           git diff --quiet . || echo "changed=true" >> $GITHUB_OUTPUT
       
       - name: Commit and Push ALL changes
@@ -50,5 +58,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Auto-update gold data [skip ci]"
+          git commit -m "Auto-update gold & tejabi data [skip ci]"
           git push
