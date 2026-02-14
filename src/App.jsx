@@ -24,20 +24,20 @@ const getOrCreateTooltip = (chart) => {
   if (!tooltipEl) {
     tooltipEl = document.createElement('div');
     tooltipEl.classList.add('custom-tooltip');
-    tooltipEl.style.background = 'rgba(10, 10, 10, 0.7)';
-    tooltipEl.style.backdropFilter = 'blur(20px)';
-    tooltipEl.style.WebkitBackdropFilter = 'blur(20px)';
-    tooltipEl.style.borderRadius = '14px';
+    tooltipEl.style.background = 'rgba(10, 10, 10, 0.75)';
+    tooltipEl.style.backdropFilter = 'blur(25px)';
+    tooltipEl.style.WebkitBackdropFilter = 'blur(25px)';
+    tooltipEl.style.borderRadius = '16px';
     tooltipEl.style.color = 'white';
     tooltipEl.style.opacity = 1;
     tooltipEl.style.pointerEvents = 'none';
     tooltipEl.style.position = 'absolute';
     tooltipEl.style.transform = 'translate(-50%, 0)';
     tooltipEl.style.transition = 'all .12s ease';
-    tooltipEl.style.border = '1px solid rgba(255, 255, 255, 0.08)';
-    tooltipEl.style.padding = '8px 12px';
+    tooltipEl.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+    tooltipEl.style.padding = '10px 14px';
     tooltipEl.style.zIndex = '100';
-    tooltipEl.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+    tooltipEl.style.boxShadow = '0 15px 35px rgba(0,0,0,0.5)';
     chart.canvas.parentNode.appendChild(tooltipEl);
   }
   return tooltipEl;
@@ -56,14 +56,14 @@ const externalTooltipHandler = (context) => {
 
     titleLines.forEach(title => {
       const span = document.createElement('span');
-      span.style.fontSize = '8px'; span.style.fontWeight = '800'; span.style.textTransform = 'uppercase';
-      span.style.marginBottom = '2px'; span.style.opacity = '0.5'; span.style.whiteSpace = 'nowrap';
+      span.style.fontSize = '9px'; span.style.fontWeight = '900'; span.style.textTransform = 'uppercase';
+      span.style.marginBottom = '2px'; span.style.opacity = '0.4'; span.style.whiteSpace = 'nowrap';
       span.innerText = title; div.appendChild(span);
     });
 
     bodyLines.forEach((body) => {
       const span = document.createElement('span');
-      span.style.fontSize = '14px'; span.style.fontWeight = '900'; span.style.letterSpacing = '-0.01em';
+      span.style.fontSize = '16px'; span.style.fontWeight = '900'; span.style.letterSpacing = '-0.02em';
       span.style.whiteSpace = 'nowrap'; span.innerText = body; div.appendChild(span);
     });
 
@@ -73,38 +73,32 @@ const externalTooltipHandler = (context) => {
   const {offsetLeft: positionX, offsetTop: positionY} = chart.canvas;
   tooltipEl.style.opacity = 1;
   tooltipEl.style.left = positionX + tooltip.caretX + 'px';
-  tooltipEl.style.top = positionY + tooltip.caretY - 60 + 'px';
+  tooltipEl.style.top = positionY + tooltip.caretY - 70 + 'px';
 };
 
 export default function App() {
-  // --- CORE STATES ---
-  const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('gv_v24_metal') || '[]'));
-  const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('gv_v24_forex') || '[]'));
+  // --- STATE MANAGEMENT ---
+  const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('gv_v25_metal') || '[]'));
+  const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('gv_v25_forex') || '[]'));
   const [loading, setLoading] = useState(priceData.length === 0);
-  const [forexLoading, setForexLoading] = useState(true);
   const [view, setView] = useState('dashboard');
-  const [activeMetal, setActiveMetal] = useState('gold'); // gold, tejabi, silver, usd
+  const [activeMetal, setActiveMetal] = useState('gold');
   const [timeframe, setTimeframe] = useState(7);
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [selectedCurrencies, setSelectedCurrencies] = useState(['USD']);
 
-  // --- CALCULATOR STATES ---
-  const [calcMode, setCalcMode] = useState('jewelry'); // jewelry, currency
-  const [calcType, setCalcType] = useState('buy'); // buy, sell
+  // Calculator Logic
+  const [calcMode, setCalcMode] = useState('jewelry'); 
+  const [calcType, setCalcType] = useState('buy');
   const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
   const [currCalc, setCurrCalc] = useState({ amount: '1', source: 'USD', isSwapped: false });
 
   const shareRef = useRef(null);
 
-  const currencyList = [
-    { code: 'USD', flag: '🇺🇸' }, { code: 'GBP', flag: '🇬🇧' }, { code: 'AUD', flag: '🇦🇺' }, 
-    { code: 'JPY', flag: '🇯🇵' }, { code: 'KRW', flag: '🇰🇷' }, { code: 'AED', flag: '🇦🇪' }, { code: 'EUR', flag: '🇪🇺' }
-  ];
-
-  // --- DATA INITIALIZATION ---
+  // --- INITIALIZATION & API FETCHING ---
   useEffect(() => {
-    // Check Notification Subscription
+    // Sync Notification Status
     if (window.OneSignalDeferred) {
       window.OneSignalDeferred.push(async (OneSignal) => {
         setIsSubscribed(await OneSignal.User.PushSubscription.optedIn);
@@ -115,24 +109,24 @@ export default function App() {
     fetch(`${DATA_URL}?t=${Date.now()}`).then(res => res.json()).then(json => {
         const processed = json.map(d => ({ ...d, tejabi: d.tejabi || Math.round(d.gold * 0.9167) }));
         setPriceData(processed);
-        localStorage.setItem('gv_v24_metal', JSON.stringify(processed));
+        localStorage.setItem('gv_v25_metal', JSON.stringify(processed));
         setLoading(false);
     }).catch(() => setLoading(false));
 
     // Fetch Forex Data
     fetch(FOREX_PROXY).then(res => res.json()).then(json => {
-        if (!json.data || !json.data.payload) throw new Error("API Structure Invalid");
-        const transformed = json.data.payload.map(day => ({
-          date: day.date,
-          rates: day.rates
-        })).sort((a, b) => new Date(a.date) - new Date(b.date));
-        setForexHistory(transformed);
-        localStorage.setItem('gv_v24_forex', JSON.stringify(transformed));
-        setForexLoading(false);
-    }).catch(() => setForexLoading(false));
+        if (json?.data?.payload) {
+            const transformed = json.data.payload.map(day => ({
+              date: day.date,
+              rates: day.rates
+            })).sort((a, b) => new Date(a.date) - new Date(b.date));
+            setForexHistory(transformed);
+            localStorage.setItem('gv_v25_forex', JSON.stringify(transformed));
+        }
+    });
   }, []);
 
-  // --- HELPERS ---
+  // --- LOGIC HELPERS ---
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
   
   const getPriceChange = (id) => {
@@ -149,7 +143,6 @@ export default function App() {
   const themeColor = useMemo(() => {
     if (view === 'calculator') {
         if (calcMode === 'currency') return '#22c55e';
-        if (activeMetal === 'gold') return '#D4AF37';
         if (activeMetal === 'tejabi') return '#FFB800';
         if (activeMetal === 'silver') return '#94a3b8';
         return '#D4AF37';
@@ -176,7 +169,7 @@ export default function App() {
     if (navigator.share) {
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], 'goldview.png', { type: 'image/png' });
-      navigator.share({ files: [file], title: 'GoldView Market Update' });
+      navigator.share({ files: [file], title: 'Market Update' });
     }
   };
 
@@ -184,15 +177,15 @@ export default function App() {
 
   return (
     <HelmetProvider>
-      <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-40 overflow-x-hidden relative selection:bg-white/10">
-        <Helmet><title>Gold Price Today Nepal | GoldView</title></Helmet>
+      <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-44 overflow-x-hidden relative selection:bg-white/10">
+        <Helmet><title>Gold Price Nepal Today | GoldView</title></Helmet>
 
         {/* --- HEADER --- */}
         <header className="p-8 pt-16 flex justify-between items-end relative z-50 sticky top-0 bg-black/40 backdrop-blur-3xl border-b border-white/5">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2.5 h-2.5 rounded-full shadow-lg animate-pulse" style={{ backgroundColor: themeColor, boxShadow: `0 0 15px ${themeColor}` }}></div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500" style={{ color: themeColor }}>Market Live</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500" style={{ color: themeColor }}>Market Update</p>
             </div>
             <h1 className="text-4xl font-black tracking-tighter text-white">GoldView</h1>
           </div>
@@ -205,17 +198,17 @@ export default function App() {
           </div>
         </header>
 
-        {/* --- DASHBOARD --- */}
+        {/* --- DASHBOARD VIEW --- */}
         {view === 'dashboard' && (
           <main className="px-6 space-y-6 mt-6 animate-in fade-in duration-700" ref={shareRef}>
             <div className="space-y-4">
               {['gold', 'tejabi', 'silver', 'usd'].map((type) => {
                  const isActive = activeMetal === type;
                  const change = getPriceChange(type);
-                 const val = type === 'usd' ? (forexHistory[forexHistory.length-1]?.rates.find(r => r.currency.iso3 === 'USD')?.buy || 0) : (priceData[priceData.length-1]?.[type] || 0);
+                 const val = type === 'usd' ? (forexHistory[forexHistory.length-1]?.rates?.find(r => r.currency.iso3 === 'USD')?.buy || 0) : (priceData[priceData.length-1]?.[type] || 0);
                  const meta = {
                    gold: { label: '24K Chhapawal Gold', grad: 'from-[#D4AF37]/50 to-transparent' },
-                   tejabi: { label: 'Tejabi 22K Gold', grad: 'from-[#FFB800]/40 to-transparent' },
+                   tejabi: { label: 'Tejab 22K Gold', grad: 'from-[#FFB800]/40 to-transparent' },
                    silver: { label: 'Pure Silver', grad: 'from-zinc-500/30 to-transparent' },
                    usd: { label: 'USD Rate (NRB)', grad: 'from-[#22c55e]/40 to-transparent' }
                  }[type];
@@ -240,9 +233,9 @@ export default function App() {
               })}
             </div>
 
-            {/* FOREX MULTI SELECT */}
+            {/* CURRENCY SELECTOR */}
             {activeMetal === 'usd' && (
-              <div className="flex flex-wrap gap-2 p-2 bg-white/5 rounded-3xl border border-white/10 animate-in slide-in-from-left">
+              <div className="flex flex-wrap gap-2 p-3 bg-white/5 rounded-3xl border border-white/10 animate-in slide-in-from-left">
                 {['USD', 'GBP', 'EUR', 'AUD', 'JPY', 'AED'].map(c => (
                   <button key={c} onClick={() => selectedCurrencies.includes(c) ? setSelectedCurrencies(selectedCurrencies.filter(i => i !== c)) : setSelectedCurrencies([...selectedCurrencies, c])}
                     className={`px-5 py-2.5 rounded-2xl text-[10px] font-black transition-all ${selectedCurrencies.includes(c) ? 'bg-green-500 text-black shadow-lg shadow-green-500/20' : 'text-zinc-500 bg-white/5'}`}>{c}</button>
@@ -251,7 +244,7 @@ export default function App() {
             )}
 
             {/* PERFORMANCE CHART */}
-            <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-10 backdrop-blur-3xl shadow-xl">
+            <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-10 backdrop-blur-3xl shadow-xl relative overflow-hidden">
               <div className="flex justify-between items-center mb-10 w-full px-1">
                 <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> Performance</h3>
                 <div className="flex bg-black/40 backdrop-blur-2xl rounded-full p-1.5 border border-white/10">
@@ -262,15 +255,12 @@ export default function App() {
               <div className="h-64 relative w-full">
                 <Line 
                   data={{
-                    labels: activeMetal === 'usd' ? forexHistory.slice(-timeframe).map(d => {
-                        const date = new Date(d.date);
-                        return `${date.toLocaleString('en-US', {month:'short'})} ${date.getDate()}`;
-                    }) : priceData.slice(-timeframe).map(d => {
-                        const date = new Date(d.date.split(' ')[0]);
+                    labels: filteredData.map(d => {
+                        const date = new Date(activeMetal === 'usd' ? d.date : d.date.split(' ')[0]);
                         return `${date.toLocaleString('en-US', {month:'short'})} ${date.getDate()}`;
                     }),
                     datasets: activeMetal === 'usd' ? selectedCurrencies.map((c, i) => ({
-                      label: c, data: forexHistory.slice(-timeframe).map(d => parseFloat(d.rates.find(r => r.currency.iso3 === c)?.buy || 0)),
+                      label: c, data: filteredData.map(d => parseFloat(d.rates?.find(r => r.currency.iso3 === c)?.buy || 0)),
                       borderColor: ['#22c55e', '#3b82f6', '#ef4444', '#a855f7'][i%4], borderWidth: 4, tension: 0.4, pointRadius: 0
                     })) : [{
                       data: filteredData.map(d => d[activeMetal]),
@@ -284,7 +274,7 @@ export default function App() {
                   }} 
                   options={{ 
                     responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { display: activeMetal === 'usd' }, tooltip: { enabled: false, external: externalTooltipHandler } }, 
+                    plugins: { legend: { display: activeMetal === 'usd', labels: { color: '#fff', font: { weight: 'bold' } } }, tooltip: { enabled: false, external: externalTooltipHandler } }, 
                     scales: { 
                       x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.2)', font: { size: 10, weight: '900' }, maxRotation: 0 } }, 
                       y: { display: false } 
@@ -300,7 +290,7 @@ export default function App() {
                 />
               </div>
 
-              {/* HISTORICAL DETAIL BOX */}
+              {/* HISTORICAL DETAIL BOX (STRAIGHT BELOW GRAPH) */}
               <div className={`mt-10 transition-all duration-500 overflow-hidden ${selectedPoint ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'}`}>
                 {selectedPoint && (
                   <div className="bg-white/[0.08] backdrop-blur-3xl border border-white/10 rounded-[2.8rem] p-7 flex justify-between items-center w-full animate-in slide-in-from-bottom duration-500">
@@ -313,8 +303,8 @@ export default function App() {
                     </div>
                     <div className="flex items-center gap-8">
                       <div className="text-right">
-                        <p className="text-[10px] font-black uppercase opacity-50">Logged Rate</p>
-                        <p className="text-3xl font-black">{formatRS(selectedPoint.price)}</p>
+                        <p className="text-[10px] font-black uppercase opacity-50">Rate</p>
+                        <p className="text-3xl font-black">{activeMetal === 'usd' ? 'Forex Point' : formatRS(selectedPoint.price)}</p>
                       </div>
                       <button onClick={() => setSelectedPoint(null)} className="p-3 bg-white/5 rounded-full border border-white/10 active:scale-75 transition-all"><X className="w-5 h-5 text-zinc-400" /></button>
                     </div>
@@ -325,36 +315,36 @@ export default function App() {
           </main>
         )}
 
-        {/* --- TOOLS --- */}
+        {/* --- CALCULATOR TAB --- */}
         {view === 'calculator' && (
           <main className="px-6 relative z-10 mt-6 animate-in zoom-in-95 duration-500">
             <div className="bg-white/5 border border-white/10 rounded-[4rem] p-10 backdrop-blur-3xl shadow-2xl">
               
-              {/* TOP SELECTOR */}
-              <div className="flex p-1.5 bg-black/40 backdrop-blur-xl rounded-[2.2rem] mb-12 border border-white/10">
-                  <button onClick={() => setCalcMode('jewelry')} className={`flex-1 py-4 rounded-[1.8rem] text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'bg-white text-black shadow-xl' : 'text-zinc-500'}`}>Jewelry</button>
-                  <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-[1.8rem] text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black shadow-xl' : 'text-zinc-500'}`}>Currency</button>
+              {/* JEWELRY vs CURRENCY SELECTOR (COLORS FIXED) */}
+              <div className="flex p-2 bg-black/40 backdrop-blur-xl rounded-[2.2rem] mb-12 border border-white/10">
+                  <button onClick={() => setCalcMode('jewelry')} className={`flex-1 py-4 rounded-[1.8rem] text-[10px] font-black uppercase transition-all duration-300 ${calcMode === 'jewelry' ? 'bg-white text-black shadow-xl' : 'text-zinc-500'}`}>Jewelry</button>
+                  <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-[1.8rem] text-[10px] font-black uppercase transition-all duration-300 ${calcMode === 'currency' ? 'bg-green-500 text-black shadow-xl shadow-green-500/10' : 'text-zinc-500'}`}>Currency</button>
               </div>
 
               {calcMode === 'jewelry' ? (
                 <div className="space-y-8">
-                  {/* BUY SELL TOGGLE */}
-                  <div className="flex bg-black/40 backdrop-blur-xl p-1.5 rounded-3xl border border-white/10">
-                    <button onClick={() => setCalcType('buy')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black transition-all ${calcType === 'buy' ? 'bg-zinc-800 text-green-400 border border-white/10 shadow-lg' : 'text-zinc-600'}`}>NEW PURCHASE</button>
-                    <button onClick={() => setCalcType('sell')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black transition-all ${calcType === 'sell' ? 'bg-zinc-800 text-red-400 border border-white/10 shadow-lg' : 'text-zinc-600'}`}>SELL BACK</button>
+                  {/* BUY vs SELL TOGGLE (COLORS FIXED) */}
+                  <div className="flex bg-black/40 backdrop-blur-xl p-2 rounded-3xl border border-white/10">
+                    <button onClick={() => setCalcType('buy')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black transition-all ${calcType === 'buy' ? 'bg-zinc-800 text-green-400 border border-white/10' : 'text-zinc-600'}`}>NEW PURCHASE</button>
+                    <button onClick={() => setCalcType('sell')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black transition-all ${calcType === 'sell' ? 'bg-zinc-800 text-red-400 border border-white/10' : 'text-zinc-600'}`}>SELL BACK</button>
                   </div>
 
-                  {/* METAL SELECTOR */}
+                  {/* METAL SELECTOR (COLORS FIXED) */}
                   <div className="flex gap-2 justify-center">
                       {['gold', 'tejabi', 'silver'].map(m => (
                         <button key={m} onClick={() => setActiveMetal(m)} 
-                           className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase border transition-all ${activeMetal === m ? 'bg-white/10 border-white/30 text-white shadow-lg' : 'border-white/5 opacity-30'}`}>
-                           {m === 'gold' ? '24K Chhapawal' : m === 'tejabi' ? 'Tejabi 22K' : 'Pure Silver'}
+                           className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase border backdrop-blur-xl transition-all ${activeMetal === m ? 'border-white/40 bg-white/10 text-white shadow-xl' : 'border-white/5 opacity-30'}`}>
+                           {m === 'gold' ? '24K Chhapawal' : m === 'tejabi' ? 'Tejab 22K' : 'Pure Silver'}
                         </button>
                       ))}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-5">
+                  <div className="grid grid-cols-3 gap-6">
                     {['tola', 'aana', 'lal'].map((unit) => (
                       <div key={unit}>
                         <label className="text-[10px] font-black opacity-30 uppercase block text-center mb-3 tracking-widest">{unit}</label>
@@ -364,24 +354,23 @@ export default function App() {
                   </div>
 
                   {calcType === 'buy' && (
-                    <div className="space-y-5">
-                      <input type="number" placeholder="Making Charges (Total रू)" className="w-full bg-black/60 border border-white/10 p-7 rounded-[2.2rem] font-black text-center text-xl outline-none focus:border-white/20" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
+                    <div className="space-y-6">
+                      <input type="number" placeholder="Making Charges (Total रू)" className="w-full bg-black/60 border border-white/10 p-7 rounded-[2.2rem] font-black text-center text-xl outline-none focus:border-white/20 transition-all" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
                       <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="p-7 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] flex justify-between items-center cursor-pointer transition-all active:scale-95">
                         <div className="flex items-center gap-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${calc.vat ? 'bg-amber-500 shadow-[0_0_15px_rgba(212,175,55,0.4)]' : 'bg-zinc-800'}`}><Zap className={`w-4 h-4 ${calc.vat ? 'text-black fill-black' : 'text-zinc-500'}`} /></div>
-                          <span className="font-black text-sm opacity-70 tracking-tight">Add 13% Govt VAT</span>
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${calc.vat ? 'bg-amber-500 shadow-[0_0_15px_rgba(212,175,55,0.4)]' : 'bg-zinc-800'}`}><Zap className={`w-4 h-4 ${calc.vat ? 'text-black fill-black' : 'text-zinc-500'}`} /></div>
+                          <span className="font-black text-sm opacity-70 tracking-tight">Apply 13% Govt VAT</span>
                         </div>
                         <div className={`w-12 h-6 rounded-full relative transition-all ${calc.vat ? 'bg-amber-500' : 'bg-zinc-800'}`}><div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${calc.vat ? 'left-7' : 'left-1'}`}></div></div>
                       </div>
                     </div>
                   )}
 
-                  {/* PRICE DISPLAY */}
                   <div className="p-14 rounded-[4.5rem] text-center shadow-2xl transition-all duration-1000 overflow-hidden relative" style={{ background: `linear-gradient(145deg, ${themeColor}, #000 160%)`, color: 'white' }}>
-                     <p className="text-[12px] font-black uppercase tracking-[0.4em] mb-3 opacity-60">{calcType === 'buy' ? 'Final Jewelry Price' : 'You Receive'}</p>
+                     <p className="text-[12px] font-black uppercase tracking-[0.4em] mb-3 opacity-60">{calcType === 'buy' ? 'Total Jewelry Price' : 'Net Cash Receive'}</p>
                      <h3 className="text-6xl font-black tracking-tighter">
                        {(() => {
-                         const rate = priceData[priceData.length-1][activeMetal === 'usd' ? 'gold' : activeMetal];
+                         const rate = priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal] || 0;
                          const weight = (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192;
                          let total = weight * rate;
                          if (calcType === 'buy') { total += (Number(calc.making)||0); if (calc.vat) total *= 1.13; }
@@ -392,7 +381,7 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                /* --- CURRENCY CONVERTER --- */
+                /* --- CURRENCY CONVERTER (CRASH FIX INCLUDED) --- */
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="bg-black/60 backdrop-blur-2xl rounded-[3.5rem] p-8 border border-white/10 space-y-10">
                         <div className="flex items-start justify-between">
@@ -400,32 +389,32 @@ export default function App() {
                                 <p className="text-[10px] font-black text-zinc-600 mb-4 uppercase tracking-[0.2em]">SEND</p>
                                 <div className="flex flex-col items-center gap-2 w-fit">
                                     <span className="text-5xl">{currCalc.isSwapped ? '🇳🇵' : currencyList.find(c => c.code === currCalc.source)?.flag}</span>
-                                    {currCalc.isSwapped ? <span className="font-black mt-2 text-sm tracking-widest">NPR</span> : 
+                                    {currCalc.isSwapped ? <span className="font-black mt-2 text-sm">NPR</span> : 
                                     <select className="bg-transparent font-black text-sm outline-none mt-2 text-white" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
                                         {currencyList.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
                                     </select>}
                                 </div>
                             </div>
-                            <div className="pt-10"><button onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})} className="p-5 bg-green-500/20 rounded-3xl border border-green-500/20 active:rotate-180 transition-all"><ArrowRightLeft className="w-6 h-6 text-green-500" /></button></div>
+                            <div className="pt-10"><button onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})} className="p-6 bg-green-500/20 rounded-[2rem] border border-green-500/20 active:rotate-180 transition-all"><ArrowRightLeft className="w-6 h-6 text-green-500" /></button></div>
                             <div className="flex-1 text-right">
-                                <p className="text-[10px] font-black text-zinc-600 mb-4 uppercase tracking-[0.2em]">GET</p>
+                                <p className="text-[10px] font-black text-zinc-600 mb-4 uppercase tracking-[0.2em]">RECEIVE</p>
                                 <div className="flex flex-col items-center gap-2 w-fit ml-auto">
                                     <span className="text-5xl">{currCalc.isSwapped ? currencyList.find(c => c.code === currCalc.source)?.flag : '🇳🇵'}</span>
                                     {currCalc.isSwapped ? <select className="bg-transparent font-black text-sm mt-2" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
                                         {currencyList.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
-                                    </select> : <span className="font-black mt-2 text-sm tracking-widest">NPR</span>}
+                                    </select> : <span className="font-black mt-2 text-sm">NPR</span>}
                                 </div>
                             </div>
                         </div>
-                        <input type="number" className="w-full bg-black/40 border border-white/10 p-10 rounded-[3rem] font-black text-5xl outline-none focus:border-green-500 text-center transition-all" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
+                        <input type="number" className="w-full bg-black/40 border border-white/10 p-12 rounded-[3.5rem] font-black text-6xl outline-none focus:border-green-500 text-center transition-all" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
                     </div>
-                    <div className="bg-green-600 p-14 rounded-[4rem] text-white text-center shadow-2xl relative overflow-hidden">
-                       <p className="text-[12px] font-black uppercase tracking-[0.4em] opacity-60 mb-3">Conversion Payout</p>
+                    <div className="bg-green-600 p-16 rounded-[4.5rem] text-white text-center shadow-2xl relative overflow-hidden">
+                       <p className="text-[12px] font-black uppercase tracking-widest opacity-60 mb-4">Payout Estimate</p>
                        <h3 className="text-6xl font-black tracking-tighter">
                           {(() => {
                             if (!forexHistory.length) return "रू 0";
                             const latestRates = forexHistory[forexHistory.length - 1]?.rates || [];
-                            const rateData = latestRates.find(r => r.currency.iso3 === currCalc.source);
+                            const rateData = latestRates.find(r => r.currency?.iso3 === currCalc.source);
                             const rawRate = parseFloat(rateData?.buy || 133);
                             const unit = parseInt(rateData?.currency?.unit || 1);
                             const amt = Number(currCalc.amount) || 0;
@@ -440,7 +429,7 @@ export default function App() {
           </main>
         )}
 
-        {/* --- BOTTOM NAV --- */}
+        {/* --- BOTTOM NAVIGATION --- */}
         <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-[200]">
           <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'dashboard' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`} style={view === 'dashboard' ? { backgroundColor: themeColor } : {}}>
             <LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} />
@@ -449,14 +438,9 @@ export default function App() {
           <button onClick={() => { setView('calculator'); setCalcMode('jewelry'); setCalcType('buy'); setActiveMetal('gold'); }} 
             className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'calculator' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`} style={view === 'calculator' ? { backgroundColor: themeColor } : {}}>
             <Calculator className={`w-6 h-6 ${view === 'calculator' ? 'fill-black' : ''}`} />
-            <span className="text-[9px] font-black uppercase tracking-widest">Calculator</span>
+            <span className="text-[9px] font-black uppercase tracking-widest">Tools</span>
           </button>
         </nav>
-
-        <footer className="mt-20 px-10 pb-20 text-center opacity-30 text-[10px] leading-relaxed">
-           <p className="font-black uppercase tracking-[0.5em] mb-2">GoldView Nepal</p>
-           <p>Live Gold, Tejabi and Silver prices via FENEGOSIDA. Forex via Nepal Rastra Bank.</p>
-        </footer>
       </div>
     </HelmetProvider>
   );
