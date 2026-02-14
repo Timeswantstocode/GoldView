@@ -224,6 +224,7 @@ export default function App() {
         <Helmet>
             <title>Gold Price Nepal Today | USD to NPR Rate - GoldView</title>
             <meta name="description" content="Check live gold, silver and dollar prices in Nepal. Official NRB exchange rates." />
+            <link rel="canonical" href="https://viewgold.vercel.app/" />
         </Helmet>
 
         <header className="p-8 pt-16 flex justify-between items-end relative z-10">
