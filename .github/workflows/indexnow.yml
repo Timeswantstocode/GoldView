@@ -1,0 +1,11 @@
+name: IndexNow
+on: [push]
+jobs:
+  indexnow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: IndexNow Action
+        uses: bojan88/indexnow-action@v2
+        with:
+          url: https://viewgold.vercel.app/
+          key: 5eb354c570e44005a618cbf7b0d2dad3
