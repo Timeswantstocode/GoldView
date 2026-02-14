@@ -225,6 +225,17 @@ export default function App() {
             <title>Gold Price Nepal Today | USD to NPR Rate - GoldView</title>
             <meta name="description" content="Check live gold, silver and dollar prices in Nepal. Official NRB exchange rates." />
             <link rel="canonical" href="https://viewgold.vercel.app/" />
+            <script type="application/ld+json">
+             {JSON.stringify({
+               "@context": "https://schema.org",
+               "@type": "WebApplication",
+               "name": "GoldView Nepal",
+               "url": "https://viewgold.vercel.app",
+               "description": "Live Gold and Silver prices in Nepal with NRB Currency Exchange rates.",
+               "applicationCategory": "FinanceApplication",
+               "operatingSystem": "All"
+                  })}
+          </script>
         </Helmet>
 
         <header className="p-8 pt-16 flex justify-between items-end relative z-10">
