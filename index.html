@@ -4,7 +4,12 @@
     <meta name="google-site-verification" content="F9ywuM8jnidvhpRtO3TnA_UgRlv1ewZ_U2_TP1DvwNY" />
     <meta name="msvalidate.01" content="4A39EAFE064B385D2D144156BAF448DB" />
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#D4AF37" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>Gold Price Today in Nepal | Live USD to NPR Rate - GoldView</title>
   <meta name="description" content="Check live 24K Chhapawal Gold and Silver rates in Nepal. Official NRB USD to NPR exchange rates. Use our jewelry cost calculator and currency converter." />
     <!-- Tailwind via CDN is fine for a quick setup -->
@@ -26,7 +31,13 @@
   </head>
   <body class="bg-black">
     <div id="root"></div>
-    <!-- Crucial: Ensure the path to main.jsx is correct -->
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
