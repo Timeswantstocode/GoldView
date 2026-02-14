@@ -1,7 +1,8 @@
 name: Scrape Gold Data
+
 on:
   schedule:
-    # Nepal Time (NPT) to UTC Conversion (-5h 45m)
+    # Timing calibrated for Nepal Market Updates (NPT is UTC +5:45)
     - cron: '20 4 * * *'  # 10:05 AM NPT
     - cron: '30 4 * * *'  # 10:15 AM NPT
     - cron: '45 4 * * *'  # 10:30 AM NPT
@@ -12,23 +13,24 @@ on:
     - cron: '15 6 * * *'  # 12:00 PM NPT
     - cron: '15 7 * * *'  # 01:00 PM NPT
     
-  workflow_dispatch: 
+  workflow_dispatch: # Allows you to manually trigger a scrape from the Actions tab
 
 jobs:
   scrape-and-deploy:
     runs-on: ubuntu-latest
+    
+    # Required to allow the bot to push updated data.json back to your repository
     permissions:
-      contents: write # This line replaces the need for any PAT keys
+      contents: write 
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          # Token line removed entirely - it now uses the default internal token
+          fetch-depth: 0 # Fetches full history for proper git operations
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
       
@@ -37,11 +39,17 @@ jobs:
           pip install requests beautifulsoup4
       
       - name: Run scraper
+        # --- INJECTING SECRETS INTO ENVIRONMENT ---
+        # This is the only way scraper.py can see your OneSignal keys
+        env:
+          ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
+          ONESIGNAL_REST_KEY: ${{ secrets.ONESIGNAL_REST_KEY }}
         run: python scraper.py
       
       - name: Check for changes
         id: verify_diff
         run: |
+          # If data.json has not changed, we don't want to create a useless commit
           git diff --quiet . || echo "changed=true" >> $GITHUB_OUTPUT
       
       - name: Commit and Push ALL changes
@@ -50,5 +58,6 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Auto-update gold data [skip ci]"
+          # [skip ci] prevents this commit from triggering another build loop
+          git commit -m "Auto-update gold, tejabi & notification state [skip ci]"
           git push
