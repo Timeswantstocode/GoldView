@@ -1,10 +1,5 @@
-// Enhanced Gold/Silver Price Scraper with multiple sources and verification
-// Sources: sabinmagar API, GitHub data.json, cross-verification
-
-const SOURCES = {
-  sabinmagar: 'https://gold-silver.sabinmagar.com.np/wp-json/v1/metal-prices/',
-  github: 'https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json',
-};
+// Enhanced Gold/Silver Price Scraper with multi-source verification
+// Sources: sabinmagar API, local data.json, open exchange rates, FENEGOSIDA scrape
 
 async function fetchWithTimeout(url, timeout = 8000) {
   const controller = new AbortController();
@@ -13,130 +8,156 @@ async function fetchWithTimeout(url, timeout = 8000) {
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timer);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    return res;
   } catch (e) {
     clearTimeout(timer);
     throw e;
   }
 }
 
-// Source 1: sabinmagar API (gives Chapawal = 24K, plus Silver)
+// Source 1: sabinmagar gold-silver API (live Chapawal/Tejabi/Silver)
 async function fetchSabinmagar() {
-  const data = await fetchWithTimeout(SOURCES.sabinmagar);
-  if (data.status !== 200 || !data.data) throw new Error('Invalid sabinmagar response');
-  
+  const res = await fetchWithTimeout('https://gold-silver.sabinmagar.com.np/wp-json/v1/metal-prices/');
+  const data = await res.json();
+  if (data.status !== 200 || !data.data) throw new Error('Invalid response');
   const entries = Array.isArray(data.data[0]) ? data.data[0] : data.data;
   const chapawal = entries.find(e => e.metal?.name?.toLowerCase().includes('chapawal'));
+  const tejabi = entries.find(e => e.metal?.name?.toLowerCase().includes('tejabi'));
   const silver = entries.find(e => e.metal?.name?.toLowerCase().includes('silver'));
-  
   const gold24k = parseInt(chapawal?.price_per_tola || 0);
-  const silverPrice = parseInt(silver?.price_per_tola || 0);
-  // 22K is approximately 91.67% of 24K (22/24), but Nepal market adds a slight premium
-  // Standard Nepal jeweler 22K rate is typically 24K * (22/24) rounded to nearest 100
-  const gold22k = Math.round((gold24k * 22 / 24) / 100) * 100;
-  
+  const gold22k = tejabi ? parseInt(tejabi.price_per_tola || 0) : Math.round((gold24k * 22 / 24) / 100) * 100;
   return {
     source: 'sabinmagar',
     date: chapawal?.date || new Date().toISOString().split('T')[0],
     gold: gold24k,
-    gold22k: gold22k,
-    silver: silverPrice,
-    gold_per_10g: parseInt(chapawal?.price_per_ten_gram || 0),
-    silver_per_10g: parseInt(silver?.price_per_ten_gram || 0),
+    gold22k,
+    silver: parseInt(silver?.price_per_tola || 0),
+    raw: { chapawal, tejabi, silver },
   };
 }
 
-// Source 2: GitHub data.json (historical + latest)
-async function fetchGithub() {
-  const data = await fetchWithTimeout(SOURCES.github);
-  if (!Array.isArray(data) || data.length === 0) throw new Error('Invalid github data');
-  const latest = data[data.length - 1];
+// Source 2: International gold price (XAU/USD) converted to NPR
+async function fetchInternational() {
+  const [xauRes, fxRes] = await Promise.all([
+    fetchWithTimeout('https://data-asg.goldprice.org/dbXRates/USD'),
+    fetchWithTimeout('https://open.er-api.com/v6/latest/USD'),
+  ]);
+  const xauData = await xauRes.json();
+  const fxData = await fxRes.json();
+  const xauUsd = xauData?.items?.[0]?.xauPrice || 0;
+  const nprRate = fxData?.rates?.NPR || 136.5;
+  if (!xauUsd) throw new Error('No XAU price');
+  // Convert: 1 troy oz = 31.1035g, 1 tola = 11.664g
+  const pricePerGram = (xauUsd * nprRate) / 31.1035;
+  const pricePerTola = Math.round(pricePerGram * 11.664);
+  const gold22k = Math.round((pricePerTola * 22 / 24) / 100) * 100;
   return {
-    source: 'github',
-    date: latest.date,
-    gold: parseInt(latest.gold || 0),
-    gold22k: parseInt(latest.gold22k || Math.round((parseInt(latest.gold || 0) * 22 / 24) / 100) * 100),
-    silver: parseInt(latest.silver || 0),
+    source: 'international',
+    date: new Date().toISOString().split('T')[0],
+    gold: pricePerTola,
+    gold22k,
+    silver: 0,
+    xauUsd: Math.round(xauUsd * 100) / 100,
+    nprRate: Math.round(nprRate * 100) / 100,
+  };
+}
+
+// Source 3: GitHub/local data.json fallback
+async function fetchLocalData(baseUrl) {
+  const url = baseUrl ? `${baseUrl}/data.json` : 'https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/public/data.json';
+  const res = await fetchWithTimeout(url);
+  const data = await res.json();
+  if (!Array.isArray(data) || data.length === 0) throw new Error('Empty data');
+  return {
+    source: 'local',
+    latest: data[data.length - 1],
     history: data,
   };
 }
 
-// Cross-verify prices between sources (tolerance: 3% difference)
-function verifyPrices(prices) {
-  if (prices.length < 2) return prices[0] || null;
-  
-  const goldPrices = prices.map(p => p.gold).filter(p => p > 0);
-  const silverPrices = prices.map(p => p.silver).filter(p => p > 0);
-  
-  let verified = { ...prices[0], verified: false, sources_count: prices.length };
-  
-  if (goldPrices.length >= 2) {
-    const avg = goldPrices.reduce((a, b) => a + b, 0) / goldPrices.length;
-    const maxDiff = Math.max(...goldPrices.map(p => Math.abs(p - avg) / avg));
-    verified.verified = maxDiff < 0.03; // Within 3%
-    verified.gold = Math.round(avg);
-    verified.gold22k = Math.round((verified.gold * 22 / 24) / 100) * 100;
-  }
-  
-  if (silverPrices.length >= 2) {
-    const avg = silverPrices.reduce((a, b) => a + b, 0) / silverPrices.length;
-    verified.silver = Math.round(avg);
-  }
-  
-  return verified;
+// Cross-verify: median of sources within 5% tolerance
+function verifyAndMerge(results) {
+  const liveSources = results.filter(r => r.gold > 0);
+  if (liveSources.length === 0) return null;
+
+  const goldPrices = liveSources.map(r => r.gold).sort((a, b) => a - b);
+  const median = goldPrices[Math.floor(goldPrices.length / 2)];
+
+  // Filter out outliers (>5% from median)
+  const valid = liveSources.filter(r => Math.abs(r.gold - median) / median < 0.05);
+  const best = valid.length > 0 ? valid[0] : liveSources[0];
+
+  return {
+    date: best.date,
+    gold: best.gold,
+    gold22k: best.gold22k,
+    silver: best.silver || liveSources.find(r => r.silver > 0)?.silver || 0,
+    verified: valid.length >= 2,
+    sourceCount: liveSources.length,
+    validCount: valid.length,
+    xauUsd: liveSources.find(r => r.xauUsd)?.xauUsd || 0,
+    nprRate: liveSources.find(r => r.nprRate)?.nprRate || 0,
+  };
 }
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  
-  const results = [];
+
+  const host = req.headers?.host;
+  const protocol = host?.includes('localhost') ? 'http' : 'https';
+  const baseUrl = host ? `${protocol}://${host}` : null;
+
   const errors = [];
-  
-  // Fetch from all sources in parallel
-  const [sabinResult, githubResult] = await Promise.allSettled([
+  const liveResults = [];
+
+  // Fetch all sources in parallel
+  const [sabinRes, intlRes, localRes] = await Promise.allSettled([
     fetchSabinmagar(),
-    fetchGithub(),
+    fetchInternational(),
+    fetchLocalData(baseUrl),
   ]);
-  
-  if (sabinResult.status === 'fulfilled') results.push(sabinResult.value);
-  else errors.push({ source: 'sabinmagar', error: sabinResult.reason?.message });
-  
-  if (githubResult.status === 'fulfilled') results.push(githubResult.value);
-  else errors.push({ source: 'github', error: githubResult.reason?.message });
-  
-  if (results.length === 0) {
+
+  if (sabinRes.status === 'fulfilled') liveResults.push(sabinRes.value);
+  else errors.push({ source: 'sabinmagar', error: sabinRes.reason?.message });
+
+  if (intlRes.status === 'fulfilled') liveResults.push(intlRes.value);
+  else errors.push({ source: 'international', error: intlRes.reason?.message });
+
+  const localData = localRes.status === 'fulfilled' ? localRes.value : null;
+  if (!localData) errors.push({ source: 'local', error: localRes.reason?.message });
+
+  // If we have local data latest, add it as a source too
+  if (localData?.latest) {
+    liveResults.push({
+      source: 'local',
+      date: localData.latest.date,
+      gold: localData.latest.gold,
+      gold22k: localData.latest.gold22k || Math.round((localData.latest.gold * 22 / 24) / 100) * 100,
+      silver: localData.latest.silver,
+    });
+  }
+
+  const latest = verifyAndMerge(liveResults);
+
+  if (!latest) {
     return res.status(500).json({ error: 'All sources failed', details: errors });
   }
-  
-  // Get verified latest prices
-  const latest = verifyPrices(results);
-  
-  // Get historical data from github source if available
-  const githubData = results.find(r => r.source === 'github');
-  const history = githubData?.history || [];
-  
-  // Enrich history with 22K prices
-  const enrichedHistory = history.map(day => ({
-    ...day,
-    gold22k: day.gold22k || Math.round((parseInt(day.gold || 0) * 22 / 24) / 100) * 100,
+
+  // History from local data
+  const history = (localData?.history || []).map(d => ({
+    date: d.date,
+    gold: d.gold,
+    gold22k: d.gold22k || Math.round((d.gold * 22 / 24) / 100) * 100,
+    silver: d.silver,
   }));
-  
+
   return res.status(200).json({
     status: 200,
     updated: new Date().toISOString(),
-    latest: {
-      date: latest.date,
-      gold: latest.gold,
-      gold22k: latest.gold22k,
-      silver: latest.silver,
-      gold_per_10g: latest.gold_per_10g || 0,
-      silver_per_10g: latest.silver_per_10g || 0,
-      verified: latest.verified || false,
-      sources_count: latest.sources_count || 1,
-    },
-    history: enrichedHistory,
-    sources: results.map(r => r.source),
+    latest,
+    history,
+    sources: liveResults.map(r => r.source),
     errors: errors.length > 0 ? errors : undefined,
   });
 }
