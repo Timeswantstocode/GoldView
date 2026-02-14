@@ -9,6 +9,7 @@ import {
   X, Calendar, Zap, Activity, Coins, ArrowRightLeft, Globe, ArrowDown, History
 } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 
 ChartJS.register(...registerables, Filler, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
@@ -432,6 +433,7 @@ export default function App() {
         </footer>
 
         <Analytics />
+        <SpeedInsights />
       </div>
     </HelmetProvider>
   );
