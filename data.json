@@ -669,734 +669,735 @@
         "gold": 240000,
         "tejabi": 237300,
         "silver": 3210,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-04",
         "gold": 240200,
         "tejabi": 235900,
         "silver": 3210,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-05",
         "gold": 240500,
         "tejabi": 234800,
         "silver": 3200,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-06",
         "gold": 240800,
         "tejabi": 235400,
         "silver": 3190,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-07",
         "gold": 241200,
         "tejabi": 236000,
         "silver": 3180,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-08",
         "gold": 241200,
-        "tejabi": 221108,
+        "tejabi": 236000,
         "silver": 3180,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2025-11-09",
         "gold": 241500,
         "tejabi": 236200,
         "silver": 3175,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-10",
         "gold": 241800,
         "tejabi": 239100,
         "silver": 3170,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-11",
         "gold": 242000,
         "tejabi": 243900,
         "silver": 3165,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-12",
         "gold": 241900,
         "tejabi": 241900,
         "silver": 3160,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-13",
         "gold": 242100,
         "tejabi": 247700,
         "silver": 3160,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-14",
         "gold": 242300,
         "tejabi": 247200,
         "silver": 3155,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-15",
         "gold": 242300,
-        "tejabi": 222116,
+        "tejabi": 247200,
         "silver": 3155,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2025-11-16",
         "gold": 242500,
         "tejabi": 240400,
         "silver": 3150,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-17",
         "gold": 242400,
         "tejabi": 240900,
         "silver": 3150,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-18",
         "gold": 242200,
         "tejabi": 237100,
         "silver": 3150,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-19",
         "gold": 242300,
         "tejabi": 239900,
         "silver": 3150,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-20",
         "gold": 243000,
         "tejabi": 240600,
         "silver": 3185,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-21",
         "gold": 241700,
         "tejabi": 239300,
         "silver": 3100,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-22",
         "gold": 241700,
-        "tejabi": 221566,
+        "tejabi": 239300,
         "silver": 3100,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2025-11-23",
         "gold": 244600,
         "tejabi": 242100,
         "silver": 3135,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-24",
         "gold": 242700,
         "tejabi": 240300,
         "silver": 3115,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-25",
         "gold": 247900,
         "tejabi": 245400,
         "silver": 3200,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-26",
         "gold": 248500,
         "tejabi": 246300,
         "silver": 3250,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-27",
         "gold": 249500,
         "tejabi": 245900,
         "silver": 3300,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-28",
         "gold": 251000,
         "tejabi": 248100,
         "silver": 3400,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-11-29",
         "gold": 251000,
-        "tejabi": 230092,
+        "tejabi": 248100,
         "silver": 3400,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2025-11-30",
         "gold": 252500,
         "tejabi": 249700,
         "silver": 3480,
-        "source": "Interpolated"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-01",
         "gold": 253600,
         "tejabi": 251100,
         "silver": 3535,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-02",
         "gold": 253300,
         "tejabi": 250800,
         "silver": 3545,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-03",
         "gold": 254100,
         "tejabi": 251600,
         "silver": 3655,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-04",
         "gold": 253300,
         "tejabi": 250800,
         "silver": 3625,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-05",
         "gold": 252400,
         "tejabi": 249900,
         "silver": 3555,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-06",
         "gold": 252400,
-        "tejabi": 231375,
+        "tejabi": 249900,
         "silver": 3555,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2025-12-07",
         "gold": 252200,
         "tejabi": 249700,
         "silver": 3605,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-08",
         "gold": 252900,
         "tejabi": 250400,
         "silver": 3585,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-09",
         "gold": 251900,
         "tejabi": 249400,
         "silver": 3600,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-10",
         "gold": 252100,
         "tejabi": 249600,
         "silver": 3750,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-11",
         "gold": 253100,
         "tejabi": 250600,
         "silver": 3805,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-12",
         "gold": 256600,
         "tejabi": 254000,
         "silver": 3905,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-13",
         "gold": 256600,
-        "tejabi": 235225,
+        "tejabi": 254000,
         "silver": 3905,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2025-12-14",
         "gold": 258800,
         "tejabi": 256200,
         "silver": 3825,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-15",
         "gold": 260700,
         "tejabi": 258100,
         "silver": 3870,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-16",
         "gold": 259000,
         "tejabi": 256400,
         "silver": 3885,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-17",
         "gold": 259700,
         "tejabi": 257100,
         "silver": 4055,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-18",
         "gold": 260400,
         "tejabi": 257800,
         "silver": 4080,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-19",
         "gold": 258400,
         "tejabi": 255800,
         "silver": 4005,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-20",
         "gold": 258400,
-        "tejabi": 236875,
+        "tejabi": 255800,
         "silver": 4005,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2025-12-21",
         "gold": 258300,
         "tejabi": 255700,
         "silver": 4105,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-22",
         "gold": 261700,
         "tejabi": 259100,
         "silver": 4235,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-23",
         "gold": 267200,
         "tejabi": 264500,
         "silver": 4255,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-24",
         "gold": 268100,
         "tejabi": 265400,
         "silver": 4420,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-25",
         "gold": 267500,
         "tejabi": 264800,
         "silver": 4400,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-26",
         "gold": 269300,
         "tejabi": 266600,
         "silver": 4565,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-27",
         "gold": 269300,
-        "tejabi": 246867,
+        "tejabi": 266600,
         "silver": 4565,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2025-12-28",
         "gold": 270600,
         "tejabi": 267900,
         "silver": 4835,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-29",
         "gold": 270000,
         "tejabi": 267300,
         "silver": 4895,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-30",
         "gold": 262100,
         "tejabi": 259500,
         "silver": 4590,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2025-12-31",
         "gold": 261000,
         "tejabi": 258400,
         "silver": 4470,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-01",
         "gold": 259600,
         "tejabi": 257000,
         "silver": 4415,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-02",
         "gold": 262500,
         "tejabi": 259900,
         "silver": 4525,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-03",
         "gold": 262500,
-        "tejabi": 240634,
+        "tejabi": 259900,
         "silver": 4525,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2026-01-04",
         "gold": 260400,
         "tejabi": 257800,
         "silver": 4500,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-05",
         "gold": 265000,
         "tejabi": 262300,
         "silver": 4685,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-06",
         "gold": 268100,
         "tejabi": 265400,
         "silver": 4880,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-07",
         "gold": 267700,
         "tejabi": 265000,
         "silver": 4935,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-08",
         "gold": 265700,
         "tejabi": 263000,
         "silver": 4835,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-09",
         "gold": 267800,
         "tejabi": 265100,
         "silver": 4780,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-10",
         "gold": 267800,
-        "tejabi": 245492,
+        "tejabi": 265100,
         "silver": 4780,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2026-01-11",
         "gold": 270600,
         "tejabi": 267900,
         "silver": 4990,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-12",
         "gold": 274700,
         "tejabi": 271900,
         "silver": 5195,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-13",
         "gold": 276500,
         "tejabi": 273700,
         "silver": 5340,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-14",
         "gold": 278000,
         "tejabi": 275200,
         "silver": 5655,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-15",
         "gold": 276500,
         "tejabi": 273700,
         "silver": 5485,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-16",
         "gold": 277200,
         "tejabi": 274400,
         "silver": 5645,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-17",
         "gold": 277200,
-        "tejabi": 254110,
+        "tejabi": 274400,
         "silver": 5645,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2026-01-18",
         "gold": 277800,
         "tejabi": 275000,
         "silver": 5625,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-19",
         "gold": 282000,
         "tejabi": 279200,
         "silver": 5810,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-20",
         "gold": 284700,
         "tejabi": 281800,
         "silver": 5880,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-21",
         "gold": 295100,
         "tejabi": 292100,
         "silver": 5920,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-22",
         "gold": 292200,
         "tejabi": 289300,
         "silver": 5870,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-23",
         "gold": 301400,
         "tejabi": 298400,
         "silver": 6190,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-24",
         "gold": 301400,
-        "tejabi": 276293,
+        "tejabi": 298400,
         "silver": 6190,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2026-01-25",
         "gold": 303800,
         "tejabi": 300800,
         "silver": 6480,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-26",
         "gold": 309000,
         "tejabi": 305900,
         "silver": 6765,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-27",
         "gold": 309300,
         "tejabi": 306200,
         "silver": 6870,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-28",
         "gold": 318800,
         "tejabi": 315600,
         "silver": 7300,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-29",
         "gold": 339300,
         "tejabi": 335900,
         "silver": 7505,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-30",
         "gold": 318800,
         "tejabi": 315600,
         "silver": 7065,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-01-31",
         "gold": 318800,
-        "tejabi": 292244,
+        "tejabi": 315600,
         "silver": 7065,
-        "source": "Saturday"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2026-02-01",
         "gold": 300000,
         "tejabi": 297000,
         "silver": 5500,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-02",
         "gold": 286600,
         "tejabi": 283700,
         "silver": 5200,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-03",
         "gold": 290300,
         "tejabi": 287400,
         "silver": 5335,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-04",
         "gold": 304700,
         "tejabi": 301600,
         "silver": 5600,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-05",
         "gold": 295200,
         "tejabi": 292200,
         "silver": 4980,
-        "source": "Recovery"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-06",
         "gold": 291000,
         "tejabi": 288100,
         "silver": 4710,
-        "source": "Recovery"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-07",
         "gold": 291000,
-        "tejabi": 266760,
+        "tejabi": 288100,
         "silver": 4710,
-        "source": "FENEGOSIDA"
+        "source": "Saturday (from Friday)"
     },
     {
         "date": "2026-02-08",
         "gold": 300500,
         "tejabi": 297500,
         "silver": 5010,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-09",
         "gold": 304600,
         "tejabi": 301500,
         "silver": 5250,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-10",
         "gold": 305500,
         "tejabi": 302400,
         "silver": 5240,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-11",
         "gold": 306600,
         "tejabi": 303500,
         "silver": 5290,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-12",
         "gold": 306500,
         "tejabi": 303400,
         "silver": 5340,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-13",
         "gold": 303500,
         "tejabi": 300500,
         "silver": 5000,
-        "source": "FENEGOSIDA"
+        "source": "Scraped/Verified"
     },
     {
         "date": "2026-02-14",
         "gold": 303500,
-        "tejabi": 278218,
+        "tejabi": 300500,
         "silver": 5000,
-        "source": "FENEGOSIDA"
+        "source": "Saturday (from Friday)"
     },
     {
-        "date": "2026-02-15 22:23",
+        "date": "2026-02-15 22:46",
         "gold": 305800,
         "tejabi": 302700,
         "silver": 4985,
-        "source": "Ashesh (Backup)"
+        "source": "FENEGOSIDA / Ashesh (Tejabi)",
+        "verified": true
     }
 ]

@@ -72,13 +72,14 @@ def get_candidates(url, metal):
             prices = []
             for row in rows:
                 text = row.get_text()
-                if metal == "gold" and "Gold Hallmark" in text and "Tola" in text:
+                # Match "Gold Hallmark" or "Gold Tajabi" or "Silver" with "Tola"
+                if metal == "gold" and ("Gold Hallmark" in text or "छापावाल" in text) and "Tola" in text:
                     m = re.search(r'(\d{5,6})', text)
                     if m: prices.append(int(m.group(1)))
-                elif metal == "tejabi" and "Gold Tajabi" in text and "Tola" in text:
+                elif metal == "tejabi" and ("Gold Tajabi" in text or "तेजाबी" in text) and "Tola" in text:
                     m = re.search(r'(\d{5,6})', text)
                     if m: prices.append(int(m.group(1)))
-                elif metal == "silver" and "Silver" in text and "Tola" in text:
+                elif metal == "silver" and ("Silver" in text or "चाँदी" in text) and "Tola" in text:
                     m = re.search(r'(\d{4,5})', text)
                     if m: prices.append(int(m.group(1)))
             if prices: return prices
