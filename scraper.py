@@ -215,4 +215,10 @@ def update():
     print(f"SUCCESS: Gold {final_gold}, Tejabi {final_tejabi}, Silver {final_silver} via {source_info}")
 
 if __name__ == "__main__":
-    update()
+    import sys
+    # Support for manual notification testing
+    if len(sys.argv) > 1 and sys.argv[1] == "--test-notify":
+        print("RUNNING NOTIFICATION TEST...")
+        send_push_notification(120000, 119000, 1450, 100, 100, 10)
+    else:
+        update()

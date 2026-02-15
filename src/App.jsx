@@ -140,6 +140,33 @@ export default function App() {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
+  const [testNotifLoading, setTestNotifLoading] = useState(false);
+
+  const handleTestNotification = async () => {
+    if (notifStatus !== 'granted') {
+      handleNotificationRequest();
+      return;
+    }
+    
+    setTestNotifLoading(true);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      registration.showNotification("GoldView Test Alert 🔔", {
+        body: "Success! Your device is ready to receive live price updates.",
+        icon: "/logo192.png",
+        badge: "/logo192.png",
+        vibrate: [200, 100, 200],
+        tag: 'test-notification'
+      });
+      // Small delay for UX
+      setTimeout(() => setTestNotifLoading(false), 1000);
+    } catch (err) {
+      console.error("Test notification failed:", err);
+      setTestNotifLoading(false);
+      alert("Test failed. Please ensure notifications are allowed in your device settings.");
+    }
+  };
+
   const handleNotificationRequest = async () => {
     // 1. Handle iOS Safari (Non-standalone)
     if (isIOS && !isStandalone) {
@@ -291,11 +318,9 @@ export default function App() {
             </div>
           </div>
           <div className="flex gap-3">
-            {notifStatus !== 'granted' && (
-              <button onClick={handleNotificationRequest} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all">
-                <Bell className="w-5 h-5 text-zinc-400" />
-              </button>
-            )}
+            <button onClick={handleTestNotification} className={`p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`}>
+              <Bell className={`w-5 h-5 ${notifStatus === 'granted' ? 'text-[#D4AF37]' : 'text-zinc-400'} ${testNotifLoading ? 'animate-bounce' : ''}`} />
+            </button>
             <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all">
               <RefreshCcw className="w-5 h-5 text-zinc-400" />
             </button>
