@@ -19,7 +19,6 @@ def send_push_notification(new_gold, new_silver, change_g, change_s):
         print("PUSH SKIPPED: OneSignal keys missing in GitHub Secrets.")
         return
 
-    # Construct the alert message
     msg_parts = []
     if change_g != 0:
         direction = "increased" if change_g > 0 else "decreased"
@@ -27,6 +26,8 @@ def send_push_notification(new_gold, new_silver, change_g, change_s):
     if change_s != 0:
         direction = "increased" if change_s > 0 else "decreased"
         msg_parts.append(f"Silver {direction} by रू {abs(change_s)}")
+    
+    if not msg_parts: return
     
     full_msg = " & ".join(msg_parts) + f". New Rate: रू {new_gold}."
 
@@ -53,8 +54,6 @@ def send_push_notification(new_gold, new_silver, change_g, change_s):
 
 def get_candidates(url, metal):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0'}
-    
-    # --- UNCOMPROMISED BLACKLIST ---
     purity = [999, 9999, 9990, 9167, 9583, 916, 750]
     weights = [1166, 11664]
     office_nums = [453227, 453228, 4532270]
@@ -64,15 +63,11 @@ def get_candidates(url, metal):
     try:
         r = requests.get(url, headers=headers, timeout=25, verify=False)
         r.raise_for_status()
-        
         raw_html = r.text.replace(',', '')
-        # Handle cases where prices might be split or have spaces
         raw_html = re.sub(r'(\d+)\s*रु\s*(\d+)', r'\1\2', raw_html)
-        
         soup = BeautifulSoup(raw_html, 'html.parser')
         
-        # Special handling for Ashesh Widget
-        if "ashesh.com.np" in url and "widget.php" in url:
+        if "ashesh.com.np" in url:
             rows = soup.find_all('tr')
             prices = []
             for row in rows:
@@ -88,10 +83,8 @@ def get_candidates(url, metal):
                     if m: prices.append(int(m.group(1)))
             if prices: return prices
 
-        # General scraping logic
         for junk in soup(["script", "style", "footer", "header", "nav", "aside"]):
             junk.decompose()
-            
         content = soup.get_text(separator=' ')
 
         if metal == "gold":
@@ -105,7 +98,6 @@ def get_candidates(url, metal):
             min_p, max_p = 1000, 15000
 
         matches = re.findall(pattern, content, re.IGNORECASE | re.DOTALL)
-        
         if not matches:
             raw_p = r"(\d{6})" if metal in ["gold", "tejabi"] else r"(\d{4,5})"
             matches = re.findall(raw_p, content)
@@ -116,41 +108,59 @@ def get_candidates(url, metal):
             if val in blacklist: continue
             if min_p <= val <= max_p:
                 valid.append(val)
-        
         return valid
     except:
         return []
 
+def verify_price(primary, backup, tolerance=0.05):
+    """Verifies primary price against backup within a tolerance percentage."""
+    if primary > 0 and backup > 0:
+        diff = abs(primary - backup) / primary
+        if diff <= tolerance:
+            return primary, True # Verified
+        else:
+            print(f"VERIFICATION WARNING: Primary {primary} and Backup {backup} differ by {diff:.2%}")
+            return primary, False # Unverified but using primary
+    return primary or backup, False
+
 def update():
     file = 'data.json'
+    widget_url = "https://www.ashesh.com.np/gold/widget.php?api=521224q192"
+    fenegosida_url = "https://fenegosida.org/"
     
     # 1. Scrape Candidates
-    widget_url = "https://www.ashesh.com.np/gold/widget.php?api=521224q192"
-    
-    f_gold = get_candidates("https://fenegosida.org/", "gold")
-    f_silver = get_candidates("https://fenegosida.org/", "silver")
+    f_gold = get_candidates(fenegosida_url, "gold")
+    f_silver = get_candidates(fenegosida_url, "silver")
     
     a_gold = get_candidates(widget_url, "gold")
     a_tejabi = get_candidates(widget_url, "tejabi")
     a_silver = get_candidates(widget_url, "silver")
 
-    # 2. Pick Maximum / Best Source
-    all_gold = f_gold + a_gold
-    all_silver = f_silver + a_silver
+    # 2. Source Prioritization & Verification
+    # Gold 24k: FENEGOSIDA (Primary), Ashesh (Backup)
+    primary_gold = max(f_gold) if f_gold else 0
+    backup_gold = max(a_gold) if a_gold else 0
+    final_gold, gold_verified = verify_price(primary_gold, backup_gold)
     
-    final_gold = max(all_gold) if all_gold else 0
-    final_silver = max(all_silver) if all_silver else 0
+    # Silver: FENEGOSIDA (Primary), Ashesh (Backup)
+    primary_silver = max(f_silver) if f_silver else 0
+    backup_silver = max(a_silver) if a_silver else 0
+    final_silver, silver_verified = verify_price(primary_silver, backup_silver)
     
-    # Tejabi logic: Use scraped value if available, else fallback to calculation
-    if a_tejabi:
-        final_tejabi = max(a_tejabi)
-    else:
-        final_tejabi = int(final_gold * 0.9167) if final_gold > 0 else 0
+    # Tejabi: Ashesh (Primary Only)
+    final_tejabi = max(a_tejabi) if a_tejabi else int(final_gold * 0.9167)
+    tejabi_verified = True if a_tejabi else False
 
     # 3. Source Attribution
-    source_info = "None"
-    if final_gold > 0:
-        source_info = "FENEGOSIDA" if final_gold in f_gold else "Ashesh (Backup)"
+    sources = []
+    if f_gold and final_gold == primary_gold: sources.append("FENEGOSIDA")
+    elif a_gold: sources.append("Ashesh")
+    
+    if a_tejabi: sources.append("Ashesh (Tejabi)")
+    
+    source_info = " / ".join(sources) if sources else "None"
+    if not gold_verified or not silver_verified:
+        source_info += " (Unverified)"
 
     # 4. History Handling
     history = []
@@ -169,7 +179,6 @@ def update():
         last = history[-1]
         change_g = final_gold - last['gold']
         change_s = final_silver - last['silver']
-        
         if change_g != 0 or change_s != 0:
             send_push_notification(final_gold, final_silver, change_g, change_s)
 
@@ -182,7 +191,8 @@ def update():
         "gold": final_gold,
         "tejabi": final_tejabi,
         "silver": final_silver,
-        "source": source_info
+        "source": source_info,
+        "verified": gold_verified and silver_verified and tejabi_verified
     }
 
     # 6. Deduplication
@@ -191,7 +201,6 @@ def update():
     else:
         history.append(new_entry)
 
-    # Maintain 200 data points
     with open(file, 'w') as f:
         json.dump(history[-200:], f, indent=4)
     
