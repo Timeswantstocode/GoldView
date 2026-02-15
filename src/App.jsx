@@ -6,7 +6,7 @@ import {
 } from 'chart.js';
 import { 
   LayoutDashboard, Calculator, RefreshCcw, TrendingUp, 
-  X, Calendar, Zap, Activity, Coins, ArrowRightLeft, Globe, ArrowDown
+  X, Calendar, Zap, Activity, Coins, ArrowRightLeft, Globe, ArrowDown, Bell
 } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
@@ -97,6 +97,7 @@ export default function App() {
   const [timeframe, setTimeframe] = useState(7);
   const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
   const [currCalc, setCurrCalc] = useState({ amount: '1', source: 'USD', isSwapped: false });
+  const [notifStatus, setNotifStatus] = useState('default');
 
   const chartRef = useRef(null);
 
@@ -124,7 +125,28 @@ export default function App() {
         localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
         setForexLoading(false);
     }).catch(() => setForexLoading(false));
+
+    // Initialize OneSignal and check permission
+    if (window.OneSignal) {
+      window.OneSignal.push(() => {
+        window.OneSignal.getNotificationPermission().then(permission => {
+          setNotifStatus(permission);
+        });
+      });
+    }
   }, []);
+
+  const handleNotificationRequest = () => {
+    if (window.OneSignal) {
+      window.OneSignal.push(() => {
+        window.OneSignal.showNativePrompt().then(() => {
+          window.OneSignal.getNotificationPermission().then(permission => {
+            setNotifStatus(permission);
+          });
+        });
+      });
+    }
+  };
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
 
@@ -242,21 +264,29 @@ export default function App() {
             </div>
             <h1 className="text-4xl font-black tracking-tighter text-white">GoldView</h1>
           </div>
-          <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all">
-            <RefreshCcw className={`w-5 h-5 transition-colors duration-500 ${forexLoading ? 'animate-spin' : ''}`} style={{ color: themeColor }} />
-          </button>
+          <div className="flex gap-3">
+            {notifStatus !== 'granted' && (
+              <button onClick={handleNotificationRequest} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all">
+                <Bell className="w-5 h-5 text-zinc-400" />
+              </button>
+            )}
+            <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all">
+              <RefreshCcw className="w-5 h-5 text-zinc-400" />
+            </button>
+          </div>
         </header>
 
         {/* --- MARKET DASHBOARD --- */}
         <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
           <main className="px-6 space-y-6 relative z-10 animate-in fade-in duration-500">
             <div className="space-y-4">
-              {['gold', 'silver', 'usd'].map((type) => {
+              {['gold', 'tejabi', 'silver', 'usd'].map((type) => {
                  const isActive = activeMetal === type;
                  const diff = getDayDiff(type);
                  const val = type === 'usd' ? (forexHistory[forexHistory.length-1]?.usdRate || 0) : (priceData[priceData.length-1]?.[type] || 0);
                  const meta = {
                    gold: { label: '24K Chhapawal Gold', sub: 'per tola', grad: 'from-[#D4AF37]/50 to-[#D4AF37]/15' },
+                   tejabi: { label: '22K Tejabi Gold', sub: 'per tola', grad: 'from-[#CD7F32]/50 to-[#CD7F32]/15' },
                    silver: { label: 'Pure Silver', sub: 'per tola', grad: 'from-zinc-400/40 to-zinc-600/15' },
                    usd: { label: 'USD to NPR', sub: 'Official Buying Rate', grad: 'from-[#22c55e]/45 to-[#22c55e]/15' }
                  }[type];
@@ -383,10 +413,11 @@ export default function App() {
                             <div className="flex-1 flex flex-col items-end gap-4 text-right">
                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">RECEIVER GETS</p>
                                 <div className="flex flex-col items-center gap-1.5 w-fit ml-auto">
-                                    <span className="text-4xl leading-none">{currCalc.isSwapped ? currencyList.find(c => c.code === currCalc.source)?.flag : '🇳🇵'}</span>
-                                    {currCalc.isSwapped ? <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
+                                    <span className="text-4xl leading-none">{!currCalc.isSwapped ? '🇳🇵' : currencyList.find(c => c.code === currCalc.source)?.flag}</span>
+                                    {!currCalc.isSwapped ? <span className="text-[11px] font-black text-white mt-1">NPR</span> : 
+                                    <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
                                         {currencyList.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
-                                    </select> : <span className="text-[11px] font-black text-white mt-1">NPR</span>}
+                                    </select>}
                                 </div>
                             </div>
                         </div>
@@ -436,7 +467,7 @@ export default function App() {
 
         <footer className="mt-12 px-8 pb-12 text-zinc-600 text-[10px] leading-relaxed border-t border-white/5 pt-10">
           <h2 className="text-zinc-400 font-black mb-2 uppercase tracking-widest">Live Gold and Silver Prices in Nepal</h2>
-          <p>GoldView provides real-time updates for <strong>24K Chhapawal Gold</strong> and <strong>Pure Silver</strong> rates in Nepal.</p>
+          <p>GoldView provides real-time updates for <strong>24K Chhapawal Gold</strong>, <strong>22K Tejabi Gold</strong> and <strong>Pure Silver</strong> rates in Nepal.</p>
           <div className="mt-12 text-center">
             <p className="font-black uppercase tracking-[0.3em] text-zinc-500">Made by @Timeswantstocode</p>
           </div>
