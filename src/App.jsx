@@ -117,15 +117,19 @@ export default function App() {
     }).catch(() => setLoading(false));
 
     fetch(FOREX_PROXY).then(res => res.json()).then(json => {
-        const transformed = json.data.payload.map(day => ({
+        // Correctly handle the response from api/forex.js
+        const transformed = (json.rates || []).map(day => ({
           date: day.date,
-          usdRate: parseFloat(day.rates.find(r => r.currency.iso3 === 'USD')?.buy || 0),
-          rates: day.rates
+          usdRate: parseFloat(day.currencies.find(c => c.code === 'USD')?.buy || 0),
+          rates: day.currencies
         })).sort((a, b) => new Date(a.date) - new Date(b.date));
         setForexHistory(transformed);
         localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
         setForexLoading(false);
-    }).catch(() => setForexLoading(false));
+    }).catch((err) => {
+        console.error("Forex fetch failed:", err);
+        setForexLoading(false);
+    });
 
     // Check notification permission
     if ('Notification' in window) {
@@ -459,15 +463,15 @@ export default function App() {
                           <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-60">Payout Estimate</p>
                        </div>
                        <h3 className="text-5xl font-black tracking-tighter relative z-10">
-                          {(() => {
-                            const latestRates = forexHistory[forexHistory.length - 1]?.rates || [];
-                            const rateData = latestRates.find(r => r.currency.iso3 === currCalc.source);
-                            const rawRate = parseFloat(rateData?.buy || 133);
-                            const unit = parseInt(rateData?.currency?.unit || 1);
-                            const amt = Number(currCalc.amount) || 0;
-                            if (currCalc.isSwapped) return ((amt / rawRate) * unit).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                            return formatRS((amt / unit) * rawRate);
-                          })()}
+	                          {(() => {
+	                            const latestRates = forexHistory[forexHistory.length - 1]?.rates || [];
+	                            const rateData = latestRates.find(r => r.code === currCalc.source);
+	                            const rawRate = parseFloat(rateData?.buy || 133);
+	                            const unit = parseInt(rateData?.unit || 1);
+	                            const amt = Number(currCalc.amount) || 0;
+	                            if (currCalc.isSwapped) return ((amt / rawRate) * unit).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+	                            return formatRS((amt / unit) * rawRate);
+	                          })()}
                        </h3>
                     </div>
                 </div>
