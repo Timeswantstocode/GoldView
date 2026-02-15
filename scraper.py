@@ -13,7 +13,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 ONESIGNAL_APP_ID = os.getenv('ONESIGNAL_APP_ID')
 ONESIGNAL_REST_KEY = os.getenv('ONESIGNAL_REST_KEY')
 
-def send_push_notification(new_gold, new_silver, change_g, change_s):
+def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t, change_s):
     """Broadcasts native device notifications via OneSignal API"""
     if not ONESIGNAL_APP_ID or not ONESIGNAL_REST_KEY:
         print("PUSH SKIPPED: OneSignal keys missing in GitHub Secrets.")
@@ -22,14 +22,17 @@ def send_push_notification(new_gold, new_silver, change_g, change_s):
     msg_parts = []
     if change_g != 0:
         direction = "increased" if change_g > 0 else "decreased"
-        msg_parts.append(f"Gold {direction} by रू {abs(change_g)}")
+        msg_parts.append(f"Gold {direction} to रू {new_gold}")
+    if change_t != 0:
+        direction = "increased" if change_t > 0 else "decreased"
+        msg_parts.append(f"Tejabi {direction} to रू {new_tejabi}")
     if change_s != 0:
         direction = "increased" if change_s > 0 else "decreased"
-        msg_parts.append(f"Silver {direction} by रू {abs(change_s)}")
+        msg_parts.append(f"Silver {direction} to रू {new_silver}")
     
     if not msg_parts: return
     
-    full_msg = " & ".join(msg_parts) + f". New Rate: रू {new_gold}."
+    full_msg = " | ".join(msg_parts) + "."
 
     header = {
         "Content-Type": "application/json; charset=utf-8", 
@@ -184,8 +187,8 @@ def update():
         change_t = final_tejabi - last.get('tejabi', 0)
         
         if change_g != 0 or change_s != 0 or change_t != 0:
-            # Enhanced notification message to include Tejabi if it changed
-            send_push_notification(final_gold, final_silver, change_g, change_s)
+            # Enhanced notification message to include all changes
+            send_push_notification(final_gold, final_tejabi, final_silver, change_g, change_t, change_s)
 
     # 5. Generate Entry
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
