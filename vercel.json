@@ -1,6 +1,19 @@
 {
   "version": 2,
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.viewgold.vercel.app"
+        }
+      ],
+      "destination": "https://viewgold.vercel.app/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
