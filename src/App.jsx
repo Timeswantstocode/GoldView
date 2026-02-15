@@ -128,14 +128,9 @@ export default function App() {
     }).catch(() => setForexLoading(false));
 
     // Check notification permission
-    const checkPermission = () => {
-      if ('Notification' in window) {
-        setNotifStatus(Notification.permission);
-      } else if (window.OneSignal) {
-        setNotifStatus(window.OneSignal.Notifications.permission ? 'granted' : 'default');
-      }
-    };
-    checkPermission();
+    if ('Notification' in window) {
+      setNotifStatus(Notification.permission);
+    }
   }, []);
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -149,28 +144,23 @@ export default function App() {
     }
 
     // 2. Handle browsers that don't support Notifications at all
-    if (!('Notification' in window) && !window.OneSignal) {
-      alert("This browser does not support notifications. Please try Safari on iOS (Add to Home Screen) or Chrome on Android/Desktop.");
+    if (!('Notification' in window)) {
+      alert("Notifications are not supported in this browser. If you're on iPhone, please 'Add to Home Screen' first.");
       return;
     }
 
-    // 3. Use OneSignal if available, otherwise fallback to native
+    // 3. Native Web Push Request
     try {
-      if (window.OneSignal) {
-        await window.OneSignal.Notifications.requestPermission();
-        setNotifStatus(window.OneSignal.Notifications.permission ? 'granted' : 'denied');
-      } else {
-        const permission = await Notification.requestPermission();
-        setNotifStatus(permission);
-        if (permission === 'granted') {
-          const registration = await navigator.serviceWorker.ready;
-          registration.showNotification("GoldView Nepal", {
-            body: "Price alerts enabled! You'll be notified when rates change.",
-            icon: "/logo192.png",
-            badge: "/logo192.png",
-            tag: 'welcome-notification'
-          });
-        }
+      const permission = await Notification.requestPermission();
+      setNotifStatus(permission);
+      if (permission === 'granted') {
+        const registration = await navigator.serviceWorker.ready;
+        registration.showNotification("GoldView Nepal", {
+          body: "Price alerts enabled! You'll be notified when rates change.",
+          icon: "/logo192.png",
+          badge: "/logo192.png",
+          tag: 'welcome-notification'
+        });
       }
     } catch (err) {
       console.error("Notification request failed:", err);
