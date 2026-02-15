@@ -1,381 +1,1402 @@
 [
-  {"date":"2025-02-01","gold":158200,"tejabi":145022,"silver":1800,"source":"FENEGOSIDA"},
-  {"date":"2025-02-02","gold":158200,"tejabi":145022,"silver":1800,"source":"FENEGOSIDA"},
-  {"date":"2025-02-03","gold":158500,"tejabi":145297,"silver":1810,"source":"Interpolated"},
-  {"date":"2025-02-04","gold":158800,"tejabi":145572,"silver":1815,"source":"Interpolated"},
-  {"date":"2025-02-05","gold":159200,"tejabi":145939,"silver":1820,"source":"Interpolated"},
-  {"date":"2025-02-06","gold":159000,"tejabi":145755,"silver":1820,"source":"Interpolated"},
-  {"date":"2025-02-07","gold":159500,"tejabi":146214,"silver":1825,"source":"Interpolated"},
-  {"date":"2025-02-08","gold":159500,"tejabi":146214,"silver":1825,"source":"Saturday"},
-  {"date":"2025-02-09","gold":159800,"tejabi":146489,"silver":1830,"source":"Interpolated"},
-  {"date":"2025-02-10","gold":160100,"tejabi":146764,"silver":1830,"source":"Interpolated"},
-  {"date":"2025-02-11","gold":160500,"tejabi":147130,"silver":1835,"source":"Interpolated"},
-  {"date":"2025-02-12","gold":160300,"tejabi":146947,"silver":1830,"source":"Interpolated"},
-  {"date":"2025-02-13","gold":160000,"tejabi":146672,"silver":1825,"source":"Interpolated"},
-  {"date":"2025-02-14","gold":160400,"tejabi":147039,"silver":1825,"source":"FENEGOSIDA"},
-  {"date":"2025-02-15","gold":160400,"tejabi":147039,"silver":1825,"source":"Saturday"},
-  {"date":"2025-02-16","gold":160800,"tejabi":147405,"silver":1830,"source":"Interpolated"},
-  {"date":"2025-02-17","gold":161200,"tejabi":147772,"silver":1835,"source":"Interpolated"},
-  {"date":"2025-02-18","gold":161500,"tejabi":148047,"silver":1840,"source":"Interpolated"},
-  {"date":"2025-02-19","gold":161400,"tejabi":147955,"silver":1840,"source":"Interpolated"},
-  {"date":"2025-02-20","gold":161800,"tejabi":148322,"silver":1845,"source":"Interpolated"},
-  {"date":"2025-02-21","gold":162200,"tejabi":148689,"silver":1845,"source":"Interpolated"},
-  {"date":"2025-02-22","gold":162200,"tejabi":148689,"silver":1845,"source":"Saturday"},
-  {"date":"2025-02-23","gold":162400,"tejabi":148872,"silver":1850,"source":"Interpolated"},
-  {"date":"2025-02-24","gold":162700,"tejabi":149147,"silver":1850,"source":"Interpolated"},
-  {"date":"2025-02-25","gold":162300,"tejabi":148780,"silver":1845,"source":"Interpolated"},
-  {"date":"2025-02-26","gold":162100,"tejabi":148597,"silver":1845,"source":"Interpolated"},
-  {"date":"2025-02-27","gold":162400,"tejabi":148872,"silver":1850,"source":"Interpolated"},
-  {"date":"2025-02-28","gold":162500,"tejabi":148964,"silver":1850,"source":"Interpolated"},
-  {"date":"2025-03-01","gold":162500,"tejabi":148964,"silver":1850,"source":"FENEGOSIDA"},
-  {"date":"2025-03-02","gold":163000,"tejabi":149422,"silver":1855,"source":"Interpolated"},
-  {"date":"2025-03-03","gold":163500,"tejabi":149881,"silver":1860,"source":"Interpolated"},
-  {"date":"2025-03-04","gold":164200,"tejabi":150522,"silver":1865,"source":"Interpolated"},
-  {"date":"2025-03-05","gold":165000,"tejabi":151256,"silver":1870,"source":"Interpolated"},
-  {"date":"2025-03-06","gold":165800,"tejabi":151989,"silver":1880,"source":"Interpolated"},
-  {"date":"2025-03-07","gold":166500,"tejabi":152631,"silver":1890,"source":"Interpolated"},
-  {"date":"2025-03-08","gold":166500,"tejabi":152631,"silver":1890,"source":"Saturday"},
-  {"date":"2025-03-09","gold":167200,"tejabi":153272,"silver":1900,"source":"Interpolated"},
-  {"date":"2025-03-10","gold":168000,"tejabi":154006,"silver":1910,"source":"Interpolated"},
-  {"date":"2025-03-11","gold":169000,"tejabi":154922,"silver":1920,"source":"Interpolated"},
-  {"date":"2025-03-12","gold":170000,"tejabi":155839,"silver":1925,"source":"Interpolated"},
-  {"date":"2025-03-13","gold":171000,"tejabi":156756,"silver":1935,"source":"Interpolated"},
-  {"date":"2025-03-14","gold":172000,"tejabi":157672,"silver":1940,"source":"FENEGOSIDA"},
-  {"date":"2025-03-15","gold":172000,"tejabi":157672,"silver":1940,"source":"Saturday"},
-  {"date":"2025-03-16","gold":172500,"tejabi":158131,"silver":1945,"source":"Interpolated"},
-  {"date":"2025-03-17","gold":173200,"tejabi":158772,"silver":1950,"source":"Interpolated"},
-  {"date":"2025-03-18","gold":174000,"tejabi":159506,"silver":1960,"source":"Interpolated"},
-  {"date":"2025-03-19","gold":174500,"tejabi":159964,"silver":1965,"source":"Interpolated"},
-  {"date":"2025-03-20","gold":175200,"tejabi":160606,"silver":1975,"source":"Interpolated"},
-  {"date":"2025-03-21","gold":176000,"tejabi":161339,"silver":1985,"source":"Interpolated"},
-  {"date":"2025-03-22","gold":176000,"tejabi":161339,"silver":1985,"source":"Saturday"},
-  {"date":"2025-03-23","gold":176400,"tejabi":161706,"silver":1990,"source":"Interpolated"},
-  {"date":"2025-03-24","gold":176800,"tejabi":162073,"silver":2000,"source":"Interpolated"},
-  {"date":"2025-03-25","gold":177200,"tejabi":162440,"silver":2010,"source":"Interpolated"},
-  {"date":"2025-03-26","gold":177500,"tejabi":162714,"silver":2020,"source":"Interpolated"},
-  {"date":"2025-03-27","gold":177800,"tejabi":162989,"silver":2025,"source":"Interpolated"},
-  {"date":"2025-03-28","gold":178000,"tejabi":163173,"silver":2030,"source":"Interpolated"},
-  {"date":"2025-03-29","gold":178000,"tejabi":163173,"silver":2030,"source":"Saturday"},
-  {"date":"2025-03-30","gold":178100,"tejabi":163264,"silver":2035,"source":"Interpolated"},
-  {"date":"2025-03-31","gold":177900,"tejabi":163081,"silver":2035,"source":"FENEGOSIDA"},
-  {"date":"2025-04-01","gold":178200,"tejabi":163356,"silver":1910,"source":"FENEGOSIDA"},
-  {"date":"2025-04-02","gold":178500,"tejabi":163631,"silver":1915,"source":"Interpolated"},
-  {"date":"2025-04-03","gold":178800,"tejabi":163906,"silver":1920,"source":"Interpolated"},
-  {"date":"2025-04-04","gold":179200,"tejabi":164273,"silver":1930,"source":"Interpolated"},
-  {"date":"2025-04-05","gold":179200,"tejabi":164273,"silver":1930,"source":"Saturday"},
-  {"date":"2025-04-06","gold":179500,"tejabi":164548,"silver":1940,"source":"Interpolated"},
-  {"date":"2025-04-07","gold":180000,"tejabi":165006,"silver":1950,"source":"Interpolated"},
-  {"date":"2025-04-08","gold":180500,"tejabi":165464,"silver":1960,"source":"Interpolated"},
-  {"date":"2025-04-09","gold":180200,"tejabi":165189,"silver":1955,"source":"Interpolated"},
-  {"date":"2025-04-10","gold":180600,"tejabi":165556,"silver":1970,"source":"Interpolated"},
-  {"date":"2025-04-11","gold":181000,"tejabi":165923,"silver":1980,"source":"Interpolated"},
-  {"date":"2025-04-12","gold":181000,"tejabi":165923,"silver":1980,"source":"Saturday"},
-  {"date":"2025-04-13","gold":181500,"tejabi":166381,"silver":2000,"source":"Interpolated"},
-  {"date":"2025-04-14","gold":181800,"tejabi":166656,"silver":2020,"source":"Interpolated"},
-  {"date":"2025-04-15","gold":181200,"tejabi":166106,"silver":2050,"source":"FENEGOSIDA"},
-  {"date":"2025-04-16","gold":181500,"tejabi":166381,"silver":2040,"source":"Interpolated"},
-  {"date":"2025-04-17","gold":182000,"tejabi":166839,"silver":2030,"source":"Interpolated"},
-  {"date":"2025-04-18","gold":182500,"tejabi":167298,"silver":2010,"source":"Interpolated"},
-  {"date":"2025-04-19","gold":182500,"tejabi":167298,"silver":2010,"source":"Saturday"},
-  {"date":"2025-04-20","gold":182800,"tejabi":167573,"silver":2000,"source":"Interpolated"},
-  {"date":"2025-04-21","gold":183200,"tejabi":167939,"silver":1990,"source":"Interpolated"},
-  {"date":"2025-04-22","gold":183500,"tejabi":168214,"silver":1980,"source":"Interpolated"},
-  {"date":"2025-04-23","gold":183800,"tejabi":168489,"silver":1980,"source":"Interpolated"},
-  {"date":"2025-04-24","gold":184100,"tejabi":168764,"silver":1975,"source":"Interpolated"},
-  {"date":"2025-04-25","gold":184300,"tejabi":168948,"silver":1970,"source":"Interpolated"},
-  {"date":"2025-04-26","gold":184300,"tejabi":168948,"silver":1970,"source":"Saturday"},
-  {"date":"2025-04-27","gold":184500,"tejabi":169131,"silver":1965,"source":"Interpolated"},
-  {"date":"2025-04-28","gold":184700,"tejabi":169315,"silver":1965,"source":"Interpolated"},
-  {"date":"2025-04-29","gold":184600,"tejabi":169223,"silver":1960,"source":"Interpolated"},
-  {"date":"2025-04-30","gold":184400,"tejabi":169040,"silver":1960,"source":"Interpolated"},
-  {"date":"2025-05-01","gold":184500,"tejabi":169131,"silver":1960,"source":"FENEGOSIDA"},
-  {"date":"2025-05-02","gold":184800,"tejabi":169406,"silver":1970,"source":"Interpolated"},
-  {"date":"2025-05-03","gold":184800,"tejabi":169406,"silver":1970,"source":"Saturday"},
-  {"date":"2025-05-04","gold":185200,"tejabi":169773,"silver":1980,"source":"Interpolated"},
-  {"date":"2025-05-05","gold":185600,"tejabi":170140,"silver":1990,"source":"Interpolated"},
-  {"date":"2025-05-06","gold":186000,"tejabi":170506,"silver":2000,"source":"Interpolated"},
-  {"date":"2025-05-07","gold":186500,"tejabi":170965,"silver":2015,"source":"Interpolated"},
-  {"date":"2025-05-08","gold":187000,"tejabi":171423,"silver":2030,"source":"Interpolated"},
-  {"date":"2025-05-09","gold":187400,"tejabi":171790,"silver":2040,"source":"Interpolated"},
-  {"date":"2025-05-10","gold":187400,"tejabi":171790,"silver":2040,"source":"Saturday"},
-  {"date":"2025-05-11","gold":187800,"tejabi":172156,"silver":2050,"source":"Interpolated"},
-  {"date":"2025-05-12","gold":188200,"tejabi":172523,"silver":2060,"source":"Interpolated"},
-  {"date":"2025-05-13","gold":188500,"tejabi":172798,"silver":2070,"source":"Interpolated"},
-  {"date":"2025-05-14","gold":188800,"tejabi":173073,"silver":2075,"source":"Interpolated"},
-  {"date":"2025-05-15","gold":188600,"tejabi":172890,"silver":2080,"source":"FENEGOSIDA"},
-  {"date":"2025-05-16","gold":189000,"tejabi":173256,"silver":2085,"source":"Interpolated"},
-  {"date":"2025-05-17","gold":189000,"tejabi":173256,"silver":2085,"source":"Saturday"},
-  {"date":"2025-05-18","gold":189400,"tejabi":173623,"silver":2090,"source":"Interpolated"},
-  {"date":"2025-05-19","gold":189800,"tejabi":173990,"silver":2090,"source":"Interpolated"},
-  {"date":"2025-05-20","gold":190200,"tejabi":174356,"silver":2095,"source":"Interpolated"},
-  {"date":"2025-05-21","gold":190500,"tejabi":174631,"silver":2100,"source":"Interpolated"},
-  {"date":"2025-05-22","gold":190800,"tejabi":174906,"silver":2105,"source":"Interpolated"},
-  {"date":"2025-05-23","gold":191000,"tejabi":175090,"silver":2110,"source":"Interpolated"},
-  {"date":"2025-05-24","gold":191000,"tejabi":175090,"silver":2110,"source":"Saturday"},
-  {"date":"2025-05-25","gold":191200,"tejabi":175273,"silver":2115,"source":"Interpolated"},
-  {"date":"2025-05-26","gold":191400,"tejabi":175456,"silver":2115,"source":"Interpolated"},
-  {"date":"2025-05-27","gold":191500,"tejabi":175548,"silver":2110,"source":"Interpolated"},
-  {"date":"2025-05-28","gold":191300,"tejabi":175365,"silver":2105,"source":"Interpolated"},
-  {"date":"2025-05-29","gold":191100,"tejabi":175181,"silver":2100,"source":"Interpolated"},
-  {"date":"2025-05-30","gold":191000,"tejabi":175090,"silver":2100,"source":"Interpolated"},
-  {"date":"2025-05-31","gold":191000,"tejabi":175090,"silver":2100,"source":"Saturday"},
-  {"date":"2025-06-01","gold":191200,"tejabi":175273,"silver":2100,"source":"FENEGOSIDA"},
-  {"date":"2025-06-02","gold":191500,"tejabi":175548,"silver":2110,"source":"Interpolated"},
-  {"date":"2025-06-03","gold":191800,"tejabi":175823,"silver":2120,"source":"Interpolated"},
-  {"date":"2025-06-04","gold":192000,"tejabi":176006,"silver":2130,"source":"Interpolated"},
-  {"date":"2025-06-05","gold":192200,"tejabi":176190,"silver":2140,"source":"Interpolated"},
-  {"date":"2025-06-06","gold":192500,"tejabi":176465,"silver":2150,"source":"Interpolated"},
-  {"date":"2025-06-07","gold":192500,"tejabi":176465,"silver":2150,"source":"Saturday"},
-  {"date":"2025-06-08","gold":192600,"tejabi":176556,"silver":2160,"source":"Interpolated"},
-  {"date":"2025-06-09","gold":192700,"tejabi":176648,"silver":2170,"source":"Interpolated"},
-  {"date":"2025-06-10","gold":192800,"tejabi":176740,"silver":2180,"source":"Interpolated"},
-  {"date":"2025-06-11","gold":192900,"tejabi":176831,"silver":2190,"source":"Interpolated"},
-  {"date":"2025-06-12","gold":192700,"tejabi":176648,"silver":2195,"source":"Interpolated"},
-  {"date":"2025-06-13","gold":192600,"tejabi":176556,"silver":2200,"source":"Interpolated"},
-  {"date":"2025-06-14","gold":192600,"tejabi":176556,"silver":2200,"source":"Saturday"},
-  {"date":"2025-06-15","gold":192500,"tejabi":176465,"silver":2200,"source":"FENEGOSIDA"},
-  {"date":"2025-06-16","gold":192700,"tejabi":176648,"silver":2205,"source":"Interpolated"},
-  {"date":"2025-06-17","gold":192900,"tejabi":176831,"silver":2210,"source":"Interpolated"},
-  {"date":"2025-06-18","gold":193100,"tejabi":177015,"silver":2215,"source":"Interpolated"},
-  {"date":"2025-06-19","gold":193000,"tejabi":176923,"silver":2220,"source":"Interpolated"},
-  {"date":"2025-06-20","gold":192800,"tejabi":176740,"silver":2225,"source":"Interpolated"},
-  {"date":"2025-06-21","gold":192800,"tejabi":176740,"silver":2225,"source":"Saturday"},
-  {"date":"2025-06-22","gold":193000,"tejabi":176923,"silver":2230,"source":"Interpolated"},
-  {"date":"2025-06-23","gold":193200,"tejabi":177106,"silver":2235,"source":"Interpolated"},
-  {"date":"2025-06-24","gold":193300,"tejabi":177198,"silver":2240,"source":"Interpolated"},
-  {"date":"2025-06-25","gold":193100,"tejabi":177015,"silver":2245,"source":"Interpolated"},
-  {"date":"2025-06-26","gold":192900,"tejabi":176831,"silver":2240,"source":"Interpolated"},
-  {"date":"2025-06-27","gold":192800,"tejabi":176740,"silver":2235,"source":"Interpolated"},
-  {"date":"2025-06-28","gold":192800,"tejabi":176740,"silver":2235,"source":"Saturday"},
-  {"date":"2025-06-29","gold":193000,"tejabi":176923,"silver":2240,"source":"Interpolated"},
-  {"date":"2025-06-30","gold":193100,"tejabi":177015,"silver":2240,"source":"Interpolated"},
-  {"date":"2025-07-01","gold":193000,"tejabi":176923,"silver":2240,"source":"FENEGOSIDA"},
-  {"date":"2025-07-02","gold":193000,"tejabi":176923,"silver":2240,"source":"Interpolated"},
-  {"date":"2025-07-03","gold":193100,"tejabi":177015,"silver":2245,"source":"Interpolated"},
-  {"date":"2025-07-04","gold":193200,"tejabi":177106,"silver":2250,"source":"Interpolated"},
-  {"date":"2025-07-05","gold":193200,"tejabi":177106,"silver":2250,"source":"Saturday"},
-  {"date":"2025-07-06","gold":193300,"tejabi":177198,"silver":2255,"source":"Interpolated"},
-  {"date":"2025-07-07","gold":193400,"tejabi":177290,"silver":2255,"source":"Interpolated"},
-  {"date":"2025-07-08","gold":193500,"tejabi":177381,"silver":2260,"source":"Interpolated"},
-  {"date":"2025-07-09","gold":193300,"tejabi":177198,"silver":2260,"source":"Interpolated"},
-  {"date":"2025-07-10","gold":193200,"tejabi":177106,"silver":2255,"source":"Interpolated"},
-  {"date":"2025-07-11","gold":193100,"tejabi":177015,"silver":2255,"source":"Interpolated"},
-  {"date":"2025-07-12","gold":193100,"tejabi":177015,"silver":2255,"source":"Saturday"},
-  {"date":"2025-07-13","gold":193000,"tejabi":176923,"silver":2260,"source":"Interpolated"},
-  {"date":"2025-07-14","gold":193050,"tejabi":176969,"silver":2260,"source":"Interpolated"},
-  {"date":"2025-07-15","gold":193050,"tejabi":176969,"silver":2260,"source":"FENEGOSIDA"},
-  {"date":"2025-07-16","gold":193100,"tejabi":177015,"silver":2265,"source":"Interpolated"},
-  {"date":"2025-07-17","gold":193150,"tejabi":177061,"silver":2270,"source":"Interpolated"},
-  {"date":"2025-07-18","gold":193200,"tejabi":177106,"silver":2275,"source":"Interpolated"},
-  {"date":"2025-07-19","gold":193200,"tejabi":177106,"silver":2275,"source":"Saturday"},
-  {"date":"2025-07-20","gold":193300,"tejabi":177198,"silver":2280,"source":"Interpolated"},
-  {"date":"2025-07-21","gold":193400,"tejabi":177290,"silver":2280,"source":"Interpolated"},
-  {"date":"2025-07-22","gold":193500,"tejabi":177381,"silver":2285,"source":"Interpolated"},
-  {"date":"2025-07-23","gold":193400,"tejabi":177290,"silver":2285,"source":"Interpolated"},
-  {"date":"2025-07-24","gold":193300,"tejabi":177198,"silver":2280,"source":"Interpolated"},
-  {"date":"2025-07-25","gold":193200,"tejabi":177106,"silver":2275,"source":"Interpolated"},
-  {"date":"2025-07-26","gold":193200,"tejabi":177106,"silver":2275,"source":"Saturday"},
-  {"date":"2025-07-27","gold":193100,"tejabi":177015,"silver":2270,"source":"Interpolated"},
-  {"date":"2025-07-28","gold":193150,"tejabi":177061,"silver":2275,"source":"Interpolated"},
-  {"date":"2025-07-29","gold":193200,"tejabi":177106,"silver":2280,"source":"Interpolated"},
-  {"date":"2025-07-30","gold":193150,"tejabi":177061,"silver":2280,"source":"Interpolated"},
-  {"date":"2025-07-31","gold":193100,"tejabi":177015,"silver":2280,"source":"Interpolated"},
-  {"date":"2025-08-01","gold":193100,"tejabi":177015,"silver":2280,"source":"FENEGOSIDA"},
-  {"date":"2025-08-02","gold":193100,"tejabi":177015,"silver":2280,"source":"Saturday"},
-  {"date":"2025-08-03","gold":193500,"tejabi":177381,"silver":2285,"source":"Interpolated"},
-  {"date":"2025-08-04","gold":194000,"tejabi":177840,"silver":2290,"source":"Interpolated"},
-  {"date":"2025-08-05","gold":194500,"tejabi":178298,"silver":2295,"source":"Interpolated"},
-  {"date":"2025-08-06","gold":195000,"tejabi":178757,"silver":2300,"source":"Interpolated"},
-  {"date":"2025-08-07","gold":195500,"tejabi":179215,"silver":2310,"source":"Interpolated"},
-  {"date":"2025-08-08","gold":196000,"tejabi":179673,"silver":2320,"source":"Interpolated"},
-  {"date":"2025-08-09","gold":196000,"tejabi":179673,"silver":2320,"source":"Saturday"},
-  {"date":"2025-08-10","gold":196500,"tejabi":180132,"silver":2330,"source":"Interpolated"},
-  {"date":"2025-08-11","gold":197000,"tejabi":180590,"silver":2335,"source":"Interpolated"},
-  {"date":"2025-08-12","gold":197500,"tejabi":181048,"silver":2340,"source":"Interpolated"},
-  {"date":"2025-08-13","gold":198000,"tejabi":181507,"silver":2345,"source":"Interpolated"},
-  {"date":"2025-08-14","gold":198200,"tejabi":181690,"silver":2350,"source":"Interpolated"},
-  {"date":"2025-08-15","gold":198400,"tejabi":181873,"silver":2350,"source":"FENEGOSIDA"},
-  {"date":"2025-08-16","gold":198400,"tejabi":181873,"silver":2350,"source":"Saturday"},
-  {"date":"2025-08-17","gold":199000,"tejabi":182423,"silver":2360,"source":"Interpolated"},
-  {"date":"2025-08-18","gold":199800,"tejabi":183157,"silver":2370,"source":"Interpolated"},
-  {"date":"2025-08-19","gold":200500,"tejabi":183798,"silver":2380,"source":"Interpolated"},
-  {"date":"2025-08-20","gold":201200,"tejabi":184440,"silver":2390,"source":"Interpolated"},
-  {"date":"2025-08-21","gold":202000,"tejabi":185173,"silver":2400,"source":"Interpolated"},
-  {"date":"2025-08-22","gold":202800,"tejabi":185907,"silver":2410,"source":"Interpolated"},
-  {"date":"2025-08-23","gold":202800,"tejabi":185907,"silver":2410,"source":"Saturday"},
-  {"date":"2025-08-24","gold":203500,"tejabi":186548,"silver":2420,"source":"Interpolated"},
-  {"date":"2025-08-25","gold":204200,"tejabi":187190,"silver":2425,"source":"Interpolated"},
-  {"date":"2025-08-26","gold":204800,"tejabi":187740,"silver":2430,"source":"Interpolated"},
-  {"date":"2025-08-27","gold":205500,"tejabi":188382,"silver":2440,"source":"Interpolated"},
-  {"date":"2025-08-28","gold":205800,"tejabi":188657,"silver":2445,"source":"Interpolated"},
-  {"date":"2025-08-29","gold":206000,"tejabi":188840,"silver":2450,"source":"Interpolated"},
-  {"date":"2025-08-30","gold":206000,"tejabi":188840,"silver":2450,"source":"Saturday"},
-  {"date":"2025-08-31","gold":206200,"tejabi":189024,"silver":2450,"source":"Interpolated"},
-  {"date":"2025-09-01","gold":205900,"tejabi":188748,"silver":2450,"source":"FENEGOSIDA"},
-  {"date":"2025-09-02","gold":207000,"tejabi":189757,"silver":2460,"source":"Interpolated"},
-  {"date":"2025-09-03","gold":208200,"tejabi":190857,"silver":2470,"source":"Interpolated"},
-  {"date":"2025-09-04","gold":209500,"tejabi":192049,"silver":2480,"source":"Interpolated"},
-  {"date":"2025-09-05","gold":210800,"tejabi":193240,"silver":2490,"source":"Interpolated"},
-  {"date":"2025-09-06","gold":210800,"tejabi":193240,"silver":2490,"source":"Saturday"},
-  {"date":"2025-09-07","gold":212000,"tejabi":194340,"silver":2500,"source":"FENEGOSIDA"},
-  {"date":"2025-09-08","gold":213200,"tejabi":195440,"silver":2520,"source":"Interpolated"},
-  {"date":"2025-09-09","gold":214500,"tejabi":196632,"silver":2550,"source":"Interpolated"},
-  {"date":"2025-09-10","gold":215800,"tejabi":197824,"silver":2580,"source":"Interpolated"},
-  {"date":"2025-09-11","gold":217000,"tejabi":198924,"silver":2610,"source":"Interpolated"},
-  {"date":"2025-09-12","gold":218500,"tejabi":200299,"silver":2650,"source":"Interpolated"},
-  {"date":"2025-09-13","gold":218500,"tejabi":200299,"silver":2650,"source":"Saturday"},
-  {"date":"2025-09-14","gold":219800,"tejabi":201491,"silver":2690,"source":"Interpolated"},
-  {"date":"2025-09-15","gold":221000,"tejabi":202591,"silver":2730,"source":"Interpolated"},
-  {"date":"2025-09-16","gold":222200,"tejabi":203691,"silver":2760,"source":"Interpolated"},
-  {"date":"2025-09-17","gold":223500,"tejabi":204882,"silver":2780,"source":"Interpolated"},
-  {"date":"2025-09-18","gold":224000,"tejabi":205341,"silver":2800,"source":"Interpolated"},
-  {"date":"2025-09-19","gold":223800,"tejabi":205157,"silver":2810,"source":"Interpolated"},
-  {"date":"2025-09-20","gold":223800,"tejabi":205157,"silver":2810,"source":"Saturday"},
-  {"date":"2025-09-21","gold":223200,"tejabi":204607,"silver":2810,"source":"FENEGOSIDA"},
-  {"date":"2025-09-22","gold":225000,"tejabi":206258,"silver":2850,"source":"Interpolated"},
-  {"date":"2025-09-23","gold":228000,"tejabi":209008,"silver":2950,"source":"Interpolated"},
-  {"date":"2025-09-24","gold":232000,"tejabi":212674,"silver":3050,"source":"Interpolated"},
-  {"date":"2025-09-25","gold":236000,"tejabi":216341,"silver":3150,"source":"Interpolated"},
-  {"date":"2025-09-26","gold":240000,"tejabi":220008,"silver":3250,"source":"Interpolated"},
-  {"date":"2025-09-27","gold":240000,"tejabi":220008,"silver":3250,"source":"Saturday"},
-  {"date":"2025-09-28","gold":245000,"tejabi":224592,"silver":3350,"source":"Interpolated"},
-  {"date":"2025-09-29","gold":248000,"tejabi":227342,"silver":3450,"source":"Interpolated"},
-  {"date":"2025-09-30","gold":251000,"tejabi":230092,"silver":3500,"source":"Interpolated"},
-  {"date":"2025-10-01","gold":253500,"tejabi":232383,"silver":3535,"source":"FENEGOSIDA"},
-  {"date":"2025-10-02","gold":248000,"tejabi":227342,"silver":3400,"source":"Interpolated"},
-  {"date":"2025-10-03","gold":242000,"tejabi":221841,"silver":3250,"source":"Interpolated"},
-  {"date":"2025-10-04","gold":242000,"tejabi":221841,"silver":3250,"source":"Saturday"},
-  {"date":"2025-10-05","gold":230600,"tejabi":211391,"silver":2930,"source":"FENEGOSIDA"},
-  {"date":"2025-10-06","gold":232500,"tejabi":213133,"silver":2980,"source":"Interpolated"},
-  {"date":"2025-10-07","gold":235000,"tejabi":215425,"silver":3030,"source":"Interpolated"},
-  {"date":"2025-10-08","gold":238000,"tejabi":218175,"silver":3080,"source":"Interpolated"},
-  {"date":"2025-10-09","gold":241000,"tejabi":220925,"silver":3130,"source":"Interpolated"},
-  {"date":"2025-10-10","gold":244000,"tejabi":223675,"silver":3180,"source":"Interpolated"},
-  {"date":"2025-10-11","gold":244000,"tejabi":223675,"silver":3180,"source":"Saturday"},
-  {"date":"2025-10-12","gold":246000,"tejabi":225508,"silver":3250,"source":"Interpolated"},
-  {"date":"2025-10-13","gold":247500,"tejabi":226883,"silver":3300,"source":"Interpolated"},
-  {"date":"2025-10-14","gold":248500,"tejabi":227800,"silver":3325,"source":"FENEGOSIDA"},
-  {"date":"2025-10-15","gold":238000,"tejabi":218175,"silver":3100,"source":"FENEGOSIDA"},
-  {"date":"2025-10-16","gold":238500,"tejabi":218633,"silver":3110,"source":"Interpolated"},
-  {"date":"2025-10-17","gold":239000,"tejabi":219091,"silver":3120,"source":"Interpolated"},
-  {"date":"2025-10-18","gold":239000,"tejabi":219091,"silver":3120,"source":"Saturday"},
-  {"date":"2025-10-19","gold":239200,"tejabi":219275,"silver":3130,"source":"Interpolated"},
-  {"date":"2025-10-20","gold":239400,"tejabi":219458,"silver":3140,"source":"Interpolated"},
-  {"date":"2025-10-21","gold":239500,"tejabi":219550,"silver":3150,"source":"Interpolated"},
-  {"date":"2025-10-22","gold":239800,"tejabi":219825,"silver":3160,"source":"Interpolated"},
-  {"date":"2025-10-23","gold":240200,"tejabi":220191,"silver":3170,"source":"Interpolated"},
-  {"date":"2025-10-24","gold":240500,"tejabi":220466,"silver":3180,"source":"Interpolated"},
-  {"date":"2025-10-25","gold":240500,"tejabi":220466,"silver":3180,"source":"Saturday"},
-  {"date":"2025-10-26","gold":240800,"tejabi":220741,"silver":3185,"source":"Interpolated"},
-  {"date":"2025-10-27","gold":241000,"tejabi":220925,"silver":3190,"source":"Interpolated"},
-  {"date":"2025-10-28","gold":240500,"tejabi":220466,"silver":3195,"source":"Interpolated"},
-  {"date":"2025-10-29","gold":240000,"tejabi":220008,"silver":3200,"source":"Interpolated"},
-  {"date":"2025-10-30","gold":239800,"tejabi":219825,"silver":3200,"source":"Interpolated"},
-  {"date":"2025-10-31","gold":239700,"tejabi":219733,"silver":3200,"source":"Interpolated"},
-  {"date":"2025-11-01","gold":239700,"tejabi":219733,"silver":3200,"source":"FENEGOSIDA"},
-  {"date":"2025-11-02","gold":239800,"tejabi":219825,"silver":3205,"source":"Interpolated"},
-  {"date":"2025-11-03","gold":240000,"tejabi":220008,"silver":3210,"source":"Interpolated"},
-  {"date":"2025-11-04","gold":240200,"tejabi":220191,"silver":3210,"source":"Interpolated"},
-  {"date":"2025-11-05","gold":240500,"tejabi":220466,"silver":3200,"source":"Interpolated"},
-  {"date":"2025-11-06","gold":240800,"tejabi":220741,"silver":3190,"source":"Interpolated"},
-  {"date":"2025-11-07","gold":241200,"tejabi":221108,"silver":3180,"source":"Interpolated"},
-  {"date":"2025-11-08","gold":241200,"tejabi":221108,"silver":3180,"source":"Saturday"},
-  {"date":"2025-11-09","gold":241500,"tejabi":221383,"silver":3175,"source":"Interpolated"},
-  {"date":"2025-11-10","gold":241800,"tejabi":221658,"silver":3170,"source":"Interpolated"},
-  {"date":"2025-11-11","gold":242000,"tejabi":221841,"silver":3165,"source":"Interpolated"},
-  {"date":"2025-11-12","gold":241900,"tejabi":221750,"silver":3160,"source":"Interpolated"},
-  {"date":"2025-11-13","gold":242100,"tejabi":221933,"silver":3160,"source":"Interpolated"},
-  {"date":"2025-11-14","gold":242300,"tejabi":222116,"silver":3155,"source":"Interpolated"},
-  {"date":"2025-11-15","gold":242300,"tejabi":222116,"silver":3155,"source":"Saturday"},
-  {"date":"2025-11-16","gold":242500,"tejabi":222300,"silver":3150,"source":"Interpolated"},
-  {"date":"2025-11-17","gold":242400,"tejabi":222208,"silver":3150,"source":"Interpolated"},
-  {"date":"2025-11-18","gold":242200,"tejabi":222025,"silver":3150,"source":"Interpolated"},
-  {"date":"2025-11-19","gold":242300,"tejabi":222116,"silver":3150,"source":"FENEGOSIDA"},
-  {"date":"2025-11-20","gold":243000,"tejabi":222758,"silver":3185,"source":"FENEGOSIDA"},
-  {"date":"2025-11-21","gold":241700,"tejabi":221566,"silver":3100,"source":"FENEGOSIDA"},
-  {"date":"2025-11-22","gold":241700,"tejabi":221566,"silver":3100,"source":"Saturday"},
-  {"date":"2025-11-23","gold":244600,"tejabi":224225,"silver":3135,"source":"FENEGOSIDA"},
-  {"date":"2025-11-24","gold":242700,"tejabi":222483,"silver":3115,"source":"FENEGOSIDA"},
-  {"date":"2025-11-25","gold":247900,"tejabi":227250,"silver":3200,"source":"FENEGOSIDA"},
-  {"date":"2025-11-26","gold":248500,"tejabi":227800,"silver":3250,"source":"Interpolated"},
-  {"date":"2025-11-27","gold":249500,"tejabi":228717,"silver":3300,"source":"Interpolated"},
-  {"date":"2025-11-28","gold":251000,"tejabi":230092,"silver":3400,"source":"Interpolated"},
-  {"date":"2025-11-29","gold":251000,"tejabi":230092,"silver":3400,"source":"Saturday"},
-  {"date":"2025-11-30","gold":252500,"tejabi":231467,"silver":3480,"source":"Interpolated"},
-  {"date":"2025-12-01","gold":253600,"tejabi":232475,"silver":3535,"source":"FENEGOSIDA"},
-  {"date":"2025-12-02","gold":253300,"tejabi":232200,"silver":3545,"source":"FENEGOSIDA"},
-  {"date":"2025-12-03","gold":254100,"tejabi":232933,"silver":3655,"source":"FENEGOSIDA"},
-  {"date":"2025-12-04","gold":253300,"tejabi":232200,"silver":3625,"source":"FENEGOSIDA"},
-  {"date":"2025-12-05","gold":252400,"tejabi":231375,"silver":3555,"source":"FENEGOSIDA"},
-  {"date":"2025-12-06","gold":252400,"tejabi":231375,"silver":3555,"source":"Saturday"},
-  {"date":"2025-12-07","gold":252200,"tejabi":231192,"silver":3605,"source":"FENEGOSIDA"},
-  {"date":"2025-12-08","gold":252900,"tejabi":231833,"silver":3585,"source":"FENEGOSIDA"},
-  {"date":"2025-12-09","gold":251900,"tejabi":230917,"silver":3600,"source":"FENEGOSIDA"},
-  {"date":"2025-12-10","gold":252100,"tejabi":231100,"silver":3750,"source":"FENEGOSIDA"},
-  {"date":"2025-12-11","gold":253100,"tejabi":232017,"silver":3805,"source":"FENEGOSIDA"},
-  {"date":"2025-12-12","gold":256600,"tejabi":235225,"silver":3905,"source":"FENEGOSIDA"},
-  {"date":"2025-12-13","gold":256600,"tejabi":235225,"silver":3905,"source":"Saturday"},
-  {"date":"2025-12-14","gold":258800,"tejabi":237242,"silver":3825,"source":"FENEGOSIDA"},
-  {"date":"2025-12-15","gold":260700,"tejabi":238984,"silver":3870,"source":"FENEGOSIDA"},
-  {"date":"2025-12-16","gold":259000,"tejabi":237425,"silver":3885,"source":"FENEGOSIDA"},
-  {"date":"2025-12-17","gold":259700,"tejabi":238067,"silver":4055,"source":"FENEGOSIDA"},
-  {"date":"2025-12-18","gold":260400,"tejabi":238709,"silver":4080,"source":"FENEGOSIDA"},
-  {"date":"2025-12-19","gold":258400,"tejabi":236875,"silver":4005,"source":"FENEGOSIDA"},
-  {"date":"2025-12-20","gold":258400,"tejabi":236875,"silver":4005,"source":"Saturday"},
-  {"date":"2025-12-21","gold":258300,"tejabi":236784,"silver":4105,"source":"FENEGOSIDA"},
-  {"date":"2025-12-22","gold":261700,"tejabi":239900,"silver":4235,"source":"FENEGOSIDA"},
-  {"date":"2025-12-23","gold":267200,"tejabi":244942,"silver":4255,"source":"FENEGOSIDA"},
-  {"date":"2025-12-24","gold":268100,"tejabi":245767,"silver":4420,"source":"FENEGOSIDA"},
-  {"date":"2025-12-25","gold":267500,"tejabi":245217,"silver":4400,"source":"FENEGOSIDA"},
-  {"date":"2025-12-26","gold":269300,"tejabi":246867,"silver":4565,"source":"FENEGOSIDA"},
-  {"date":"2025-12-27","gold":269300,"tejabi":246867,"silver":4565,"source":"Saturday"},
-  {"date":"2025-12-28","gold":270600,"tejabi":248060,"silver":4835,"source":"FENEGOSIDA"},
-  {"date":"2025-12-29","gold":270000,"tejabi":247509,"silver":4895,"source":"FENEGOSIDA"},
-  {"date":"2025-12-30","gold":262100,"tejabi":240267,"silver":4590,"source":"FENEGOSIDA"},
-  {"date":"2025-12-31","gold":261000,"tejabi":239259,"silver":4470,"source":"FENEGOSIDA"},
-  {"date":"2026-01-01","gold":259600,"tejabi":237975,"silver":4415,"source":"FENEGOSIDA"},
-  {"date":"2026-01-02","gold":262500,"tejabi":240634,"silver":4525,"source":"FENEGOSIDA"},
-  {"date":"2026-01-03","gold":262500,"tejabi":240634,"silver":4525,"source":"Saturday"},
-  {"date":"2026-01-04","gold":260400,"tejabi":238709,"silver":4500,"source":"FENEGOSIDA"},
-  {"date":"2026-01-05","gold":265000,"tejabi":242926,"silver":4685,"source":"FENEGOSIDA"},
-  {"date":"2026-01-06","gold":268100,"tejabi":245767,"silver":4880,"source":"FENEGOSIDA"},
-  {"date":"2026-01-07","gold":267700,"tejabi":245401,"silver":4935,"source":"FENEGOSIDA"},
-  {"date":"2026-01-08","gold":265700,"tejabi":243567,"silver":4835,"source":"FENEGOSIDA"},
-  {"date":"2026-01-09","gold":267800,"tejabi":245492,"silver":4780,"source":"FENEGOSIDA"},
-  {"date":"2026-01-10","gold":267800,"tejabi":245492,"silver":4780,"source":"Saturday"},
-  {"date":"2026-01-11","gold":270600,"tejabi":248060,"silver":4990,"source":"FENEGOSIDA"},
-  {"date":"2026-01-12","gold":274700,"tejabi":251817,"silver":5195,"source":"FENEGOSIDA"},
-  {"date":"2026-01-13","gold":276500,"tejabi":253468,"silver":5340,"source":"FENEGOSIDA"},
-  {"date":"2026-01-14","gold":278000,"tejabi":254843,"silver":5655,"source":"FENEGOSIDA"},
-  {"date":"2026-01-15","gold":276500,"tejabi":253468,"silver":5485,"source":"FENEGOSIDA"},
-  {"date":"2026-01-16","gold":277200,"tejabi":254110,"silver":5645,"source":"FENEGOSIDA"},
-  {"date":"2026-01-17","gold":277200,"tejabi":254110,"silver":5645,"source":"Saturday"},
-  {"date":"2026-01-18","gold":277800,"tejabi":254660,"silver":5625,"source":"FENEGOSIDA"},
-  {"date":"2026-01-19","gold":282000,"tejabi":258509,"silver":5810,"source":"FENEGOSIDA"},
-  {"date":"2026-01-20","gold":284700,"tejabi":260984,"silver":5880,"source":"FENEGOSIDA"},
-  {"date":"2026-01-21","gold":295100,"tejabi":270518,"silver":5920,"source":"FENEGOSIDA"},
-  {"date":"2026-01-22","gold":292200,"tejabi":267860,"silver":5870,"source":"FENEGOSIDA"},
-  {"date":"2026-01-23","gold":301400,"tejabi":276293,"silver":6190,"source":"FENEGOSIDA"},
-  {"date":"2026-01-24","gold":301400,"tejabi":276293,"silver":6190,"source":"Saturday"},
-  {"date":"2026-01-25","gold":303800,"tejabi":278493,"silver":6480,"source":"FENEGOSIDA"},
-  {"date":"2026-01-26","gold":309000,"tejabi":283260,"silver":6765,"source":"FENEGOSIDA"},
-  {"date":"2026-01-27","gold":309300,"tejabi":283536,"silver":6870,"source":"FENEGOSIDA"},
-  {"date":"2026-01-28","gold":318800,"tejabi":292244,"silver":7300,"source":"FENEGOSIDA"},
-  {"date":"2026-01-29","gold":339300,"tejabi":311036,"silver":7505,"source":"FENEGOSIDA"},
-  {"date":"2026-01-30","gold":318800,"tejabi":292244,"silver":7065,"source":"FENEGOSIDA"},
-  {"date":"2026-01-31","gold":318800,"tejabi":292244,"silver":7065,"source":"Saturday"},
-  {"date":"2026-02-01","gold":300000,"tejabi":275010,"silver":5500,"source":"FENEGOSIDA"},
-  {"date":"2026-02-02","gold":286600,"tejabi":262726,"silver":5200,"source":"FENEGOSIDA"},
-  {"date":"2026-02-03","gold":290300,"tejabi":266118,"silver":5335,"source":"FENEGOSIDA"},
-  {"date":"2026-02-04","gold":304700,"tejabi":279319,"silver":5600,"source":"FENEGOSIDA"},
-  {"date":"2026-02-05","gold":295200,"tejabi":270610,"silver":4980,"source":"Recovery"},
-  {"date":"2026-02-06","gold":291000,"tejabi":266760,"silver":4710,"source":"Recovery"},
-  {"date":"2026-02-07","gold":291000,"tejabi":266760,"silver":4710,"source":"FENEGOSIDA"},
-  {"date":"2026-02-08","gold":300500,"tejabi":275468,"silver":5010,"source":"FENEGOSIDA"},
-  {"date":"2026-02-09","gold":304600,"tejabi":279227,"silver":5250,"source":"FENEGOSIDA"},
-  {"date":"2026-02-10","gold":305500,"tejabi":280052,"silver":5240,"source":"FENEGOSIDA"},
-  {"date":"2026-02-11","gold":306600,"tejabi":281060,"silver":5290,"source":"FENEGOSIDA"},
-  {"date":"2026-02-12","gold":306500,"tejabi":280969,"silver":5340,"source":"FENEGOSIDA"},
-  {"date":"2026-02-13","gold":303500,"tejabi":278218,"silver":5000,"source":"FENEGOSIDA"},
-  {"date":"2026-02-14","gold":303500,"tejabi":278218,"silver":5000,"source":"FENEGOSIDA"}
+    {
+        "date": "2025-07-31",
+        "gold": 193100,
+        "tejabi": 177015,
+        "silver": 2280,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-01",
+        "gold": 193100,
+        "tejabi": 177015,
+        "silver": 2280,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-08-02",
+        "gold": 193100,
+        "tejabi": 177015,
+        "silver": 2280,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-08-03",
+        "gold": 193500,
+        "tejabi": 177381,
+        "silver": 2285,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-04",
+        "gold": 194000,
+        "tejabi": 177840,
+        "silver": 2290,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-05",
+        "gold": 194500,
+        "tejabi": 178298,
+        "silver": 2295,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-06",
+        "gold": 195000,
+        "tejabi": 178757,
+        "silver": 2300,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-07",
+        "gold": 195500,
+        "tejabi": 179215,
+        "silver": 2310,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-08",
+        "gold": 196000,
+        "tejabi": 179673,
+        "silver": 2320,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-09",
+        "gold": 196000,
+        "tejabi": 179673,
+        "silver": 2320,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-08-10",
+        "gold": 196500,
+        "tejabi": 180132,
+        "silver": 2330,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-11",
+        "gold": 197000,
+        "tejabi": 180590,
+        "silver": 2335,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-12",
+        "gold": 197500,
+        "tejabi": 181048,
+        "silver": 2340,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-13",
+        "gold": 198000,
+        "tejabi": 181507,
+        "silver": 2345,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-14",
+        "gold": 198200,
+        "tejabi": 181690,
+        "silver": 2350,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-15",
+        "gold": 198400,
+        "tejabi": 181873,
+        "silver": 2350,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-08-16",
+        "gold": 198400,
+        "tejabi": 181873,
+        "silver": 2350,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-08-17",
+        "gold": 199000,
+        "tejabi": 182423,
+        "silver": 2360,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-18",
+        "gold": 199800,
+        "tejabi": 183157,
+        "silver": 2370,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-19",
+        "gold": 200500,
+        "tejabi": 183798,
+        "silver": 2380,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-20",
+        "gold": 201200,
+        "tejabi": 184440,
+        "silver": 2390,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-21",
+        "gold": 202000,
+        "tejabi": 185173,
+        "silver": 2400,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-22",
+        "gold": 202800,
+        "tejabi": 185907,
+        "silver": 2410,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-23",
+        "gold": 202800,
+        "tejabi": 185907,
+        "silver": 2410,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-08-24",
+        "gold": 203500,
+        "tejabi": 186548,
+        "silver": 2420,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-25",
+        "gold": 204200,
+        "tejabi": 187190,
+        "silver": 2425,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-26",
+        "gold": 204800,
+        "tejabi": 187740,
+        "silver": 2430,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-27",
+        "gold": 205500,
+        "tejabi": 188382,
+        "silver": 2440,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-28",
+        "gold": 205800,
+        "tejabi": 188657,
+        "silver": 2445,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-29",
+        "gold": 206000,
+        "tejabi": 188840,
+        "silver": 2450,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-08-30",
+        "gold": 206000,
+        "tejabi": 188840,
+        "silver": 2450,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-08-31",
+        "gold": 206200,
+        "tejabi": 189024,
+        "silver": 2450,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-01",
+        "gold": 205900,
+        "tejabi": 188748,
+        "silver": 2450,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-09-02",
+        "gold": 207000,
+        "tejabi": 189757,
+        "silver": 2460,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-03",
+        "gold": 208200,
+        "tejabi": 190857,
+        "silver": 2470,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-04",
+        "gold": 209500,
+        "tejabi": 192049,
+        "silver": 2480,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-05",
+        "gold": 210800,
+        "tejabi": 193240,
+        "silver": 2490,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-06",
+        "gold": 210800,
+        "tejabi": 193240,
+        "silver": 2490,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-09-07",
+        "gold": 212000,
+        "tejabi": 194340,
+        "silver": 2500,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-09-08",
+        "gold": 213200,
+        "tejabi": 195440,
+        "silver": 2520,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-09",
+        "gold": 214500,
+        "tejabi": 196632,
+        "silver": 2550,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-10",
+        "gold": 215800,
+        "tejabi": 197824,
+        "silver": 2580,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-11",
+        "gold": 217000,
+        "tejabi": 198924,
+        "silver": 2610,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-12",
+        "gold": 218500,
+        "tejabi": 200299,
+        "silver": 2650,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-13",
+        "gold": 218500,
+        "tejabi": 200299,
+        "silver": 2650,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-09-14",
+        "gold": 219800,
+        "tejabi": 201491,
+        "silver": 2690,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-15",
+        "gold": 221000,
+        "tejabi": 202591,
+        "silver": 2730,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-16",
+        "gold": 222200,
+        "tejabi": 203691,
+        "silver": 2760,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-17",
+        "gold": 223500,
+        "tejabi": 204882,
+        "silver": 2780,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-18",
+        "gold": 224000,
+        "tejabi": 205341,
+        "silver": 2800,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-19",
+        "gold": 223800,
+        "tejabi": 205157,
+        "silver": 2810,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-20",
+        "gold": 223800,
+        "tejabi": 205157,
+        "silver": 2810,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-09-21",
+        "gold": 223200,
+        "tejabi": 204607,
+        "silver": 2810,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-09-22",
+        "gold": 225000,
+        "tejabi": 206258,
+        "silver": 2850,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-23",
+        "gold": 228000,
+        "tejabi": 209008,
+        "silver": 2950,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-24",
+        "gold": 232000,
+        "tejabi": 212674,
+        "silver": 3050,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-25",
+        "gold": 236000,
+        "tejabi": 216341,
+        "silver": 3150,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-26",
+        "gold": 240000,
+        "tejabi": 220008,
+        "silver": 3250,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-27",
+        "gold": 240000,
+        "tejabi": 220008,
+        "silver": 3250,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-09-28",
+        "gold": 245000,
+        "tejabi": 224592,
+        "silver": 3350,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-29",
+        "gold": 248000,
+        "tejabi": 227342,
+        "silver": 3450,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-09-30",
+        "gold": 251000,
+        "tejabi": 230092,
+        "silver": 3500,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-01",
+        "gold": 253500,
+        "tejabi": 232383,
+        "silver": 3535,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-10-02",
+        "gold": 248000,
+        "tejabi": 227342,
+        "silver": 3400,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-03",
+        "gold": 242000,
+        "tejabi": 221841,
+        "silver": 3250,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-04",
+        "gold": 242000,
+        "tejabi": 221841,
+        "silver": 3250,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-10-05",
+        "gold": 230600,
+        "tejabi": 211391,
+        "silver": 2930,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-10-06",
+        "gold": 232500,
+        "tejabi": 213133,
+        "silver": 2980,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-07",
+        "gold": 235000,
+        "tejabi": 215425,
+        "silver": 3030,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-08",
+        "gold": 238000,
+        "tejabi": 218175,
+        "silver": 3080,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-09",
+        "gold": 241000,
+        "tejabi": 220925,
+        "silver": 3130,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-10",
+        "gold": 244000,
+        "tejabi": 223675,
+        "silver": 3180,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-11",
+        "gold": 244000,
+        "tejabi": 223675,
+        "silver": 3180,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-10-12",
+        "gold": 246000,
+        "tejabi": 225508,
+        "silver": 3250,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-13",
+        "gold": 247500,
+        "tejabi": 226883,
+        "silver": 3300,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-14",
+        "gold": 248500,
+        "tejabi": 227800,
+        "silver": 3325,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-10-15",
+        "gold": 238000,
+        "tejabi": 218175,
+        "silver": 3100,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-10-16",
+        "gold": 238500,
+        "tejabi": 218633,
+        "silver": 3110,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-17",
+        "gold": 239000,
+        "tejabi": 219091,
+        "silver": 3120,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-18",
+        "gold": 239000,
+        "tejabi": 219091,
+        "silver": 3120,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-10-19",
+        "gold": 239200,
+        "tejabi": 219275,
+        "silver": 3130,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-20",
+        "gold": 239400,
+        "tejabi": 219458,
+        "silver": 3140,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-21",
+        "gold": 239500,
+        "tejabi": 219550,
+        "silver": 3150,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-22",
+        "gold": 239800,
+        "tejabi": 219825,
+        "silver": 3160,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-23",
+        "gold": 240200,
+        "tejabi": 220191,
+        "silver": 3170,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-24",
+        "gold": 240500,
+        "tejabi": 220466,
+        "silver": 3180,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-25",
+        "gold": 240500,
+        "tejabi": 220466,
+        "silver": 3180,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-10-26",
+        "gold": 240800,
+        "tejabi": 220741,
+        "silver": 3185,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-27",
+        "gold": 241000,
+        "tejabi": 220925,
+        "silver": 3190,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-28",
+        "gold": 240500,
+        "tejabi": 220466,
+        "silver": 3195,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-29",
+        "gold": 240000,
+        "tejabi": 220008,
+        "silver": 3200,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-30",
+        "gold": 239800,
+        "tejabi": 219825,
+        "silver": 3200,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-10-31",
+        "gold": 239700,
+        "tejabi": 219733,
+        "silver": 3200,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-01",
+        "gold": 239700,
+        "tejabi": 219733,
+        "silver": 3200,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-11-02",
+        "gold": 239800,
+        "tejabi": 219825,
+        "silver": 3205,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-03",
+        "gold": 240000,
+        "tejabi": 220008,
+        "silver": 3210,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-04",
+        "gold": 240200,
+        "tejabi": 220191,
+        "silver": 3210,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-05",
+        "gold": 240500,
+        "tejabi": 220466,
+        "silver": 3200,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-06",
+        "gold": 240800,
+        "tejabi": 220741,
+        "silver": 3190,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-07",
+        "gold": 241200,
+        "tejabi": 221108,
+        "silver": 3180,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-08",
+        "gold": 241200,
+        "tejabi": 221108,
+        "silver": 3180,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-11-09",
+        "gold": 241500,
+        "tejabi": 221383,
+        "silver": 3175,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-10",
+        "gold": 241800,
+        "tejabi": 221658,
+        "silver": 3170,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-11",
+        "gold": 242000,
+        "tejabi": 221841,
+        "silver": 3165,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-12",
+        "gold": 241900,
+        "tejabi": 221750,
+        "silver": 3160,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-13",
+        "gold": 242100,
+        "tejabi": 221933,
+        "silver": 3160,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-14",
+        "gold": 242300,
+        "tejabi": 222116,
+        "silver": 3155,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-15",
+        "gold": 242300,
+        "tejabi": 222116,
+        "silver": 3155,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-11-16",
+        "gold": 242500,
+        "tejabi": 222300,
+        "silver": 3150,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-17",
+        "gold": 242400,
+        "tejabi": 222208,
+        "silver": 3150,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-18",
+        "gold": 242200,
+        "tejabi": 222025,
+        "silver": 3150,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-19",
+        "gold": 242300,
+        "tejabi": 222116,
+        "silver": 3150,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-11-20",
+        "gold": 243000,
+        "tejabi": 222758,
+        "silver": 3185,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-11-21",
+        "gold": 241700,
+        "tejabi": 221566,
+        "silver": 3100,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-11-22",
+        "gold": 241700,
+        "tejabi": 221566,
+        "silver": 3100,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-11-23",
+        "gold": 244600,
+        "tejabi": 224225,
+        "silver": 3135,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-11-24",
+        "gold": 242700,
+        "tejabi": 222483,
+        "silver": 3115,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-11-25",
+        "gold": 247900,
+        "tejabi": 227250,
+        "silver": 3200,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-11-26",
+        "gold": 248500,
+        "tejabi": 227800,
+        "silver": 3250,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-27",
+        "gold": 249500,
+        "tejabi": 228717,
+        "silver": 3300,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-28",
+        "gold": 251000,
+        "tejabi": 230092,
+        "silver": 3400,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-11-29",
+        "gold": 251000,
+        "tejabi": 230092,
+        "silver": 3400,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-11-30",
+        "gold": 252500,
+        "tejabi": 231467,
+        "silver": 3480,
+        "source": "Interpolated"
+    },
+    {
+        "date": "2025-12-01",
+        "gold": 253600,
+        "tejabi": 232475,
+        "silver": 3535,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-02",
+        "gold": 253300,
+        "tejabi": 232200,
+        "silver": 3545,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-03",
+        "gold": 254100,
+        "tejabi": 232933,
+        "silver": 3655,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-04",
+        "gold": 253300,
+        "tejabi": 232200,
+        "silver": 3625,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-05",
+        "gold": 252400,
+        "tejabi": 231375,
+        "silver": 3555,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-06",
+        "gold": 252400,
+        "tejabi": 231375,
+        "silver": 3555,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-12-07",
+        "gold": 252200,
+        "tejabi": 231192,
+        "silver": 3605,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-08",
+        "gold": 252900,
+        "tejabi": 231833,
+        "silver": 3585,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-09",
+        "gold": 251900,
+        "tejabi": 230917,
+        "silver": 3600,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-10",
+        "gold": 252100,
+        "tejabi": 231100,
+        "silver": 3750,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-11",
+        "gold": 253100,
+        "tejabi": 232017,
+        "silver": 3805,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-12",
+        "gold": 256600,
+        "tejabi": 235225,
+        "silver": 3905,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-13",
+        "gold": 256600,
+        "tejabi": 235225,
+        "silver": 3905,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-12-14",
+        "gold": 258800,
+        "tejabi": 237242,
+        "silver": 3825,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-15",
+        "gold": 260700,
+        "tejabi": 238984,
+        "silver": 3870,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-16",
+        "gold": 259000,
+        "tejabi": 237425,
+        "silver": 3885,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-17",
+        "gold": 259700,
+        "tejabi": 238067,
+        "silver": 4055,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-18",
+        "gold": 260400,
+        "tejabi": 238709,
+        "silver": 4080,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-19",
+        "gold": 258400,
+        "tejabi": 236875,
+        "silver": 4005,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-20",
+        "gold": 258400,
+        "tejabi": 236875,
+        "silver": 4005,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-12-21",
+        "gold": 258300,
+        "tejabi": 236784,
+        "silver": 4105,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-22",
+        "gold": 261700,
+        "tejabi": 239900,
+        "silver": 4235,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-23",
+        "gold": 267200,
+        "tejabi": 244942,
+        "silver": 4255,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-24",
+        "gold": 268100,
+        "tejabi": 245767,
+        "silver": 4420,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-25",
+        "gold": 267500,
+        "tejabi": 245217,
+        "silver": 4400,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-26",
+        "gold": 269300,
+        "tejabi": 246867,
+        "silver": 4565,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-27",
+        "gold": 269300,
+        "tejabi": 246867,
+        "silver": 4565,
+        "source": "Saturday"
+    },
+    {
+        "date": "2025-12-28",
+        "gold": 270600,
+        "tejabi": 248060,
+        "silver": 4835,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-29",
+        "gold": 270000,
+        "tejabi": 247509,
+        "silver": 4895,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-30",
+        "gold": 262100,
+        "tejabi": 240267,
+        "silver": 4590,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2025-12-31",
+        "gold": 261000,
+        "tejabi": 239259,
+        "silver": 4470,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-01",
+        "gold": 259600,
+        "tejabi": 237975,
+        "silver": 4415,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-02",
+        "gold": 262500,
+        "tejabi": 240634,
+        "silver": 4525,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-03",
+        "gold": 262500,
+        "tejabi": 240634,
+        "silver": 4525,
+        "source": "Saturday"
+    },
+    {
+        "date": "2026-01-04",
+        "gold": 260400,
+        "tejabi": 238709,
+        "silver": 4500,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-05",
+        "gold": 265000,
+        "tejabi": 242926,
+        "silver": 4685,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-06",
+        "gold": 268100,
+        "tejabi": 245767,
+        "silver": 4880,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-07",
+        "gold": 267700,
+        "tejabi": 245401,
+        "silver": 4935,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-08",
+        "gold": 265700,
+        "tejabi": 243567,
+        "silver": 4835,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-09",
+        "gold": 267800,
+        "tejabi": 245492,
+        "silver": 4780,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-10",
+        "gold": 267800,
+        "tejabi": 245492,
+        "silver": 4780,
+        "source": "Saturday"
+    },
+    {
+        "date": "2026-01-11",
+        "gold": 270600,
+        "tejabi": 248060,
+        "silver": 4990,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-12",
+        "gold": 274700,
+        "tejabi": 251817,
+        "silver": 5195,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-13",
+        "gold": 276500,
+        "tejabi": 253468,
+        "silver": 5340,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-14",
+        "gold": 278000,
+        "tejabi": 254843,
+        "silver": 5655,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-15",
+        "gold": 276500,
+        "tejabi": 253468,
+        "silver": 5485,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-16",
+        "gold": 277200,
+        "tejabi": 254110,
+        "silver": 5645,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-17",
+        "gold": 277200,
+        "tejabi": 254110,
+        "silver": 5645,
+        "source": "Saturday"
+    },
+    {
+        "date": "2026-01-18",
+        "gold": 277800,
+        "tejabi": 254660,
+        "silver": 5625,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-19",
+        "gold": 282000,
+        "tejabi": 258509,
+        "silver": 5810,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-20",
+        "gold": 284700,
+        "tejabi": 260984,
+        "silver": 5880,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-21",
+        "gold": 295100,
+        "tejabi": 270518,
+        "silver": 5920,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-22",
+        "gold": 292200,
+        "tejabi": 267860,
+        "silver": 5870,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-23",
+        "gold": 301400,
+        "tejabi": 276293,
+        "silver": 6190,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-24",
+        "gold": 301400,
+        "tejabi": 276293,
+        "silver": 6190,
+        "source": "Saturday"
+    },
+    {
+        "date": "2026-01-25",
+        "gold": 303800,
+        "tejabi": 278493,
+        "silver": 6480,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-26",
+        "gold": 309000,
+        "tejabi": 283260,
+        "silver": 6765,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-27",
+        "gold": 309300,
+        "tejabi": 283536,
+        "silver": 6870,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-28",
+        "gold": 318800,
+        "tejabi": 292244,
+        "silver": 7300,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-29",
+        "gold": 339300,
+        "tejabi": 311036,
+        "silver": 7505,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-30",
+        "gold": 318800,
+        "tejabi": 292244,
+        "silver": 7065,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-01-31",
+        "gold": 318800,
+        "tejabi": 292244,
+        "silver": 7065,
+        "source": "Saturday"
+    },
+    {
+        "date": "2026-02-01",
+        "gold": 300000,
+        "tejabi": 275010,
+        "silver": 5500,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-02",
+        "gold": 286600,
+        "tejabi": 262726,
+        "silver": 5200,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-03",
+        "gold": 290300,
+        "tejabi": 266118,
+        "silver": 5335,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-04",
+        "gold": 304700,
+        "tejabi": 279319,
+        "silver": 5600,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-05",
+        "gold": 295200,
+        "tejabi": 270610,
+        "silver": 4980,
+        "source": "Recovery"
+    },
+    {
+        "date": "2026-02-06",
+        "gold": 291000,
+        "tejabi": 266760,
+        "silver": 4710,
+        "source": "Recovery"
+    },
+    {
+        "date": "2026-02-07",
+        "gold": 291000,
+        "tejabi": 266760,
+        "silver": 4710,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-08",
+        "gold": 300500,
+        "tejabi": 275468,
+        "silver": 5010,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-09",
+        "gold": 304600,
+        "tejabi": 279227,
+        "silver": 5250,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-10",
+        "gold": 305500,
+        "tejabi": 280052,
+        "silver": 5240,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-11",
+        "gold": 306600,
+        "tejabi": 281060,
+        "silver": 5290,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-12",
+        "gold": 306500,
+        "tejabi": 280969,
+        "silver": 5340,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-13",
+        "gold": 303500,
+        "tejabi": 278218,
+        "silver": 5000,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-14",
+        "gold": 303500,
+        "tejabi": 278218,
+        "silver": 5000,
+        "source": "FENEGOSIDA"
+    },
+    {
+        "date": "2026-02-15 11:20",
+        "gold": 305800,
+        "tejabi": 280326,
+        "silver": 4985,
+        "source": "FENEGOSIDA"
+    }
 ]
