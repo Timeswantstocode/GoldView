@@ -98,6 +98,7 @@ export default function App() {
   const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
   const [currCalc, setCurrCalc] = useState({ amount: '1', source: 'USD', isSwapped: false });
   const [notifStatus, setNotifStatus] = useState('default');
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
 
   const chartRef = useRef(null);
 
@@ -126,31 +127,50 @@ export default function App() {
         setForexLoading(false);
     }).catch(() => setForexLoading(false));
 
-    // Check native notification permission
-    if ('Notification' in window) {
-      setNotifStatus(Notification.permission);
-    }
+    // Check notification permission
+    const checkPermission = () => {
+      if ('Notification' in window) {
+        setNotifStatus(Notification.permission);
+      } else if (window.OneSignal) {
+        setNotifStatus(window.OneSignal.Notifications.permission ? 'granted' : 'default');
+      }
+    };
+    checkPermission();
   }, []);
 
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
   const handleNotificationRequest = async () => {
-    if (!('Notification' in window)) {
-      alert("This browser does not support desktop notification");
+    // 1. Handle iOS Safari (Non-standalone)
+    if (isIOS && !isStandalone) {
+      setShowIOSGuide(true);
       return;
     }
 
+    // 2. Handle browsers that don't support Notifications at all
+    if (!('Notification' in window) && !window.OneSignal) {
+      alert("This browser does not support notifications. Please try Safari on iOS (Add to Home Screen) or Chrome on Android/Desktop.");
+      return;
+    }
+
+    // 3. Use OneSignal if available, otherwise fallback to native
     try {
-      const permission = await Notification.requestPermission();
-      setNotifStatus(permission);
-      
-      if (permission === 'granted') {
-        const registration = await navigator.serviceWorker.ready;
-        registration.showNotification("GoldView Nepal", {
-          body: "Notifications enabled! You'll receive live price updates and market alerts.",
-          icon: "/logo192.png",
-          badge: "/logo192.png",
-          vibrate: [200, 100, 200],
-          tag: 'welcome-notification'
-        });
+      if (window.OneSignal) {
+        await window.OneSignal.Notifications.requestPermission();
+        setNotifStatus(window.OneSignal.Notifications.permission ? 'granted' : 'denied');
+      } else {
+        const permission = await Notification.requestPermission();
+        setNotifStatus(permission);
+        if (permission === 'granted') {
+          const registration = await navigator.serviceWorker.ready;
+          registration.showNotification("GoldView Nepal", {
+            body: "Price alerts enabled! You'll be notified when rates change.",
+            icon: "/logo192.png",
+            badge: "/logo192.png",
+            tag: 'welcome-notification'
+          });
+        }
       }
     } catch (err) {
       console.error("Notification request failed:", err);
@@ -465,6 +485,36 @@ export default function App() {
             </div>
           </main>
         </div>
+
+        {/* --- iOS Notification Guide --- */}
+        {showIOSGuide && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="bg-[#121212] border border-white/10 rounded-[3rem] p-8 max-w-sm w-full shadow-2xl space-y-6 text-center">
+              <div className="w-20 h-20 bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto border border-white/10">
+                <Bell className="w-10 h-10 text-[#D4AF37]" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-black text-white tracking-tight">Enable Alerts on iOS</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">To receive price change notifications on your iPhone, you must add GoldView to your Home Screen:</p>
+              </div>
+              <div className="space-y-4 text-left bg-white/5 p-6 rounded-3xl border border-white/5">
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">1</div>
+                  <p className="text-xs text-zinc-300 font-bold">Tap the <span className="text-blue-400">Share</span> icon in Safari</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">2</div>
+                  <p className="text-xs text-zinc-300 font-bold">Select <span className="text-white">"Add to Home Screen"</span></p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">3</div>
+                  <p className="text-xs text-zinc-300 font-bold">Open the app from your home screen</p>
+                </div>
+              </div>
+              <button onClick={() => setShowIOSGuide(false)} className="w-full py-5 bg-[#D4AF37] text-black font-black rounded-3xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">Got it</button>
+            </div>
+          </div>
+        )}
 
         <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-2xl">
           <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'dashboard' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`} style={view === 'dashboard' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
