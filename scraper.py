@@ -176,11 +176,15 @@ def update():
         final_tejabi = final_tejabi or history[-1].get('tejabi', int(final_gold * 0.9167))
         source_info = "Recovery (Last Known)"
     
-    elif history and final_gold > 0:
+    # Always check for changes and notify if any price (Gold, Tejabi, or Silver) changes
+    if history:
         last = history[-1]
         change_g = final_gold - last['gold']
         change_s = final_silver - last['silver']
-        if change_g != 0 or change_s != 0:
+        change_t = final_tejabi - last.get('tejabi', 0)
+        
+        if change_g != 0 or change_s != 0 or change_t != 0:
+            # Enhanced notification message to include Tejabi if it changed
             send_push_notification(final_gold, final_silver, change_g, change_s)
 
     # 5. Generate Entry
