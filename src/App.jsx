@@ -126,25 +126,30 @@ export default function App() {
         setForexLoading(false);
     }).catch(() => setForexLoading(false));
 
-    // Initialize OneSignal and check permission
-    if (window.OneSignal) {
-      window.OneSignal.push(() => {
-        window.OneSignal.getNotificationPermission().then(permission => {
-          setNotifStatus(permission);
-        });
-      });
+    // Check native notification permission
+    if ('Notification' in window) {
+      setNotifStatus(Notification.permission);
     }
   }, []);
 
-  const handleNotificationRequest = () => {
-    if (window.OneSignal) {
-      window.OneSignal.push(() => {
-        window.OneSignal.showNativePrompt().then(() => {
-          window.OneSignal.getNotificationPermission().then(permission => {
-            setNotifStatus(permission);
-          });
+  const handleNotificationRequest = async () => {
+    if (!('Notification' in window)) {
+      alert("This browser does not support desktop notification");
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setNotifStatus(permission);
+      
+      if (permission === 'granted') {
+        new Notification("GoldView", {
+          body: "Notifications enabled! You'll get live price updates.",
+          icon: "/logo192.png"
         });
-      });
+      }
+    } catch (err) {
+      console.error("Notification request failed:", err);
     }
   };
 
