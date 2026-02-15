@@ -235,8 +235,8 @@ export default function App() {
             <title>Gold Price Nepal Today | Live 24K Gold Rate - GoldView</title>
             <meta name="description" content="Check live 24K Chhapawal gold, silver and dollar prices in Nepal. Official daily updates." />
             {/* GOOGLE SEARCH CONSOLE ORIGINALITY TAGS */}
-            <link rel="canonical" href="https://goldview.com.np" />
-            <meta name="google-site-verification" content="ADD_YOUR_VERIFICATION_CODE_HERE" />
+            <link rel="canonical" href="https://viewgold.vercel.app" />
+            <meta name="google-site-verification" content="D8_FIBS1CmLS7JUGcgbpN6XWwzFxtiyT709o2PSM1SU" />
             <script type="application/ld+json">{structuredData}</script>
         </Helmet>
 
