@@ -136,6 +136,25 @@ export default function App() {
 
   const activeDataList = useMemo(() => activeMetal === 'usd' ? forexHistory : priceData, [activeMetal, forexHistory, priceData]);
   const filteredData = useMemo(() => activeDataList.slice(-timeframe), [activeDataList, timeframe]);
+
+  // SEO: Structured Data to tell Google this is the original source
+  const structuredData = useMemo(() => {
+    const latest = priceData[priceData.length - 1];
+    return JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Dataset",
+      "name": "Live Gold & Silver Rates Nepal",
+      "description": "Real-time 24K Gold, Tejabi Gold, and Silver prices provided directly by GoldView.",
+      "url": "https://goldview.com.np", // REPLACE WITH YOUR REAL DOMAIN
+      "license": "https://creativecommons.org/licenses/by/4.0/",
+      "creator": {
+        "@type": "Organization",
+        "name": "GoldView Nepal"
+      },
+      "variableMeasured": ["Gold Price", "Silver Price", "USD Exchange Rate"],
+      "isAccessibleForFree": true
+    });
+  }, [priceData]);
   
   const getDayDiff = (id) => {
     const source = id === 'usd' ? forexHistory : priceData;
@@ -213,8 +232,12 @@ export default function App() {
     <HelmetProvider>
       <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-40 overflow-x-hidden relative">
         <Helmet>
-            <title>Gold Price Nepal Today | 24K & 22K Gold Rate - GoldView</title>
-            <meta name="description" content="Check live 24K Chhapawal, 22K Tejabi gold, silver and dollar prices in Nepal." />
+            <title>Gold Price Nepal Today | Live 24K Gold Rate - GoldView</title>
+            <meta name="description" content="Check live 24K Chhapawal gold, silver and dollar prices in Nepal. Official daily updates." />
+            {/* GOOGLE SEARCH CONSOLE ORIGINALITY TAGS */}
+            <link rel="canonical" href="https://goldview.com.np" />
+            <meta name="google-site-verification" content="ADD_YOUR_VERIFICATION_CODE_HERE" />
+            <script type="application/ld+json">{structuredData}</script>
         </Helmet>
 
         <header className="p-8 pt-16 flex justify-between items-end relative z-10">
