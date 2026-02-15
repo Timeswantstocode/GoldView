@@ -143,9 +143,13 @@ export default function App() {
       setNotifStatus(permission);
       
       if (permission === 'granted') {
-        new Notification("GoldView", {
-          body: "Notifications enabled! You'll get live price updates.",
-          icon: "/logo192.png"
+        const registration = await navigator.serviceWorker.ready;
+        registration.showNotification("GoldView Nepal", {
+          body: "Notifications enabled! You'll receive live price updates and market alerts.",
+          icon: "/logo192.png",
+          badge: "/logo192.png",
+          vibrate: [200, 100, 200],
+          tag: 'welcome-notification'
         });
       }
     } catch (err) {
@@ -267,7 +271,10 @@ export default function App() {
               <div className="w-2 h-2 rounded-full shadow-lg animate-pulse" style={{ backgroundColor: themeColor, boxShadow: `0 0 10px ${themeColor}` }}></div>
               <p className="text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500" style={{ color: themeColor }}>Market Update</p>
             </div>
-            <h1 className="text-4xl font-black tracking-tighter text-white">GoldView</h1>
+            <div className="flex items-center gap-3">
+              <img src="/logo192.png" alt="GoldView Logo" className="w-10 h-10 rounded-xl shadow-lg border border-white/10" />
+              <h1 className="text-4xl font-black tracking-tighter text-white">GoldView</h1>
+            </div>
           </div>
           <div className="flex gap-3">
             {notifStatus !== 'granted' && (
