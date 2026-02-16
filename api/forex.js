@@ -3,105 +3,88 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  const endDate = new Date().toISOString().split('T')[0];
   const startDate = new Date(Date.now() - 95 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  const currencyMeta = [
-    { name: "US Dollar", code: "USD", unit: 1 },
-    { name: "Indian Rupee", code: "INR", unit: 100 },
-    { name: "European Euro", code: "EUR", unit: 1 },
-    { name: "UK Pound Sterling", code: "GBP", unit: 1 },
-    { name: "UAE Dirham", code: "AED", unit: 1 },
-    { name: "Qatari Riyal", code: "QAR", unit: 1 },
-    { name: "Saudi Arabian Riyal", code: "SAR", unit: 1 },
-    { name: "Malaysian Ringgit", code: "MYR", unit: 1 },
-    { name: "South Korean Won", code: "KRW", unit: 100 }, // Added KRW (Unit 100)
-    { name: "Australian Dollar", code: "AUD", unit: 1 },
-    { name: "Canadian Dollar", code: "CAD", unit: 1 },
-    { name: "Singapore Dollar", code: "SGD", unit: 1 },
-    { name: "Japanese Yen", code: "JPY", unit: 10 }
-  ];
-
   try {
-    // 1. Fetch LIVE USD/NPR from Yahoo (For the "Google Search" 144.95 price)
-    let liveUsdNpr = 144.95;
+    // 1. Fetch LIVE USD/NPR from Yahoo (The "Google" 144.95 price)
+    let liveUsdNpr = null;
     try {
       const yRes = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/USDNPR=X?interval=1d&range=1d`, {
         headers: { 'User-Agent': 'Mozilla/5.0' }
       });
       const yData = await yRes.json();
-      liveUsdNpr = yData?.chart?.result?.[0]?.meta?.regularMarketPrice || 144.95;
+      liveUsdNpr = yData?.chart?.result?.[0]?.meta?.regularMarketPrice;
     } catch (e) { console.error("Yahoo Live Failed"); }
 
-    // 2. Fetch History from Frankfurter (Includes KRW in symbols)
-    const frankUrl = `https://api.frankfurter.dev/v1/${startDate}..?base=USD&symbols=NPR,EUR,GBP,INR,AUD,CAD,MYR,SGD,JPY,KRW`;
-    const frankRes = await fetch(frankUrl);
-    const frankData = await frankRes.json();
+    // 2. Fetch Official Data from Nepal Rastra Bank (NRB)
+    const nrbUrl = `https://www.nrb.org.np/api/forex/v1/rates?from=${startDate}&to=${endDate}&per_page=100&page=1`;
+    const nrbRes = await fetch(nrbUrl);
+    const nrbData = await nrbRes.json();
+    
+    if (!nrbData?.data?.payload) throw new Error("NRB API unavailable");
 
-    // Middle Eastern Currencies are pegged to USD.
-    const fixedPegs = { "AED": 3.6725, "QAR": 3.64, "SAR": 3.75 };
+    // 3. Process NRB Data and Merge Live Price
+    const formattedRates = nrbData.data.payload.map((day, index) => {
+      const isLatestDay = index === 0;
 
-    // 3. Process History
-    const history = Object.entries(frankData.rates).map(([date, rates]) => {
-      const isToday = date === frankData.end_date;
-      
       return {
-        date: date,
-        currencies: currencyMeta.map(meta => {
-          let buyRate;
-          const currentNprBase = isToday ? liveUsdNpr : (rates["NPR"] || 144.95);
+        date: day.date,
+        currencies: day.rates.map(r => {
+          const code = r.currency.iso3;
+          let buy = parseFloat(r.buy);
+          let sell = parseFloat(r.sell);
 
-          if (meta.code === "USD") {
-            buyRate = currentNprBase;
-          } else if (meta.code === "INR") {
-            buyRate = 160.00; // Nepal official peg
-          } else if (fixedPegs[meta.code]) {
-            buyRate = (currentNprBase / fixedPegs[meta.code]) * meta.unit;
-          } else {
-            // Floating currencies (EUR, GBP, KRW, JPY, etc.)
-            const foreignPerUsd = rates[meta.code] || 1;
-            buyRate = (currentNprBase / foreignPerUsd) * meta.unit;
+          // If this is the most recent entry and we have a Live Yahoo price
+          if (isLatestDay && liveUsdNpr) {
+            if (code === "USD") {
+              // Update USD to the Google-accurate price
+              buy = liveUsdNpr;
+              sell = liveUsdNpr;
+            } else {
+              // Adjust other currencies based on the "Google" USD trend
+              // (Live USD / Bank USD) * Bank Rate
+              const adjustmentFactor = liveUsdNpr / parseFloat(day.rates.find(cr => cr.currency.iso3 === "USD").buy);
+              buy = buy * adjustmentFactor;
+              sell = sell * adjustmentFactor;
+            }
           }
 
           return {
-            currency: meta.name,
-            code: meta.code,
-            unit: meta.unit,
-            buy: Number(buyRate.toFixed(2)),
-            sell: Number(buyRate.toFixed(2))
+            currency: r.currency.name,
+            code: code,
+            unit: r.currency.unit,
+            buy: Number(buy.toFixed(2)),
+            sell: Number(sell.toFixed(2))
           };
         })
       };
-    }).reverse();
-
-    // 4. Fill Weekend Gaps / Missing Today
-    const finalHistory = [];
-    const seenDates = new Set();
-    
-    const todayStr = new Date().toISOString().split('T')[0];
-    if (history.length > 0 && history[0].date !== todayStr) {
-      const todayEntry = JSON.parse(JSON.stringify(history[0]));
-      todayEntry.date = todayStr;
-      // Inject the live USD rate into today's injected entry
-      todayEntry.currencies.forEach(c => {
-         if(c.code === "USD") { c.buy = liveUsdNpr; c.sell = liveUsdNpr; }
-      });
-      finalHistory.push(todayEntry);
-      seenDates.add(todayStr);
-    }
-
-    history.forEach(item => {
-      if (!seenDates.has(item.date)) {
-        finalHistory.push(item);
-        seenDates.add(item.date);
-      }
     });
 
+    // 4. Ensure Today is always present (even if NRB hasn't updated yet)
+    if (formattedRates.length > 0 && formattedRates[0].date !== endDate) {
+      const latestFromNrb = JSON.parse(JSON.stringify(formattedRates[0]));
+      latestFromNrb.date = endDate;
+      
+      // Force the USD to the current Live Market price
+      if (liveUsdNpr) {
+        latestFromNrb.currencies.forEach(c => {
+          if (c.code === "USD") {
+            c.buy = liveUsdNpr;
+            c.sell = liveUsdNpr;
+          }
+        });
+      }
+      formattedRates.unshift(latestFromNrb);
+    }
+
+    // 5. Final Output (limit to 90 days)
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
     return res.status(200).json({
       status: "success",
-      source: "Yahoo Live + Frankfurter History",
+      source: "Nepal Rastra Bank + Yahoo Live",
       last_updated: new Date().toISOString(),
-      rates: finalHistory.slice(0, 90)
+      rates: formattedRates.slice(0, 90)
     });
 
   } catch (error) {
