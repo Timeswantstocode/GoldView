@@ -16,52 +16,74 @@ export default async function handler(req, res) {
   const endDate = new Date().toISOString().split('T')[0];
   const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   
-  // Primary: Nepal Rastra Bank (NRB)
+  // Primary: ExchangeRate-API (More reliable for real-time)
+  // Backup: NRB (Official but sometimes delayed)
+  const primaryUrl = "https://open.er-api.com/v6/latest/USD";
   const nrbUrl = `https://www.nrb.org.np/api/forex/v1/rates?from=${startDate}&to=${endDate}&per_page=100&page=1`;
-  
-  // Multiple Backups for long-term reliability
-  const backupSources = [
-    "https://open.er-api.com/v6/latest/USD",
-    "https://api.exchangerate-api.com/v4/latest/USD"
-  ];
 
   try {
-    const response = await fetch(nrbUrl, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-      },
-      signal: AbortSignal.timeout(15000), 
-    });
-
-    if (!response.ok) throw new Error(`NRB API Error: ${response.status}`);
-
-    const rawData = await response.json();
-    if (!rawData.data || !rawData.data.payload) throw new Error("Invalid NRB Response");
+    // Try Primary Source first
+    const response = await fetch(primaryUrl, { signal: AbortSignal.timeout(10000) });
+    if (!response.ok) throw new Error(`Primary API Error: ${response.status}`);
+    
+    const data = await response.json();
+    const nprRate = data.rates ? data.rates.NPR : null;
+    if (!nprRate) throw new Error("Invalid Primary Response");
 
     const formattedData = {
       status: "success",
-      source: "Nepal Rastra Bank",
-      last_updated: endDate,
-      rates: rawData.data.payload.map(day => ({
-        date: day.date,
-        currencies: day.rates.map(r => ({
-          currency: r.currency.name,
-          code: r.currency.iso3,
-          unit: r.currency.unit,
-          buy: parseFloat(r.buy),
-          sell: parseFloat(r.sell)
-        }))
-      })).sort((a, b) => new Date(b.date) - new Date(a.date))
+      source: "ExchangeRate-API",
+      last_updated: data.time_last_update_utc || endDate,
+      rates: [{
+        date: new Date().toISOString().split('T')[0],
+        currencies: [
+          { currency: "US Dollar", code: "USD", unit: 1, buy: nprRate, sell: nprRate }
+        ]
+      }]
     };
 
-    res.setHeader('Cache-Control', 's-maxage=7200, stale-while-revalidate');
+    // Try to merge with NRB data for history if possible, but don't fail if NRB is down/stale
+    try {
+      const nrbRes = await fetch(nrbUrl, { signal: AbortSignal.timeout(5000) });
+      if (nrbRes.ok) {
+        const nrbData = await nrbRes.json();
+        if (nrbData.data && nrbData.data.payload) {
+          const nrbRates = nrbData.data.payload.map(day => ({
+            date: day.date,
+            currencies: day.rates.map(r => ({
+              currency: r.currency.name,
+              code: r.currency.iso3,
+              unit: r.currency.unit,
+              buy: parseFloat(r.buy),
+              sell: parseFloat(r.sell)
+            }))
+          }));
+          
+          // Add current rate to the top if it's newer than NRB's latest
+          const latestNrbDate = nrbRates.length > 0 ? nrbRates[0].date : "";
+          if (formattedData.rates[0].date > latestNrbDate) {
+            formattedData.rates = [...formattedData.rates, ...nrbRates];
+          } else {
+            formattedData.rates = nrbRates;
+          }
+          formattedData.source = "ExchangeRate-API + NRB";
+        }
+      }
+    } catch (e) {
+      console.warn("NRB fetch failed, using primary only:", e.message);
+    }
+
+    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
     return res.status(200).json(formattedData);
 
   } catch (primaryError) {
     console.error('Primary Forex Fetch Error:', primaryError.message);
     
+    // Fallback to other sources if primary fails
+    const backupSources = [
+      "https://api.exchangerate-api.com/v4/latest/USD"
+    ];
+
     for (const backupUrl of backupSources) {
       try {
         const backupResponse = await fetch(backupUrl, { signal: AbortSignal.timeout(10000) });
