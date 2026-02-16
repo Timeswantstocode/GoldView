@@ -13,42 +13,59 @@ export default async function handler(req, res) {
     return;
   }
 
+  const API_KEY = "1de72fcaa4e9fe19534f8e3a";
   const endDate = new Date().toISOString().split('T')[0];
-  const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   
-  // Primary: ExchangeRate-API (More reliable for real-time)
-  // Backup: NRB (Official but sometimes delayed)
-  const primaryUrl = "https://open.er-api.com/v6/latest/USD";
+  // URLs
+  const exchangeRateUrl = `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/USD`;
+  const frankfurterUrl = `https://api.frankfurter.dev/v1/${startDate}..${endDate}?base=USD&symbols=NPR`;
   const nrbUrl = `https://www.nrb.org.np/api/forex/v1/rates?from=${startDate}&to=${endDate}&per_page=100&page=1`;
 
   try {
-    // Try Primary Source first
-    const response = await fetch(primaryUrl, { signal: AbortSignal.timeout(10000) });
-    if (!response.ok) throw new Error(`Primary API Error: ${response.status}`);
+    // 1. Fetch Latest Rate using your API Key (Quota used here)
+    const exRes = await fetch(exchangeRateUrl);
+    const exData = await exRes.json();
     
-    const data = await response.json();
-    const nprRate = data.rates ? data.rates.NPR : null;
-    if (!nprRate) throw new Error("Invalid Primary Response");
+    if (exData.result !== "success") throw new Error("ExchangeRate-API failed");
+    const currentNprRate = exData.conversion_rates.NPR;
 
-    const formattedData = {
-      status: "success",
-      source: "ExchangeRate-API",
-      last_updated: data.time_last_update_utc || endDate,
-      rates: [{
-        date: new Date().toISOString().split('T')[0],
-        currencies: [
-          { currency: "US Dollar", code: "USD", unit: 1, buy: nprRate, sell: nprRate }
-        ]
-      }]
+    // 2. Fetch History from Frankfurter (Free, no quota hit)
+    const frankRes = await fetch(frankfurterUrl);
+    const frankData = await frankRes.json();
+    
+    // Transform Frankfurter history into our format
+    let history = Object.entries(frankData.rates || {})
+      .map(([date, val]) => ({
+        date: date,
+        currencies: [{ currency: "US Dollar", code: "USD", unit: 1, buy: val.NPR, sell: val.NPR }]
+      }));
+
+    // Add your API Key's "Latest" rate to the front of the history
+    const latestEntry = {
+      date: endDate,
+      currencies: [{ currency: "US Dollar", code: "USD", unit: 1, buy: currentNprRate, sell: currentNprRate }]
     };
 
-    // Try to merge with NRB data for history if possible, but don't fail if NRB is down/stale
+    // Filter out if today's date already exists in history to avoid duplicates
+    let finalRates = [latestEntry, ...history.filter(h => h.date !== endDate)];
+    finalRates.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    let responseData = {
+      status: "success",
+      source: "ExchangeRate-API + Frankfurter",
+      last_updated: exData.time_last_update_utc,
+      rates: finalRates
+    };
+
+    // 3. Optional: Enrich with NRB data for more currencies (AED, MYR, etc.)
     try {
       const nrbRes = await fetch(nrbUrl, { signal: AbortSignal.timeout(5000) });
       if (nrbRes.ok) {
         const nrbData = await nrbRes.json();
-        if (nrbData.data && nrbData.data.payload) {
-          const nrbRates = nrbData.data.payload.map(day => ({
+        if (nrbData.data?.payload) {
+          // If NRB is available, we use their comprehensive list for all dates
+          responseData.rates = nrbData.data.payload.map(day => ({
             date: day.date,
             currencies: day.rates.map(r => ({
               currency: r.currency.name,
@@ -58,64 +75,26 @@ export default async function handler(req, res) {
               sell: parseFloat(r.sell)
             }))
           }));
-          
-          // Add current rate to the top if it's newer than NRB's latest
-          const latestNrbDate = nrbRates.length > 0 ? nrbRates[0].date : "";
-          if (formattedData.rates[0].date > latestNrbDate) {
-            formattedData.rates = [...formattedData.rates, ...nrbRates];
-          } else {
-            formattedData.rates = nrbRates;
-          }
-          formattedData.source = "ExchangeRate-API + NRB";
+          responseData.source = "Nepal Rastra Bank (Verified by ExchangeRate-API)";
         }
       }
     } catch (e) {
-      console.warn("NRB fetch failed, using primary only:", e.message);
+      console.warn("NRB fallback used history.");
     }
 
-    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
-    return res.status(200).json(formattedData);
-
-  } catch (primaryError) {
-    console.error('Primary Forex Fetch Error:', primaryError.message);
+    // --- CACHE FOR 24 HOURS TO SAVE QUOTA ---
+    // s-maxage=86400 (24h) caches on Vercel CDN
+    // stale-while-revalidate=3600 allows serving old data while fetching new in background
+    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
     
-    // Fallback to other sources if primary fails
-    const backupSources = [
-      "https://api.exchangerate-api.com/v4/latest/USD"
-    ];
+    return res.status(200).json(responseData);
 
-    for (const backupUrl of backupSources) {
-      try {
-        const backupResponse = await fetch(backupUrl, { signal: AbortSignal.timeout(10000) });
-        if (!backupResponse.ok) continue;
-        
-        const backupData = await backupResponse.json();
-        const nprRate = backupData.rates ? backupData.rates.NPR : null;
-        if (!nprRate) continue;
-        
-        const fallbackData = {
-          status: "success",
-          source: `Backup (${new URL(backupUrl).hostname})`,
-          last_updated: endDate,
-          rates: [{
-            date: endDate,
-            currencies: [
-              { currency: "US Dollar", code: "USD", unit: 1, buy: nprRate, sell: nprRate }
-            ]
-          }]
-        };
-        
-        res.setHeader('Cache-Control', 's-maxage=3600');
-        return res.status(200).json(fallbackData);
-      } catch (e) {
-        console.error(`Backup ${backupUrl} failed:`, e.message);
-      }
-    }
-
+  } catch (error) {
+    console.error('Forex Fetch Error:', error.message);
     return res.status(500).json({ 
       status: 'error',
-      message: 'All forex sources failed',
-      details: primaryError.message 
+      message: 'Failed to fetch forex data',
+      details: error.message 
     });
   }
 }
