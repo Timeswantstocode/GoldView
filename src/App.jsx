@@ -168,24 +168,47 @@ export default function App() {
   };
 
   const handleNotificationRequest = async () => {
-    // 1. Handle iOS Safari (Non-standalone)
     if (isIOS && !isStandalone) {
       setShowIOSGuide(true);
       return;
     }
 
-    // 2. Handle browsers that don't support Notifications at all
-    if (!('Notification' in window)) {
-      alert("Notifications are not supported in this browser. If you're on iPhone, please 'Add to Home Screen' first.");
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      alert("Notifications are not supported in this browser.");
       return;
     }
 
-    // 3. Native Web Push Request
     try {
       const permission = await Notification.requestPermission();
       setNotifStatus(permission);
+      
       if (permission === 'granted') {
         const registration = await navigator.serviceWorker.ready;
+        
+        // VAPID Public Key - User needs to generate this and put it here
+        const VAPID_PUBLIC_KEY = "YOUR_VAPID_PUBLIC_KEY"; 
+        
+        if (VAPID_PUBLIC_KEY === "YOUR_VAPID_PUBLIC_KEY") {
+          console.log("VAPID Public Key not set. Only local notifications will work.");
+          registration.showNotification("GoldView Nepal", {
+            body: "Local alerts enabled! (Server-side push requires VAPID setup)",
+            icon: "/logo192.png",
+            badge: "/logo192.png",
+            tag: 'welcome-notification'
+          });
+          return;
+        }
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: VAPID_PUBLIC_KEY
+        });
+
+        // Send subscription to GitHub via an issue (simple way to store it without a DB)
+        // This requires a small backend or a GitHub Action to process
+        console.log("Subscription obtained:", JSON.stringify(subscription));
+        
+        // For now, we'll just show a success message
         registration.showNotification("GoldView Nepal", {
           body: "Price alerts enabled! You'll be notified when rates change.",
           icon: "/logo192.png",

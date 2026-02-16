@@ -9,51 +9,74 @@ import urllib3
 # Suppress SSL warnings for FENEGOSIDA (expired certificates are common)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- GITHUB SECRETS CONFIGURATION ---
-ONESIGNAL_APP_ID = os.getenv('ONESIGNAL_APP_ID')
-ONESIGNAL_REST_KEY = os.getenv('ONESIGNAL_REST_KEY')
+# --- WEB PUSH CONFIGURATION ---
+VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
+VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY')
+VAPID_EMAIL = os.getenv('VAPID_EMAIL', 'mailto:admin@example.com')
 
 def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t, change_s):
-    """Broadcasts native device notifications via OneSignal API"""
-    if not ONESIGNAL_APP_ID or not ONESIGNAL_REST_KEY:
-        print("PUSH SKIPPED: OneSignal keys missing in GitHub Secrets.")
+    """Broadcasts native device notifications via Web Push"""
+    from pywebpush import webpush, WebPushException
+
+    if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
+        print("PUSH SKIPPED: VAPID keys missing in GitHub Secrets.")
         return
 
     msg_parts = []
     if change_g != 0:
-        direction = "increased" if change_g > 0 else "decreased"
-        msg_parts.append(f"Gold {direction} to रू {new_gold}")
-    if change_t != 0:
-        direction = "increased" if change_t > 0 else "decreased"
-        msg_parts.append(f"Tejabi {direction} to रू {new_tejabi}")
+        diff = f"(+{change_g})" if change_g > 0 else f"({change_g})"
+        msg_parts.append(f"Gold: रू {new_gold} {diff}")
     if change_s != 0:
-        direction = "increased" if change_s > 0 else "decreased"
-        msg_parts.append(f"Silver {direction} to रू {new_silver}")
+        diff = f"(+{change_s})" if change_s > 0 else f"({change_s})"
+        msg_parts.append(f"Silver: रू {new_silver} {diff}")
     
     if not msg_parts: return
     
-    full_msg = " | ".join(msg_parts) + "."
-
-    header = {
-        "Content-Type": "application/json; charset=utf-8", 
-        "Authorization": f"Basic {ONESIGNAL_REST_KEY}"
-    }
+    full_msg = " | ".join(msg_parts)
     
+    # Load subscriptions
+    subs_file = 'subscriptions.json'
+    if not os.path.exists(subs_file):
+        print("PUSH SKIPPED: No subscriptions found.")
+        return
+        
+    try:
+        with open(subs_file, 'r') as f:
+            subscriptions = json.load(f)
+    except:
+        print("PUSH ERROR: Could not read subscriptions.json")
+        return
+
+    if not subscriptions:
+        print("PUSH SKIPPED: Subscriptions list is empty.")
+        return
+
     payload = {
-        "app_id": ONESIGNAL_APP_ID,
-        "included_segments": ["All"],
-        "headings": {"en": "GoldView Price Alert 📈"},
-        "contents": {"en": full_msg},
-        "ios_badgeType": "Increase",
-        "ios_badgeCount": 1,
-        "priority": 10 
+        "title": "GoldView Price Alert 📈",
+        "body": full_msg,
+        "data": {"url": "/"}
     }
 
-    try:
-        r = requests.post("https://onesignal.com/api/v1/notifications", headers=header, data=json.dumps(payload), timeout=15)
-        print(f"PUSH STATUS: {r.status_code} - {full_msg}")
-    except Exception as e:
-        print(f"PUSH ERROR: {e}")
+    print(f"Sending push to {len(subscriptions)} devices...")
+    
+    success_count = 0
+    for sub in subscriptions:
+        try:
+            webpush(
+                subscription_info=sub,
+                data=json.dumps(payload),
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": VAPID_EMAIL}
+            )
+            success_count += 1
+        except WebPushException as ex:
+            print(f"Push failed for one device: {ex}")
+            # If the device is no longer registered, we should ideally remove it
+            pass
+        except Exception as e:
+            print(f"Unexpected push error: {e}")
+
+    print(f"PUSH STATUS: Sent to {success_count}/{len(subscriptions)} devices - {full_msg}")
 
 def get_candidates(url, metal):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0'}
@@ -219,6 +242,7 @@ if __name__ == "__main__":
     # Support for manual notification testing
     if len(sys.argv) > 1 and sys.argv[1] == "--test-notify":
         print("RUNNING NOTIFICATION TEST...")
+        # Mocking a price change for testing
         send_push_notification(120000, 119000, 1450, 100, 100, 10)
     else:
         update()
