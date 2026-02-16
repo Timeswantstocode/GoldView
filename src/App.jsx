@@ -186,7 +186,7 @@ export default function App() {
         const registration = await navigator.serviceWorker.ready;
         
         // VAPID Public Key - User needs to generate this and put it here
-        const VAPID_PUBLIC_KEY = "YOUR_VAPID_PUBLIC_KEY"; 
+        const VAPID_PUBLIC_KEY = "BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ"; 
         
         if (VAPID_PUBLIC_KEY === "YOUR_VAPID_PUBLIC_KEY") {
           console.log("VAPID Public Key not set. Only local notifications will work.");
