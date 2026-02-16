@@ -52,11 +52,13 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         return
 
     # Optimization: Use a unique tag and clear title to avoid spam flagging
+    # Using a dynamic tag helps avoid Android/Chrome spam flagging for repeated content
+    import time
     payload = {
         "title": "GoldView Nepal: Price Update 📈",
         "body": full_msg,
-        "data": {"url": "/"},
-        "tag": "price-update",
+        "data": {"url": "/", "tag": f"price-update-{int(time.time())}"},
+        "tag": f"price-update-{int(time.time())}",
         "renotify": True
     }
 
