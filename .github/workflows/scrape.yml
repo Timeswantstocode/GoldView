@@ -36,14 +36,14 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install requests beautifulsoup4
+          pip install requests beautifulsoup4 pywebpush
       
       - name: Run scraper
-        # --- INJECTING SECRETS INTO ENVIRONMENT ---
-        # This is the only way scraper.py can see your OneSignal keys
+        # --- INJECTING VAPID SECRETS INTO ENVIRONMENT ---
         env:
-          ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
-          ONESIGNAL_REST_KEY: ${{ secrets.ONESIGNAL_REST_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_EMAIL: ${{ secrets.VAPID_EMAIL }}
         run: python scraper.py
       
       - name: Check for changes
