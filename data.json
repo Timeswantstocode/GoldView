@@ -1394,11 +1394,11 @@
         "verified": true
     },
     {
-        "date": "2026-02-16 13:45",
-        "gold": 302801,
-        "tejabi": 299801,
-        "silver": 4861,
-        "source": "FENEGOSIDA / Ashesh (Tejabi)",
-        "verified": true
+        "date": "2026-02-16 16:27",
+        "gold": 302800,
+        "tejabi": 299800,
+        "silver": 4860,
+        "source": "Ashesh / Ashesh (Tejabi) (Unverified)",
+        "verified": false
     }
 ]
