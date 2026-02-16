@@ -17,16 +17,18 @@ export default async function handler(req, res) {
       liveUsdNpr = yData?.chart?.result?.[0]?.meta?.regularMarketPrice;
     } catch (e) { console.error("Yahoo Live Failed"); }
 
-    // 2. Fetch Official Data from Nepal Rastra Bank (NRB)
+    // 2. Fetch History from Nepal Rastra Bank
+    // This API returns only days they published rates (no weekends/holidays)
     const nrbUrl = `https://www.nrb.org.np/api/forex/v1/rates?from=${startDate}&to=${endDate}&per_page=100&page=1`;
     const nrbRes = await fetch(nrbUrl);
     const nrbData = await nrbRes.json();
     
     if (!nrbData?.data?.payload) throw new Error("NRB API unavailable");
 
-    // 3. Process NRB Data and Merge Live Price
-    const formattedRates = nrbData.data.payload.map((day, index) => {
-      const isLatestDay = index === 0;
+    // 3. Process the NRB list exactly as it is
+    const rates = nrbData.data.payload.map((day, index) => {
+      // We only update the very first (most recent) entry with the Live Yahoo price
+      const isLatestEntry = index === 0;
 
       return {
         date: day.date,
@@ -35,19 +37,10 @@ export default async function handler(req, res) {
           let buy = parseFloat(r.buy);
           let sell = parseFloat(r.sell);
 
-          // If this is the most recent entry and we have a Live Yahoo price
-          if (isLatestDay && liveUsdNpr) {
-            if (code === "USD") {
-              // Update USD to the Google-accurate price
-              buy = liveUsdNpr;
-              sell = liveUsdNpr;
-            } else {
-              // Adjust other currencies based on the "Google" USD trend
-              // (Live USD / Bank USD) * Bank Rate
-              const adjustmentFactor = liveUsdNpr / parseFloat(day.rates.find(cr => cr.currency.iso3 === "USD").buy);
-              buy = buy * adjustmentFactor;
-              sell = sell * adjustmentFactor;
-            }
+          // If this is the newest day in the list, inject the Google-accurate USD price
+          if (isLatestEntry && liveUsdNpr && code === "USD") {
+            buy = liveUsdNpr;
+            sell = liveUsdNpr;
           }
 
           return {
@@ -61,30 +54,13 @@ export default async function handler(req, res) {
       };
     });
 
-    // 4. Ensure Today is always present (even if NRB hasn't updated yet)
-    if (formattedRates.length > 0 && formattedRates[0].date !== endDate) {
-      const latestFromNrb = JSON.parse(JSON.stringify(formattedRates[0]));
-      latestFromNrb.date = endDate;
-      
-      // Force the USD to the current Live Market price
-      if (liveUsdNpr) {
-        latestFromNrb.currencies.forEach(c => {
-          if (c.code === "USD") {
-            c.buy = liveUsdNpr;
-            c.sell = liveUsdNpr;
-          }
-        });
-      }
-      formattedRates.unshift(latestFromNrb);
-    }
-
-    // 5. Final Output (limit to 90 days)
+    // 4. Return the data exactly as formatted by NRB
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
     return res.status(200).json({
       status: "success",
-      source: "Nepal Rastra Bank + Yahoo Live",
+      source: "Nepal Rastra Bank (Live USD by Yahoo)",
       last_updated: new Date().toISOString(),
-      rates: formattedRates.slice(0, 90)
+      rates: rates // No filling, no gap-closing
     });
 
   } catch (error) {
