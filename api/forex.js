@@ -7,29 +7,25 @@ export default async function handler(req, res) {
   const startDate = new Date(Date.now() - 95 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   try {
-    // 1. Fetch LIVE quotes for ALL global currency pairs from Yahoo
-    // We fetch USD vs everything else to calculate the most accurate NPR cross-rates
+    // 1. Fetch LIVE quotes from Yahoo Finance
     const tickers = [
       "USDNPR=X", "USDEUR=X", "USDGBP=X", "USDAED=X", "USDQAR=X", "USDSAR=X", 
       "USDMYR=X", "USDKRW=X", "USDAUD=X", "USDCAD=X", "USDSGD=X", "USDJPY=X", "USDINR=X"
     ];
     
     let liveMarket = {};
-    try {
-      // Use a more reliable Yahoo Finance endpoint or multiple sources if needed
-      // Added a timestamp to prevent caching issues
-      const yRes = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(',')}&t=${Date.now()}`, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
-      });
-      const yData = await yRes.json();
-      yData?.quoteResponse?.result?.forEach(q => {
-        liveMarket[q.symbol] = q.regularMarketPrice;
-      });
-    } catch (e) { 
-      console.error("Yahoo Live Fetch Failed", e); 
-    }
-
-    const liveUsdNpr = liveMarket["USDNPR=X"];
+    await Promise.all(tickers.map(async (ticker) => {
+      try {
+        const yRes = await fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1m&range=1d`, {
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+        const yData = await yRes.json();
+        const price = yData?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        if (price) liveMarket[ticker] = price;
+      } catch (e) {
+        console.error(`Yahoo Fetch Failed for ${ticker}:`, e);
+      }
+    }));
 
     // 2. Fetch Official History from Nepal Rastra Bank (NRB)
     const nrbUrl = `https://www.nrb.org.np/api/forex/v1/rates?from=${startDate}&to=${endDate}&per_page=100&page=1`;
@@ -38,57 +34,69 @@ export default async function handler(req, res) {
     
     if (!nrbData?.data?.payload) throw new Error("NRB API unavailable");
 
-    // 3. Process NRB Data and inject LIVE prices for every currency in the first entry
+    // 3. Process NRB Data for history
     const payload = nrbData.data.payload;
-    const finalRates = payload.map((day, index) => {
-      const isLatestEntry = index === 0;
-      
-      const dayRates = day.rates.map(r => {
-        const code = r.currency.iso3;
-        let buy = parseFloat(r.buy);
-        let sell = parseFloat(r.sell);
-
-        // ONLY update the very first entry with LIVE market data if available
-        if (isLatestEntry) {
-          if (code === "USD" && liveUsdNpr) {
-            buy = liveUsdNpr;
-            sell = liveUsdNpr;
-          } else if (code === "INR") {
-            buy = 160.00; // Keep Nepal-India peg official
-            sell = 160.00;
-          } else if (liveUsdNpr) {
-            // Calculate LIVE Cross Rate for every other currency
-            const tickerName = `USD${code}=X`;
-            const usdToForeign = liveMarket[tickerName];
-            
-            if (usdToForeign) {
-              const liveCrossRate = (liveUsdNpr / usdToForeign) * r.currency.unit;
-              buy = liveCrossRate;
-              sell = liveCrossRate;
-            }
-          }
-        }
-
-        return {
-          currency: r.currency.name,
-          code: code,
-          unit: r.currency.unit,
-          buy: Number(buy.toFixed(2)),
-          sell: Number(sell.toFixed(2))
-        };
-      });
-
+    const historyRates = payload.map((day) => {
       return {
         date: day.date,
-        currencies: dayRates
+        currencies: day.rates.map(r => ({
+          currency: r.currency.name,
+          code: r.currency.iso3,
+          unit: r.currency.unit,
+          buy: parseFloat(r.buy),
+          sell: parseFloat(r.sell)
+        }))
       };
     });
 
-    // 4. Final Output with optimized caching
+    // 4. Construct the CURRENT entry using Yahoo Finance data
+    // We use the currency list from the latest NRB entry as a template
+    const latestNrbTemplate = payload[0].rates;
+    const liveUsdNpr = liveMarket["USDNPR=X"];
+
+    const currentDayRates = latestNrbTemplate.map(r => {
+      const code = r.currency.iso3;
+      let buy = parseFloat(r.buy);
+      let sell = parseFloat(r.sell);
+
+      if (code === "USD" && liveUsdNpr) {
+        buy = liveUsdNpr;
+        sell = liveUsdNpr;
+      } else if (code === "INR") {
+        buy = 160.00; // Fixed peg
+        sell = 160.00;
+      } else if (liveUsdNpr) {
+        const tickerName = `USD${code}=X`;
+        const usdToForeign = liveMarket[tickerName];
+        if (usdToForeign) {
+          const liveCrossRate = (liveUsdNpr / usdToForeign) * r.currency.unit;
+          buy = liveCrossRate;
+          sell = liveCrossRate;
+        }
+      }
+
+      return {
+        currency: r.currency.name,
+        code: code,
+        unit: r.currency.unit,
+        buy: Number(buy.toFixed(2)),
+        sell: Number(sell.toFixed(2))
+      };
+    });
+
+    const currentEntry = {
+      date: new Date().toISOString().split('T')[0],
+      currencies: currentDayRates
+    };
+
+    // 5. Combine: Current (Yahoo) + History (NRB)
+    // If the latest NRB entry is from today, we replace it or prepend our live entry
+    const finalRates = [currentEntry, ...historyRates];
+
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return res.status(200).json({
       status: "success",
-      source: "Nepal Rastra Bank + Yahoo Live Market",
+      source: "Yahoo Finance (Live) + Nepal Rastra Bank (History)",
       last_updated: new Date().toISOString(),
       rates: finalRates
     });
