@@ -22,7 +22,7 @@ const getOrCreateTooltip = (chart) => {
   let tooltipEl = chart.canvas.parentNode.querySelector('div');
   if (!tooltipEl) {
     tooltipEl = document.createElement('div');
-    tooltipEl.style.background = 'rgba(10, 10, 10, 0.8)';
+    tooltipEl.style.background = 'rgba(10, 10, 10, 0.7)';
     tooltipEl.style.backdropFilter = 'blur(20px)';
     tooltipEl.style.WebkitBackdropFilter = 'blur(20px)';
     tooltipEl.style.borderRadius = '14px';
@@ -31,8 +31,8 @@ const getOrCreateTooltip = (chart) => {
     tooltipEl.style.pointerEvents = 'none';
     tooltipEl.style.position = 'absolute';
     tooltipEl.style.transform = 'translate(-50%, 0)';
-    tooltipEl.style.transition = 'opacity .15s ease';
-    tooltipEl.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+    tooltipEl.style.transition = 'all .12s ease';
+    tooltipEl.style.border = '1px solid rgba(255, 255, 255, 0.08)';
     tooltipEl.style.padding = '8px 12px';
     tooltipEl.style.zIndex = '100';
     tooltipEl.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
@@ -97,33 +97,24 @@ export default function App() {
   const [currCalc, setCurrCalc] = useState({ amount: '1', source: 'USD', isSwapped: false });
   const [notifStatus, setNotifStatus] = useState('default');
   const [showIOSGuide, setShowIOSGuide] = useState(false);
-  const [testNotifLoading, setTestNotifLoading] = useState(false);
 
   const chartRef = useRef(null);
 
-  const currencyList = useMemo(() => [
+  const currencyList = [
     { code: 'USD', flag: '🇺🇸' }, { code: 'GBP', flag: '🇬🇧' },
     { code: 'AUD', flag: '🇦🇺' }, { code: 'JPY', flag: '🇯🇵' },
     { code: 'KRW', flag: '🇰🇷' }, { code: 'AED', flag: '🇦🇪' },
     { code: 'EUR', flag: '🇪🇺' }
-  ], []);
+  ];
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`${DATA_URL}?t=${Date.now()}`);
-        const json = await res.json();
+    fetch(`${DATA_URL}?t=${Date.now()}`).then(res => res.json()).then(json => {
         setPriceData(json);
         localStorage.setItem('gv_v18_metal', JSON.stringify(json));
         setLoading(false);
-      } catch (err) {
-        console.error("Metal data fetch failed:", err);
-        setLoading(false);
-      }
+    }).catch(() => setLoading(false));
 
-      try {
-        const res = await fetch(FOREX_PROXY);
-        const json = await res.json();
+    fetch(FOREX_PROXY).then(res => res.json()).then(json => {
         const transformed = (json.rates || []).map(day => ({
           date: day.date,
           usdRate: parseFloat(day.currencies.find(c => c.code === 'USD')?.buy || 0),
@@ -132,45 +123,18 @@ export default function App() {
         setForexHistory(transformed);
         localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
         setForexLoading(false);
-      } catch (err) {
+    }).catch((err) => {
         console.error("Forex fetch failed:", err);
         setForexLoading(false);
-      }
-    };
-
-    fetchData();
+    });
 
     if ('Notification' in window) {
       setNotifStatus(Notification.permission);
     }
   }, []);
 
-  const isIOS = useMemo(() => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream, []);
-  const isStandalone = useMemo(() => window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches, []);
-
-  const handleTestNotification = async () => {
-    if (notifStatus !== 'granted') {
-      handleNotificationRequest();
-      return;
-    }
-    
-    setTestNotifLoading(true);
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      registration.showNotification("GoldView Test Alert 🔔", {
-        body: "Success! Your device is ready to receive live price updates.",
-        icon: "/logo192.png",
-        badge: "/logo192.png",
-        vibrate: [200, 100, 200],
-        tag: 'test-notification'
-      });
-      setTimeout(() => setTestNotifLoading(false), 1000);
-    } catch (err) {
-      console.error("Test notification failed:", err);
-      setTestNotifLoading(false);
-      alert("Test failed. Please ensure notifications are allowed in your device settings.");
-    }
-  };
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
   const handleNotificationRequest = async () => {
     if (isIOS && !isStandalone) {
@@ -206,7 +170,6 @@ export default function App() {
           applicationServerKey: VAPID_PUBLIC_KEY
         });
 
-        // Optimization: Use a dedicated endpoint for subscriptions
         await fetch('/api/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -250,14 +213,14 @@ export default function App() {
     });
   }, []);
   
-  const getDayDiff = useCallback((id) => {
+  const getDayDiff = (id) => {
     const source = id === 'usd' ? forexHistory : priceData;
     if (source.length < 2) return { val: 'Rs. 0', isUp: true };
     const currVal = id === 'usd' ? source[source.length-1].usdRate : source[source.length-1][id];
     const prevVal = id === 'usd' ? source[source.length-2].usdRate : source[source.length-2][id];
     const diff = currVal - prevVal;
     return { val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, isUp: diff >= 0 };
-  }, [forexHistory, priceData]);
+  };
 
   const chartData = useMemo(() => ({
     labels: filteredData.map(d => {
@@ -267,18 +230,18 @@ export default function App() {
     datasets: [{
       data: filteredData.map(d => activeMetal === 'usd' ? d.usdRate : Number(d[activeMetal]) || 0),
       borderColor: themeColor,
-      borderWidth: 3, // Reduced for performance
+      borderWidth: 4,
       fill: true,
       tension: 0.4,
-      pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 6 : 0),
-      pointHoverRadius: 8,
+      pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 8 : 0),
+      pointHoverRadius: 10,
       pointBackgroundColor: '#fff',
-      pointBorderWidth: 2,
+      pointBorderWidth: 3,
       backgroundColor: (context) => {
         const {ctx, chartArea} = context.chart;
         if (!chartArea) return null;
         const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-        g.addColorStop(0, `${themeColor}30`);
+        g.addColorStop(0, `${themeColor}40`);
         g.addColorStop(1, 'transparent');
         return g;
       },
@@ -288,7 +251,6 @@ export default function App() {
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    animation: { duration: 400 }, // Faster animations
     interaction: { mode: 'index', intersect: false },
     plugins: { 
         legend: false, 
@@ -303,10 +265,10 @@ export default function App() {
     scales: {
       x: {
         display: true,
-        grid: { display: true, color: 'rgba(255, 255, 255, 0.02)', borderDash: [6, 6], drawTicks: false },
-        ticks: { color: 'rgba(255, 255, 255, 0.2)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 8 }
+        grid: { display: true, color: 'rgba(255, 255, 255, 0.04)', borderDash: [6, 6], drawTicks: false },
+        ticks: { color: 'rgba(255, 255, 255, 0.25)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 8 }
       },
-      y: { display: true, position: 'right', grid: { display: true, color: 'rgba(255, 255, 255, 0.04)', borderDash: [5, 5], drawBorder: false }, ticks: { display: false } }
+      y: { display: true, position: 'right', grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5], drawBorder: false }, ticks: { display: false } }
     },
     onClick: (e, elements) => {
       if (elements.length > 0) {
@@ -346,8 +308,8 @@ export default function App() {
             </div>
           </div>
           <div className="flex gap-3">
-            <button onClick={handleTestNotification} className={`p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`}>
-              <Bell className={`w-5 h-5 ${notifStatus === 'granted' ? 'text-[#D4AF37]' : 'text-zinc-400'} ${testNotifLoading ? 'animate-bounce' : ''}`} />
+            <button onClick={handleNotificationRequest} className={`p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`}>
+              <Bell className={`w-5 h-5 ${notifStatus === 'granted' ? 'text-[#D4AF37]' : 'text-zinc-400'}`} />
             </button>
             <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all">
               <RefreshCcw className="w-5 h-5 text-zinc-400" />
@@ -363,15 +325,15 @@ export default function App() {
                  const diff = getDayDiff(type);
                  const val = type === 'usd' ? (forexHistory[forexHistory.length-1]?.usdRate || 0) : (priceData[priceData.length-1]?.[type] || 0);
                  const meta = {
-                   gold: { label: '24K Chhapawal Gold', sub: 'per tola', grad: 'from-[#D4AF37]/40 to-[#D4AF37]/10' },
-                   tejabi: { label: '22K Tejabi Gold', sub: 'per tola', grad: 'from-[#CD7F32]/40 to-[#CD7F32]/10' },
-                   silver: { label: 'Pure Silver', sub: 'per tola', grad: 'from-zinc-400/30 to-zinc-600/10' },
-                   usd: { label: 'USD to NPR', sub: 'Official Buying Rate', grad: 'from-[#22c55e]/35 to-[#22c55e]/10' }
+                   gold: { label: '24K Chhapawal Gold', sub: 'per tola', grad: 'from-[#D4AF37]/50 to-[#D4AF37]/15' },
+                   tejabi: { label: '22K Tejabi Gold', sub: 'per tola', grad: 'from-[#CD7F32]/50 to-[#CD7F32]/15' },
+                   silver: { label: 'Pure Silver', sub: 'per tola', grad: 'from-zinc-400/40 to-zinc-600/15' },
+                   usd: { label: 'USD to NPR', sub: 'Official Buying Rate', grad: 'from-[#22c55e]/45 to-[#22c55e]/15' }
                  }[type];
                  return (
                   <div key={type} onClick={() => { setActiveMetal(type); setSelectedPoint(null); }}
                     className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden ${
-                      isActive ? `${meta.grad} border-white/20 scale-[1.01]` : 'border-white/5 bg-white/5 opacity-40'
+                      isActive ? `${meta.grad} border-white/20 scale-[1.02]` : 'border-white/5 bg-white/5 opacity-40'
                     }`}>
                     <div className="flex justify-between items-start mb-2 text-[10px] font-black uppercase tracking-widest">
                       <div>{meta.label}<p className="text-[8px] opacity-50 mt-0.5">{meta.sub}</p></div>
@@ -440,84 +402,69 @@ export default function App() {
                   </div>
 
                   <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto gap-1">
-                     {['gold', 'tejabi', 'silver'].map(m => (
-                       <button key={m} onClick={() => setActiveMetal(m)} className={`px-6 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === m ? 'bg-white/10 text-white' : 'text-zinc-500'}`}>{m}</button>
-                     ))}
+                      {['gold', 'tejabi', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (metal === 'gold' ? '#D4AF37' : metal === 'tejabi' ? '#CD7F32' : '#94a3b8') : 'transparent' }} className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black' : 'text-zinc-500'}`}>{metal}</button>))}
+                  </div>
+                  <div className="mb-8 p-6 rounded-[2.2rem] border-2 flex items-center justify-between" style={{ borderColor: `${themeColor}80`, backgroundColor: `${themeColor}10` }}>
+                    <div className="flex items-center gap-4"><Coins className="w-8 h-8" style={{ color: themeColor }} /><p className="text-xl font-black uppercase text-white">{activeMetal === 'gold' ? '24K Gold' : activeMetal === 'tejabi' ? '22K Gold' : 'Pure Silver'}</p></div>
+                    <div className="text-right text-[10px] font-black text-zinc-500">{formatRS(priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal])}</div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
-                    {['tola', 'aana', 'lal'].map(unit => (
-                      <div key={unit} className="space-y-2">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-4">{unit}</p>
-                        <input type="number" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} placeholder="0" className="w-full bg-black/40 border border-white/5 rounded-3xl p-5 text-center text-xl font-black focus:border-white/20 outline-none transition-all" />
-                      </div>
-                    ))}
+                    {['tola', 'aana', 'lal'].map((unit) => (<div key={unit}><label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{unit}</label>
+                    <input type="number" style={{ caretColor: themeColor }} className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-2xl text-white outline-none focus:border-white/20" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} /></div>))}
                   </div>
+                  
+                  {tradeMode === 'buy' && (
+                    <>
+                      <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
+                      <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer animate-in fade-in slide-in-from-top-2"><div className="flex items-center gap-3"><div className="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all" style={{ borderColor: calc.vat ? themeColor : '#27272a', backgroundColor: calc.vat ? themeColor : 'transparent' }}>{calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}</div><span className="font-bold text-zinc-300">13% Govt VAT</span></div></div>
+                    </>
+                  )}
 
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 ml-4">Making Charge (Rs.)</p>
-                    <input type="number" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} placeholder="0" className="w-full bg-black/40 border border-white/5 rounded-3xl p-5 text-center text-xl font-black focus:border-white/20 outline-none transition-all" />
-                  </div>
-
-                  <div className="flex items-center justify-between p-6 bg-white/5 rounded-3xl border border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${calc.vat ? 'bg-green-500/20 text-green-500' : 'bg-zinc-500/10 text-zinc-500'}`}>
-                        <Coins className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-black">Include 13% VAT</p>
-                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Government Tax</p>
-                      </div>
-                    </div>
-                    <button onClick={() => setCalc({...calc, vat: !calc.vat})} className={`w-14 h-8 rounded-full relative transition-all ${calc.vat ? 'bg-green-500' : 'bg-zinc-700'}`}>
-                      <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${calc.vat ? 'right-1' : 'left-1'}`} />
-                    </button>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-zinc-800 to-black p-10 rounded-[3.5rem] text-center shadow-2xl border border-white/10 relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 mb-3 relative z-10">Total Estimate</p>
-                    <h3 className="text-5xl font-black tracking-tighter text-white relative z-10">
-                      {(() => {
-                        const rate = priceData[priceData.length-1]?.[activeMetal] || 0;
-                        const tola = Number(calc.tola) || 0;
-                        const aana = Number(calc.aana) || 0;
-                        const lal = Number(calc.lal) || 0;
-                        const making = Number(calc.making) || 0;
-                        const totalTola = tola + (aana/16) + (lal/160);
-                        let total = totalTola * rate;
-                        if (tradeMode === 'buy') {
-                          total += making;
-                          if (calc.vat) total *= 1.13;
-                        } else {
-                          total *= 0.95; // 5% deduction for sell back
-                        }
-                        return formatRS(total);
-                      })()}
-                    </h3>
+                  <div className="p-12 rounded-[3.5rem] text-black text-center shadow-2xl transition-all" style={{ background: `linear-gradient(135deg, ${themeColor}, ${activeMetal === 'gold' ? '#b8860b' : activeMetal === 'tejabi' ? '#8B4513' : '#4b5563'})` }}>
+                     <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">{tradeMode === 'buy' ? 'Estimated Total' : 'Buyback Value (Market - 5%)'}</p>
+                     <h3 className="text-5xl font-black tracking-tighter">
+                        {(() => {
+                            const weight = (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192;
+                            const rate = priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal] || 0;
+                            if (tradeMode === 'sell') return formatRS(weight * rate * 0.95);
+                            return formatRS((weight * rate + (Number(calc.making)||0)) * (calc.vat ? 1.13 : 1));
+                        })()}
+                     </h3>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-8">
-                    <div className="flex items-center justify-center gap-6">
-                        <div className="flex-1 space-y-3">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 text-center">Source</p>
-                            <select value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})} className="w-full bg-black/40 border border-white/5 rounded-3xl p-5 text-center text-lg font-black appearance-none outline-none">
-                                {currencyList.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
-                            </select>
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="bg-black/40 rounded-[3rem] p-7 border border-white/10 space-y-10">
+                        <div className="flex items-start justify-between px-1">
+                            <div className="flex-1 flex flex-col items-start gap-4">
+                                <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">YOU SEND</p>
+                                <div className="flex flex-col items-center gap-1.5 w-fit">
+                                    <span className="text-4xl leading-none">{currCalc.isSwapped ? '🇳🇵' : currencyList.find(c => c.code === currCalc.source)?.flag}</span>
+                                    {currCalc.isSwapped ? <span className="text-[11px] font-black text-white mt-1">NPR</span> : 
+                                    <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
+                                        {currencyList.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
+                                    </select>}
+                                </div>
+                            </div>
+                            <div className="px-4 pt-8">
+                                <button onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})} className="p-4 bg-green-500/20 rounded-2xl active:rotate-180 transition-all border border-green-500/20 shadow-lg shadow-green-500/10"><ArrowRightLeft className="w-5 h-5 text-green-500" /></button>
+                            </div>
+                            <div className="flex-1 flex flex-col items-end gap-4 text-right">
+                                <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">RECEIVER GETS</p>
+                                <div className="flex flex-col items-center gap-1.5 w-fit ml-auto">
+                                    <span className="text-4xl leading-none">{!currCalc.isSwapped ? '🇳🇵' : currencyList.find(c => c.code === currCalc.source)?.flag}</span>
+                                    {!currCalc.isSwapped ? <span className="text-[11px] font-black text-white mt-1">NPR</span> : 
+                                    <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
+                                        {currencyList.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
+                                    </select>}
+                                </div>
+                            </div>
                         </div>
-                        <button onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})} className="mt-6 p-5 bg-green-500/10 rounded-full border border-green-500/20 active:rotate-180 transition-all duration-500">
-                            <ArrowRightLeft className="w-6 h-6 text-green-500" />
-                        </button>
-                        <div className="flex-1 space-y-3">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 text-center">Target</p>
-                            <div className="w-full bg-black/40 border border-white/5 rounded-3xl p-5 text-center text-lg font-black opacity-50">🇳🇵 NPR</div>
+                        <div className="relative">
+                            <input type="number" placeholder="Amount" className="w-full bg-black/60 border-2 border-zinc-800 p-8 rounded-[2.5rem] font-black text-4xl outline-none focus:border-green-500 text-white text-center transition-all" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
+                            <div className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20"><Globe className="w-8 h-8 text-[#22c55e]" /></div>
                         </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 text-center">Amount to Convert</p>
-                        <input type="number" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} placeholder="1.00" className="w-full bg-black/40 border border-white/5 rounded-[2.5rem] p-8 text-center text-4xl font-black focus:border-green-500/30 outline-none transition-all" />
                     </div>
 
                     <div className="bg-gradient-to-br from-green-500 to-green-700 p-12 rounded-[3.5rem] text-black text-center shadow-xl relative overflow-hidden group">

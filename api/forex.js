@@ -17,7 +17,8 @@ export default async function handler(req, res) {
     let liveMarket = {};
     try {
       // Use a more reliable Yahoo Finance endpoint or multiple sources if needed
-      const yRes = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(',')}`, {
+      // Added a timestamp to prevent caching issues
+      const yRes = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(',')}&t=${Date.now()}`, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
       });
       const yData = await yRes.json();
@@ -38,18 +39,16 @@ export default async function handler(req, res) {
     if (!nrbData?.data?.payload) throw new Error("NRB API unavailable");
 
     // 3. Process NRB Data and inject LIVE prices for every currency in the first entry
-    // Optimization: Only process the necessary data and avoid heavy computations in the loop
     const payload = nrbData.data.payload;
     const finalRates = payload.map((day, index) => {
       const isLatestEntry = index === 0;
       
-      // Optimization: Pre-calculate rates for the latest entry to avoid repeated lookups
       const dayRates = day.rates.map(r => {
         const code = r.currency.iso3;
         let buy = parseFloat(r.buy);
         let sell = parseFloat(r.sell);
 
-        // ONLY update the very first entry with LIVE market data
+        // ONLY update the very first entry with LIVE market data if available
         if (isLatestEntry) {
           if (code === "USD" && liveUsdNpr) {
             buy = liveUsdNpr;
@@ -59,7 +58,6 @@ export default async function handler(req, res) {
             sell = 160.00;
           } else if (liveUsdNpr) {
             // Calculate LIVE Cross Rate for every other currency
-            // Formula: (USD/NPR) / (USD/ForeignCode) * Unit
             const tickerName = `USD${code}=X`;
             const usdToForeign = liveMarket[tickerName];
             
@@ -87,7 +85,7 @@ export default async function handler(req, res) {
     });
 
     // 4. Final Output with optimized caching
-    res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return res.status(200).json({
       status: "success",
       source: "Nepal Rastra Bank + Yahoo Live Market",

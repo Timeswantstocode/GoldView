@@ -6,19 +6,22 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(clients.claim());
 });
 
-// Function to show a beautiful notification
+// Function to show a notification
 const showBeautifulNotification = (title, body, data) => {
   const options = {
     body: body,
     icon: '/logo192.png',
-    badge: '/logo192.png', // Small icon for Android status bar
+    badge: '/logo192.png',
     vibrate: [100, 50, 100],
     data: data,
     actions: [
       { action: 'view', title: 'View Rates' }
     ],
-    tag: 'price-update', // Replaces previous notification of same type
-    renotify: true
+    // Using a dynamic tag or unique identifier helps avoid spam filters
+    // that flag identical repeated notifications
+    tag: data.tag || 'price-update-' + Date.now(), 
+    renotify: true,
+    requireInteraction: false // Don't force interaction for simple updates
   };
 
   return self.registration.showNotification(title, options);
