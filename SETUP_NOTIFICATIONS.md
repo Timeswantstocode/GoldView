@@ -1,29 +1,27 @@
-# Setting Up Push Notifications
+# Setting Up Push Notifications with Vercel Blob
 
-The "PUSH SKIPPED: Subscriptions list is empty" error occurs because subscriptions are not being persisted. In a serverless environment like Vercel, the filesystem is read-only and resets between requests.
+I have integrated **Vercel Blob** into your project to store push notification subscriptions persistently. This fixes the "Subscriptions list is empty" error.
 
-## Recommended Fix: Use a Database
+## Steps to Complete Setup
 
-To properly store subscriptions, you should use a database. Here are two easy options:
+### 1. Enable Vercel Blob in your Dashboard
+1. Go to your project in the [Vercel Dashboard](https://vercel.com).
+2. Click on the **Storage** tab.
+3. Select **Connect Database** and choose **Blob**.
+4. Follow the instructions to create a new Blob store.
+5. Vercel will automatically add the `BLOB_READ_WRITE_TOKEN` to your Environment Variables.
 
-### Option 1: Vercel KV (Redis) - Easiest
-1. Create a KV database in your Vercel Dashboard.
-2. Update `api/subscribe.js` to use `@vercel/kv`.
+### 2. Add Secret to GitHub Actions
+To allow the notification script to run from GitHub Actions, you need to add the token there as well:
+1. Go to your GitHub repository: `Timeswantstocode/GoldView`.
+2. Navigate to **Settings** > **Secrets and variables** > **Actions**.
+3. Click **New repository secret**.
+4. Name: `BLOB_READ_WRITE_TOKEN`.
+5. Value: (Copy the value of `BLOB_READ_WRITE_TOKEN` from your Vercel Project Settings > Environment Variables).
 
-```javascript
-import { kv } from '@vercel/kv';
+## How it Works
+- **Frontend**: When a user enables notifications, the `/api/subscribe` endpoint saves their subscription to a file named `subscriptions/data.json` in your Vercel Blob storage.
+- **Scraper/Notifications**: The Python scripts (`scraper.py` and `send_notifications.py`) now use the `BLOB_READ_WRITE_TOKEN` to fetch this file from Vercel Blob before sending notifications.
 
-export default async function handler(req, res) {
-  const subscription = req.body;
-  await kv.sadd('subscriptions', JSON.stringify(subscription));
-  return res.status(200).json({ success: true });
-}
-```
-
-3. Update `scraper.py` to fetch subscriptions from the KV API before sending.
-
-### Option 2: GitHub Actions Artifacts/Commits (Current Architecture)
-If you want to keep using `subscriptions.json`, you must ensure that when a user subscribes, the change is committed back to the repository. However, this is slow and not recommended for high-traffic apps.
-
-## Immediate Improvement
-I have updated `api/subscribe.js` to attempt to handle subscriptions more gracefully and provided the `forex.js` fix for real-time prices.
+## Forex Prices
+The forex API is now fully integrated with **Yahoo Finance** for real-time rates and **Nepal Rastra Bank** for historical data. No further setup is required for this.

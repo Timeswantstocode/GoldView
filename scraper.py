@@ -34,17 +34,40 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
     
     full_msg = " | ".join(msg_parts)
     
-    # Load subscriptions
-    subs_file = 'subscriptions.json'
-    if not os.path.exists(subs_file):
-        print("PUSH SKIPPED: No subscriptions found.")
+    # Load subscriptions from Vercel Blob
+    # The BLOB_READ_WRITE_TOKEN must be in GitHub Secrets
+    blob_token = os.getenv('BLOB_READ_WRITE_TOKEN')
+    if not blob_token:
+        print("PUSH SKIPPED: BLOB_READ_WRITE_TOKEN missing.")
         return
-        
+
     try:
-        with open(subs_file, 'r') as f:
-            subscriptions = json.load(f)
-    except:
-        print("PUSH ERROR: Could not read subscriptions.json")
+        # Use Vercel Blob API to find the subscriptions file
+        # We use the public URL if possible, or the API if token is provided
+        # Since we need to read it, we'll try to fetch it from the known path
+        # Note: In a production environment, you might want to store the specific URL in a secret
+        # or use the @vercel/blob python client if available, but simple requests works too.
+        
+        # We'll try to list blobs to find the latest URL for 'subscriptions/data.json'
+        headers = {"Authorization": f"Bearer {blob_token}"}
+        list_url = "https://blob.vercel-storage.com/?prefix=subscriptions/data.json"
+        resp = requests.get(list_url, headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            blobs = data.get('blobs', [])
+            target_blob = next((b for b in blobs if b['pathname'] == 'subscriptions/data.json'), None)
+            
+            if target_blob:
+                sub_resp = requests.get(target_blob['url'])
+                subscriptions = sub_resp.json()
+            else:
+                print("PUSH SKIPPED: subscriptions/data.json not found in Blob.")
+                return
+        else:
+            print(f"PUSH ERROR: Failed to list blobs ({resp.status_code})")
+            return
+    except Exception as e:
+        print(f"PUSH ERROR: Could not fetch subscriptions from Blob: {e}")
         return
 
     if not subscriptions:

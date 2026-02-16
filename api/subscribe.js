@@ -1,5 +1,4 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { put, list, get } from '@vercel/blob';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,49 +11,49 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid subscription' });
     }
 
-    // In Vercel, the filesystem is read-only in production.
-    // However, for this project, the user is likely running the scraper locally 
-    // or expecting the subscriptions to be saved to the repository via some mechanism.
-    // To fix the "Subscriptions list is empty" error, we need a way to store these.
-    
-    // For a real fix without a database, we would need to use an external service.
-    // But to address the user's immediate issue, we will update the code to at least
-    // attempt to read/write to a file, and provide instructions for a better solution.
-    
-    const filePath = join(process.cwd(), 'subscriptions.json');
+    const BLOB_PATH = 'subscriptions/data.json';
     let subscriptions = [];
-    
-    if (existsSync(filePath)) {
-      try {
-        const fileData = readFileSync(filePath, 'utf8');
-        subscriptions = JSON.parse(fileData || '[]');
-      } catch (e) {
-        subscriptions = [];
+
+    // 1. Try to fetch existing subscriptions from Blob
+    try {
+      const { blobs } = await list({ prefix: BLOB_PATH });
+      const existingBlob = blobs.find(b => b.pathname === BLOB_PATH);
+      
+      if (existingBlob) {
+        const response = await fetch(existingBlob.url);
+        subscriptions = await response.json();
       }
+    } catch (e) {
+      console.error('Error fetching existing subscriptions from Blob:', e);
+      subscriptions = [];
     }
 
-    // Check if subscription already exists
+    // 2. Check if subscription already exists
     const exists = subscriptions.some(s => s.endpoint === subscription.endpoint);
+    
     if (!exists) {
       subscriptions.push(subscription);
-      // NOTE: This will only work in local development or environments with persistent storage.
-      // In Vercel, this file will NOT persist across requests.
-      try {
-        writeFileSync(filePath, JSON.stringify(subscriptions, null, 2));
-      } catch (e) {
-        console.error('Could not write to subscriptions.json:', e);
-      }
+      
+      // 3. Save updated list back to Vercel Blob
+      // We use 'public' access as requested by the user's example
+      await put(BLOB_PATH, JSON.stringify(subscriptions, null, 2), {
+        access: 'public',
+        contentType: 'application/json',
+        addRandomSuffix: false // Keep the filename consistent
+      });
+      
+      console.log('Subscription added. Total:', subscriptions.length);
+    } else {
+      console.log('Subscription already exists.');
     }
-    
-    console.log('Subscription added. Total:', subscriptions.length);
     
     return res.status(200).json({ 
       success: true, 
-      message: 'Subscription received',
+      message: 'Subscription synchronized',
       count: subscriptions.length
     });
   } catch (error) {
     console.error('Subscription error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 }

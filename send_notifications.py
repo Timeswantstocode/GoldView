@@ -58,18 +58,32 @@ def main():
         }
     }
 
-    # Load subscriptions
-    # In a real app, these would be in a database. 
-    # Here we use the subscriptions.json file if it exists.
+    # Load subscriptions from Vercel Blob
+    blob_token = os.getenv('BLOB_READ_WRITE_TOKEN')
+    if not blob_token:
+        print("Error: BLOB_READ_WRITE_TOKEN missing")
+        return
+
     try:
-        if os.path.exists("subscriptions.json"):
-            with open("subscriptions.json", "r") as f:
-                subscriptions = json.load(f)
+        headers = {"Authorization": f"Bearer {blob_token}"}
+        list_url = "https://blob.vercel-storage.com/?prefix=subscriptions/data.json"
+        resp = requests.get(list_url, headers=headers)
+        if resp.status_code == 200:
+            data = resp.json()
+            blobs = data.get('blobs', [])
+            target_blob = next((b for b in blobs if b['pathname'] == 'subscriptions/data.json'), None)
+            
+            if target_blob:
+                sub_resp = requests.get(target_blob['url'])
+                subscriptions = sub_resp.json()
+            else:
+                print("No subscriptions found in Blob")
+                return
         else:
-            print("No subscriptions found")
+            print(f"Error listing blobs: {resp.status_code}")
             return
     except Exception as e:
-        print(f"Error loading subscriptions: {e}")
+        print(f"Error loading subscriptions from Blob: {e}")
         return
 
     print(f"Sending notifications to {len(subscriptions)} users...")
