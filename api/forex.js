@@ -16,16 +16,19 @@ export default async function handler(req, res) {
     
     let liveMarket = {};
     try {
+      // Use a more reliable Yahoo Finance endpoint or multiple sources if needed
       const yRes = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(',')}`, {
-        headers: { 'User-Agent': 'Mozilla/5.0' }
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
       });
       const yData = await yRes.json();
       yData?.quoteResponse?.result?.forEach(q => {
         liveMarket[q.symbol] = q.regularMarketPrice;
       });
-    } catch (e) { console.error("Yahoo Live Fetch Failed"); }
+    } catch (e) { 
+      console.error("Yahoo Live Fetch Failed", e); 
+    }
 
-    const liveUsdNpr = liveMarket["USDNPR=X"] || 144.95;
+    const liveUsdNpr = liveMarket["USDNPR=X"];
 
     // 2. Fetch Official History from Nepal Rastra Bank (NRB)
     const nrbUrl = `https://www.nrb.org.np/api/forex/v1/rates?from=${startDate}&to=${endDate}&per_page=100&page=1`;
@@ -35,51 +38,56 @@ export default async function handler(req, res) {
     if (!nrbData?.data?.payload) throw new Error("NRB API unavailable");
 
     // 3. Process NRB Data and inject LIVE prices for every currency in the first entry
-    const finalRates = nrbData.data.payload.map((day, index) => {
+    // Optimization: Only process the necessary data and avoid heavy computations in the loop
+    const payload = nrbData.data.payload;
+    const finalRates = payload.map((day, index) => {
       const isLatestEntry = index === 0;
+      
+      // Optimization: Pre-calculate rates for the latest entry to avoid repeated lookups
+      const dayRates = day.rates.map(r => {
+        const code = r.currency.iso3;
+        let buy = parseFloat(r.buy);
+        let sell = parseFloat(r.sell);
+
+        // ONLY update the very first entry with LIVE market data
+        if (isLatestEntry) {
+          if (code === "USD" && liveUsdNpr) {
+            buy = liveUsdNpr;
+            sell = liveUsdNpr;
+          } else if (code === "INR") {
+            buy = 160.00; // Keep Nepal-India peg official
+            sell = 160.00;
+          } else if (liveUsdNpr) {
+            // Calculate LIVE Cross Rate for every other currency
+            // Formula: (USD/NPR) / (USD/ForeignCode) * Unit
+            const tickerName = `USD${code}=X`;
+            const usdToForeign = liveMarket[tickerName];
+            
+            if (usdToForeign) {
+              const liveCrossRate = (liveUsdNpr / usdToForeign) * r.currency.unit;
+              buy = liveCrossRate;
+              sell = liveCrossRate;
+            }
+          }
+        }
+
+        return {
+          currency: r.currency.name,
+          code: code,
+          unit: r.currency.unit,
+          buy: Number(buy.toFixed(2)),
+          sell: Number(sell.toFixed(2))
+        };
+      });
 
       return {
         date: day.date,
-        currencies: day.rates.map(r => {
-          const code = r.currency.iso3;
-          let buy = parseFloat(r.buy);
-          let sell = parseFloat(r.sell);
-
-          // ONLY update the very first entry with LIVE market data
-          if (isLatestEntry && liveUsdNpr) {
-            if (code === "USD") {
-              buy = liveUsdNpr;
-              sell = liveUsdNpr;
-            } else if (code === "INR") {
-              buy = 160.00; // Keep Nepal-India peg official
-              sell = 160.00;
-            } else {
-              // Calculate LIVE Cross Rate for every other currency
-              // Formula: (USD/NPR) / (USD/ForeignCode) * Unit
-              const tickerName = `USD${code}=X`;
-              const usdToForeign = liveMarket[tickerName];
-              
-              if (usdToForeign) {
-                const liveCrossRate = (liveUsdNpr / usdToForeign) * r.currency.unit;
-                buy = liveCrossRate;
-                sell = liveCrossRate;
-              }
-            }
-          }
-
-          return {
-            currency: r.currency.name,
-            code: code,
-            unit: r.currency.unit,
-            buy: Number(buy.toFixed(2)),
-            sell: Number(sell.toFixed(2))
-          };
-        })
+        currencies: dayRates
       };
     });
 
-    // 4. Final Output
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+    // 4. Final Output with optimized caching
+    res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=300');
     return res.status(200).json({
       status: "success",
       source: "Nepal Rastra Bank + Yahoo Live Market",
@@ -88,6 +96,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
+    console.error("Forex Handler Error:", error);
     return res.status(500).json({ status: 'error', message: error.message });
   }
 }

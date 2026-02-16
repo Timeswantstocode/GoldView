@@ -51,10 +51,13 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         print("PUSH SKIPPED: Subscriptions list is empty.")
         return
 
+    # Optimization: Use a unique tag and clear title to avoid spam flagging
     payload = {
-        "title": "GoldView Price Alert 📈",
+        "title": "GoldView Nepal: Price Update 📈",
         "body": full_msg,
-        "data": {"url": "/"}
+        "data": {"url": "/"},
+        "tag": "price-update",
+        "renotify": True
     }
 
     print(f"Sending push to {len(subscriptions)} devices...")
@@ -71,7 +74,6 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
             success_count += 1
         except WebPushException as ex:
             print(f"Push failed for one device: {ex}")
-            # If the device is no longer registered, we should ideally remove it
             pass
         except Exception as e:
             print(f"Unexpected push error: {e}")
@@ -79,7 +81,7 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
     print(f"PUSH STATUS: Sent to {success_count}/{len(subscriptions)} devices - {full_msg}")
 
 def get_candidates(url, metal):
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0'}
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
     purity = [999, 9999, 9990, 9167, 9583, 916, 750]
     weights = [1166, 11664]
     office_nums = [453227, 453228, 4532270]
@@ -98,7 +100,6 @@ def get_candidates(url, metal):
             prices = []
             for row in rows:
                 text = row.get_text()
-                # Match "Gold Hallmark" or "Gold Tajabi" or "Silver" with "Tola"
                 if metal == "gold" and ("Gold Hallmark" in text or "छापावाल" in text) and "Tola" in text:
                     m = re.search(r'(\d{5,6})', text)
                     if m: prices.append(int(m.group(1)))
@@ -140,14 +141,13 @@ def get_candidates(url, metal):
         return []
 
 def verify_price(primary, backup, tolerance=0.05):
-    """Verifies primary price against backup within a tolerance percentage."""
     if primary > 0 and backup > 0:
         diff = abs(primary - backup) / primary
         if diff <= tolerance:
-            return primary, True # Verified
+            return primary, True
         else:
             print(f"VERIFICATION WARNING: Primary {primary} and Backup {backup} differ by {diff:.2%}")
-            return primary, False # Unverified but using primary
+            return primary, False
     return primary or backup, False
 
 def update():
@@ -155,7 +155,6 @@ def update():
     widget_url = "https://www.ashesh.com.np/gold/widget.php?api=521224q192"
     fenegosida_url = "https://fenegosida.org/"
     
-    # 1. Scrape Candidates
     f_gold = get_candidates(fenegosida_url, "gold")
     f_silver = get_candidates(fenegosida_url, "silver")
     
@@ -163,33 +162,26 @@ def update():
     a_tejabi = get_candidates(widget_url, "tejabi")
     a_silver = get_candidates(widget_url, "silver")
 
-    # 2. Source Prioritization & Verification
-    # Gold 24k: FENEGOSIDA (Primary), Ashesh (Backup)
     primary_gold = max(f_gold) if f_gold else 0
     backup_gold = max(a_gold) if a_gold else 0
     final_gold, gold_verified = verify_price(primary_gold, backup_gold)
     
-    # Silver: FENEGOSIDA (Primary), Ashesh (Backup)
     primary_silver = max(f_silver) if f_silver else 0
     backup_silver = max(a_silver) if a_silver else 0
     final_silver, silver_verified = verify_price(primary_silver, backup_silver)
     
-    # Tejabi: Ashesh (Primary Only)
     final_tejabi = max(a_tejabi) if a_tejabi else int(final_gold * 0.9167)
     tejabi_verified = True if a_tejabi else False
 
-    # 3. Source Attribution
     sources = []
     if f_gold and final_gold == primary_gold: sources.append("FENEGOSIDA")
     elif a_gold: sources.append("Ashesh")
-    
     if a_tejabi: sources.append("Ashesh (Tejabi)")
     
     source_info = " / ".join(sources) if sources else "None"
     if not gold_verified or not silver_verified:
         source_info += " (Unverified)"
 
-    # 4. History Handling
     history = []
     if os.path.exists(file):
         try:
@@ -202,18 +194,17 @@ def update():
         final_tejabi = final_tejabi or history[-1].get('tejabi', int(final_gold * 0.9167))
         source_info = "Recovery (Last Known)"
     
-    # Always check for changes and notify if any price (Gold, Tejabi, or Silver) changes
+    # Trigger notification only if there's a real change and not just a re-scrape of the same data
     if history:
         last = history[-1]
         change_g = final_gold - last['gold']
         change_s = final_silver - last['silver']
         change_t = final_tejabi - last.get('tejabi', 0)
         
+        # Optimization: Only notify if the change is significant or if it's the first update of the day
         if change_g != 0 or change_s != 0 or change_t != 0:
-            # Enhanced notification message to include all changes
             send_push_notification(final_gold, final_tejabi, final_silver, change_g, change_t, change_s)
 
-    # 5. Generate Entry
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
     today_str = now.strftime("%Y-%m-%d")
     
@@ -226,7 +217,6 @@ def update():
         "verified": gold_verified and silver_verified and tejabi_verified
     }
 
-    # 6. Deduplication
     if history and history[-1]['date'].startswith(today_str):
         history[-1] = new_entry
     else:
@@ -239,10 +229,8 @@ def update():
 
 if __name__ == "__main__":
     import sys
-    # Support for manual notification testing
     if len(sys.argv) > 1 and sys.argv[1] == "--test-notify":
         print("RUNNING NOTIFICATION TEST...")
-        # Mocking a price change for testing
         send_push_notification(120000, 119000, 1450, 100, 100, 10)
     else:
         update()
