@@ -1,4 +1,4 @@
-import { put, list, get } from '@vercel/blob';
+import { put, list } from '@vercel/blob'; // Fixed: Removed 'get'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -16,12 +16,14 @@ export default async function handler(req, res) {
 
     // 1. Try to fetch existing subscriptions from Blob
     try {
-      const { blobs } = await list({ prefix: BLOB_PATH });
+      const { blobs } = await list({ prefix: 'subscriptions/' }); // Adjusted prefix to be more general
       const existingBlob = blobs.find(b => b.pathname === BLOB_PATH);
       
       if (existingBlob) {
         const response = await fetch(existingBlob.url);
-        subscriptions = await response.json();
+        if (response.ok) {
+           subscriptions = await response.json();
+        }
       }
     } catch (e) {
       console.error('Error fetching existing subscriptions from Blob:', e);
@@ -35,11 +37,10 @@ export default async function handler(req, res) {
       subscriptions.push(subscription);
       
       // 3. Save updated list back to Vercel Blob
-      // We use 'public' access as requested by the user's example
       await put(BLOB_PATH, JSON.stringify(subscriptions, null, 2), {
         access: 'public',
         contentType: 'application/json',
-        addRandomSuffix: false // Keep the filename consistent
+        addRandomSuffix: false // Keep the filename consistent for the GitHub Action
       });
       
       console.log('Subscription added. Total:', subscriptions.length);
