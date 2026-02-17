@@ -451,11 +451,6 @@ export default function App() {
             <button onClick={handleNotificationRequest} className={`p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`} title="Enable Notifications">
               <Bell className={`w-5 h-5 ${notifStatus === 'granted' ? 'text-[#D4AF37]' : 'text-zinc-400'}`} />
             </button>
-            {notifStatus === 'granted' && (
-              <button onClick={handleTestNotification} className="p-4 bg-green-500/10 backdrop-blur-3xl rounded-3xl border border-green-500/30 active:scale-90 transition-all" title="Test Notification">
-                <Zap className="w-5 h-5 text-green-500" />
-              </button>
-            )}
             <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all" title="Refresh Data">
               <RefreshCcw className="w-5 h-5 text-zinc-400" />
             </button>

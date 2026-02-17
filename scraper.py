@@ -12,7 +12,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # --- WEB PUSH CONFIGURATION ---
 VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
 VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY', 'BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ')
-VAPID_EMAIL = os.getenv('VAPID_EMAIL', 'mailto:admin@viewgold.vercel.app')
+VAPID_EMAIL = os.getenv('VAPID_EMAIL', 'mailto:timesbaral11@gmail.com')
 
 def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t, change_s):
     """Broadcasts native device notifications via Web Push"""

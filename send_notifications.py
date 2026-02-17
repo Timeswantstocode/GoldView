@@ -6,7 +6,7 @@ from pywebpush import webpush, WebPushException
 # VAPID Keys - Load from environment
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY")
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ")
-VAPID_EMAIL = os.environ.get("VAPID_EMAIL", "mailto:admin@viewgold.vercel.app")
+VAPID_EMAIL = os.environ.get("VAPID_EMAIL", "mailto:timesbaral11@gmail.com")
 
 # Validate VAPID configuration
 print(f"DEBUG: VAPID_PRIVATE_KEY present: {bool(VAPID_PRIVATE_KEY)}")
