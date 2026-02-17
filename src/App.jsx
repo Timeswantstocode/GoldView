@@ -309,12 +309,19 @@ export default function App() {
     if (activeMetal === 'usd') {
       // If we have USD in priceData (from data.json), we can use it for longer history
       // but forexHistory is still our primary source for the 90-day NRB+Yahoo view.
+      console.log('[Graph] Using forexHistory for USD, length:', forexHistory.length);
       return forexHistory;
     }
+    console.log('[Graph] Using priceData for', activeMetal, ', length:', priceData.length);
     return priceData;
   }, [activeMetal, forexHistory, priceData]);
   
-  const filteredData = useMemo(() => activeDataList.slice(-timeframe), [activeDataList, timeframe]);
+  const filteredData = useMemo(() => {
+    const filtered = activeDataList.slice(-timeframe);
+    console.log('[Graph] Filtered data for timeframe', timeframe, ':', filtered.length, 'entries');
+    console.log('[Graph] Sample data:', filtered.length > 0 ? filtered[0] : 'EMPTY');
+    return filtered;
+  }, [activeDataList, timeframe]);
 
   const structuredData = useMemo(() => {
     return JSON.stringify({
@@ -337,31 +344,40 @@ export default function App() {
     return { val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, isUp: diff >= 0 };
   };
 
-  const chartData = useMemo(() => ({
-    labels: filteredData.map(d => {
+  const chartData = useMemo(() => {
+    const labels = filteredData.map(d => {
         const date = new Date(d.date.replace(' ', 'T'));
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }),
-    datasets: [{
-      data: filteredData.map(d => activeMetal === 'usd' ? d.usdRate : Number(d[activeMetal]) || 0),
-      borderColor: themeColor,
-      borderWidth: 4,
-      fill: true,
-      tension: 0.4,
-      pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 8 : 0),
-      pointHoverRadius: 10,
-      pointBackgroundColor: '#fff',
-      pointBorderWidth: 3,
-      backgroundColor: (context) => {
-        const {ctx, chartArea} = context.chart;
-        if (!chartArea) return null;
-        const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-        g.addColorStop(0, `${themeColor}40`);
-        g.addColorStop(1, 'transparent');
-        return g;
-      },
-    }]
-  }), [filteredData, activeMetal, selectedPoint, themeColor]);
+    });
+    const dataPoints = filteredData.map(d => activeMetal === 'usd' ? d.usdRate : Number(d[activeMetal]) || 0);
+    
+    console.log('[Graph] Chart data prepared - Labels:', labels.length, 'Data points:', dataPoints.length);
+    console.log('[Graph] First 3 data points:', dataPoints.slice(0, 3));
+    console.log('[Graph] Data range:', Math.min(...dataPoints), 'to', Math.max(...dataPoints));
+    
+    return {
+      labels,
+      datasets: [{
+        data: dataPoints,
+        borderColor: themeColor,
+        borderWidth: 4,
+        fill: true,
+        tension: 0.4,
+        pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 8 : 0),
+        pointHoverRadius: 10,
+        pointBackgroundColor: '#fff',
+        pointBorderWidth: 3,
+        backgroundColor: (context) => {
+          const {ctx, chartArea} = context.chart;
+          if (!chartArea) return null;
+          const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          g.addColorStop(0, `${themeColor}40`);
+          g.addColorStop(1, 'transparent');
+          return g;
+        },
+      }]
+    };
+  }, [filteredData, activeMetal, selectedPoint, themeColor]);
 
   const chartOptions = useMemo(() => ({
     responsive: true,
@@ -485,7 +501,15 @@ export default function App() {
                   {[7, 30, 90].map((t) => (<button key={t} onClick={() => { setTimeframe(t); setSelectedPoint(null); }} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === t ? `text-black shadow-lg shadow-white/5` : 'text-zinc-500'}`} style={timeframe === t ? { backgroundColor: themeColor } : {}}>{t === 7 ? '7D' : t === 30 ? '1M' : '3M'}</button>))}
                 </div>
               </div>
-              <div className="h-64 relative w-full"><Line ref={chartRef} data={chartData} options={chartOptions} redraw={false} /></div>
+              <div className="h-64 relative w-full" style={{ minHeight: '256px' }}>
+                {filteredData.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-zinc-500">
+                    <p>No data available for the selected timeframe</p>
+                  </div>
+                ) : (
+                  <Line ref={chartRef} data={chartData} options={chartOptions} redraw={false} />
+                )}
+              </div>
               
               <div className={`mt-8 transition-all duration-500 overflow-hidden ${selectedPoint ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
                 {selectedPoint && (
