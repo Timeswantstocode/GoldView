@@ -86,7 +86,7 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         return
 
     payload = {
-        "title": "GoldView:Current Rates",
+        "title": "Current Rates",
         "body": full_msg,
         "icon": "/logo512.png",
         "badge": "/logo512.png",

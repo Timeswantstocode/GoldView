@@ -78,7 +78,7 @@ def main():
     silver_str = f"Silver: {get_change_str(current['silver'], previous['silver'])}"
 
     notification_data = {
-        "title": "GoldView:Current Rates",
+        "title": "Current Rates",
         "body": f"{gold_str}\n{tejabi_str}\n{silver_str}",
         "data": {
             "url": "https://viewgold.vercel.app",
