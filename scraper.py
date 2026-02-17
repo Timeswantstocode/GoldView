@@ -62,7 +62,16 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
                     subscriptions = sub_resp.json()
                     print(f"DEBUG: Successfully loaded {len(subscriptions)} subscriptions from Blob.")
             else:
-                print("DEBUG: 'subscriptions/data.json' not found in Blob storage.")
+                print("DEBUG: 'subscriptions/data.json' not found in Blob storage. Initializing with dummy data.")
+                # Initialize with dummy data if not exists
+                dummy_data = [{"endpoint":"https://fcm.googleapis.com/fcm/send/dummy-endpoint","keys":{"p256dh":"dummy-p256dh","auth":"dummy-auth"}}]
+                put_url = "https://blob.vercel-storage.com/subscriptions/data.json"
+                put_resp = requests.put(put_url, headers=headers, data=json.dumps(dummy_data), timeout=10)
+                if put_resp.status_code in [200, 201]:
+                    print("DEBUG: Successfully initialized 'subscriptions/data.json' in Blob.")
+                    subscriptions = dummy_data
+                else:
+                    print(f"DEBUG: Failed to initialize Blob data: {put_resp.status_code}")
         else:
             print(f"DEBUG: Blob API returned error {resp.status_code}")
 
@@ -91,6 +100,9 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
     
     success_count = 0
     for sub in subscriptions:
+        # Skip dummy endpoints
+        if "dummy-endpoint" in sub.get('endpoint', ''):
+            continue
         try:
             webpush(
                 subscription_info=sub,
@@ -104,7 +116,7 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         except Exception as e:
             print(f"Unexpected push error: {e}")
 
-    print(f"PUSH STATUS: Sent to {success_count}/{len(subscriptions)} devices.")
+    print(f"PUSH STATUS: Sent to {success_count} active devices.")
 
 def get_candidates(url, metal):
     headers = {'User-Agent': 'Mozilla/5.0'}
@@ -118,7 +130,6 @@ def get_candidates(url, metal):
         r = requests.get(url, headers=headers, timeout=25, verify=False)
         r.raise_for_status()
         raw_html = r.text.replace(',', '')
-        # Normalize spaces and remove commas for easier regex matching
         raw_html = re.sub(r'\s+', ' ', raw_html)
         
         soup = BeautifulSoup(raw_html, 'html.parser')
@@ -128,7 +139,6 @@ def get_candidates(url, metal):
             prices = []
             for row in rows:
                 text = row.get_text(separator=' ')
-                # Check for Tola and the specific metal
                 if "Tola" in text:
                     if metal == "gold" and ("Gold Hallmark" in text or "छापावाल" in text):
                         m = re.search(r'(\d{5,6})', text)
@@ -141,27 +151,21 @@ def get_candidates(url, metal):
                         if m: prices.append(int(m.group(1)))
             if prices: return prices
 
-        # For FENEGOSIDA and others
         for junk in soup(["script", "style", "footer", "header", "nav", "aside"]):
             junk.decompose()
         content = soup.get_text(separator=' ')
 
         if metal == "gold":
-            # Look for Hallmark/Fine Gold followed by a price
             pattern = r"(?:FINE|Hallmark|Tola|छापावाल).{0,100}?(\d{5,6})"
             min_p, max_p = 100000, 1000000
         elif metal == "tejabi":
-            # Look for Tejabi/Tajabi followed by a price
             pattern = r"(?:Tejabi|Tajabi|तेजाबी|Tola).{0,100}?(\d{5,6})"
             min_p, max_p = 100000, 1000000
         else:
-            # Look for Silver followed by a price
             pattern = r"(?:SILVER|Tola|चाँदी).{0,100}?(\d{4,5})"
             min_p, max_p = 1000, 15000
 
         matches = re.findall(pattern, content, re.IGNORECASE | re.DOTALL)
-        
-        # Fallback to raw numbers if no pattern matches
         if not matches:
             raw_p = r"(\d{5,6})" if metal in ["gold", "tejabi"] else r"(\d{4,5})"
             matches = re.findall(raw_p, content)
@@ -238,26 +242,27 @@ def update():
     backup_silver = max(a_silver) if a_silver else 0
     final_silver, silver_verified = verify_price(primary_silver, backup_silver)
     
-    # Tejabi logic: Prefer FENEGOSIDA, then Ashesh, then calculated
-    primary_tejabi = max(f_tejabi) if f_tejabi else 0
+    # Tejabi logic: Prioritize Ashesh as requested, then FENEGOSIDA, then calculated
     backup_tejabi = max(a_tejabi) if a_tejabi else 0
+    primary_tejabi = max(f_tejabi) if f_tejabi else 0
     
-    if primary_tejabi > 0:
-        final_tejabi = primary_tejabi
-        tejabi_verified = True
-    elif backup_tejabi > 0:
+    if backup_tejabi > 0:
         final_tejabi = backup_tejabi
         tejabi_verified = True
+        tejabi_source = "Ashesh (Tejabi)"
+    elif primary_tejabi > 0:
+        final_tejabi = primary_tejabi
+        tejabi_verified = True
+        tejabi_source = "FENEGOSIDA (Tejabi)"
     else:
-        final_tejabi = int(final_gold * 0.991) # Tejabi is usually ~99.1% of Hallmark
+        final_tejabi = int(final_gold * 0.991)
         tejabi_verified = False
+        tejabi_source = "Calculated"
 
     sources = []
     if f_gold and final_gold == primary_gold: sources.append("FENEGOSIDA")
     elif a_gold: sources.append("Ashesh")
-    
-    if primary_tejabi > 0: sources.append("FENEGOSIDA (Tejabi)")
-    elif backup_tejabi > 0: sources.append("Ashesh (Tejabi)")
+    sources.append(tejabi_source)
     
     source_info = " / ".join(sources) if sources else "None"
     
@@ -319,7 +324,6 @@ if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "--test-notify":
         print("RUNNING NOTIFICATION TEST...")
-        # Force a non-zero change during a test so it doesn't skip
         send_push_notification(120000, 119000, 1450, 100, 100, 10)
     else:
         update()
