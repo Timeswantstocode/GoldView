@@ -21,6 +21,8 @@ ChartJS.defaults.animation = {
 };
 ChartJS.defaults.responsive = true;
 ChartJS.defaults.maintainAspectRatio = false;
+ChartJS.defaults.color = 'rgba(255, 255, 255, 0.8)';
+ChartJS.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
 
 const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json";
 const FOREX_PROXY = "/api/forex";
@@ -503,7 +505,7 @@ export default function App() {
                   {[7, 30, 90].map((t) => (<button key={t} onClick={() => { setTimeframe(t); setSelectedPoint(null); }} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === t ? `text-black shadow-lg shadow-white/5` : 'text-zinc-500'}`} style={timeframe === t ? { backgroundColor: themeColor } : {}}>{t === 7 ? '7D' : t === 30 ? '1M' : '3M'}</button>))}
                 </div>
               </div>
-              <div className="h-64 relative w-full" style={{ minHeight: '256px' }}>
+              <div className="h-64 relative w-full" style={{ minHeight: '256px', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '20px' }}>
                 {filteredData.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-zinc-500">
                     <p>No data available for the selected timeframe</p>
@@ -513,8 +515,7 @@ export default function App() {
                     ref={chartRef} 
                     data={chartData} 
                     options={chartOptions} 
-                    redraw={false}
-                    onContentVisible={(e) => console.log('[Graph] Chart rendered, canvas available:', !!e?.target)}
+                    redraw={true}
                   />
                 )}
               </div>
