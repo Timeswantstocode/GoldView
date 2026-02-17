@@ -64,7 +64,7 @@ def main():
         diff = curr - prev
         pct = (diff / prev * 100) if prev != 0 else 0
         sign = '+' if diff >= 0 else ''
-        return f"Rs. {curr:,} ({sign}{pct:.2f}%)"
+        return f"रू {curr:,} ({sign}{pct:.2f}%)"
 
     gold_str = f"Gold(24K): {get_change_str(current['gold'], previous['gold'])}"
     tejabi_str = f"Tejabi(22K): {get_change_str(current['tejabi'], previous['tejabi'])}"
@@ -74,8 +74,10 @@ def main():
         "title": "GoldView:Current Rates",
         "body": f"{gold_str}\n{tejabi_str}\n{silver_str}",
         "data": {
-            "url": "https://viewgold.vercel.app"
+            "url": "https://viewgold.vercel.app",
+            "tag": "price-update"
         },
+        "tag": "price-update",
         "icon": "/logo512.png",
         "badge": "/logo512.png"
     }

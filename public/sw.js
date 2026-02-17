@@ -19,9 +19,8 @@ const showBeautifulNotification = (title, body, data, icon, badge) => {
     actions: [
       { action: 'view', title: 'View Rates' }
     ],
-    // Using a dynamic tag or unique identifier helps avoid spam filters
-    // that flag identical repeated notifications
-    tag: data.tag || 'price-update-' + Date.now(), 
+    // Using a static tag allows new notifications to replace old ones
+    tag: data.tag || 'price-update',
     renotify: true,
     requireInteraction: false // Don't force interaction for simple updates
   };
@@ -48,7 +47,7 @@ self.addEventListener('push', (event) => {
   
   event.waitUntil(
     showBeautifulNotification(
-      payload.title || 'GoldView Nepal',
+      payload.title || 'GoldView',
       payload.body || 'New market rates are available.',
       payload.data || {},
       payload.icon,
