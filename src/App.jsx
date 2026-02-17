@@ -1,58 +1,58 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef, memo } from ‘react’;
-import { Line } from ‘react-chartjs-2’;
+import React, { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
+import { Line } from 'react-chartjs-2';
 import {
 Chart as ChartJS, registerables, Filler, Tooltip,
 Legend, CategoryScale, LinearScale, PointElement, LineElement
-} from ‘chart.js’;
+} from 'chart.js';
 import {
 LayoutDashboard, Calculator, RefreshCcw, TrendingUp,
 X, Calendar, Zap, Activity, Coins, ArrowRightLeft, Globe, ArrowDown, Bell
-} from ‘lucide-react’;
-import { Analytics } from ‘@vercel/analytics/react’;
-import { SpeedInsights } from ‘@vercel/speed-insights/react’;
-import { Helmet, HelmetProvider } from ‘react-helmet-async’;
+} from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
+import { Helmet, HelmetProvider } from 'react-helmet-async';
 
-ChartJS.register(…registerables, Filler, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
+ChartJS.register(...registerables, Filler, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
 
 ChartJS.defaults.animation = {
 duration: 300,
-easing: ‘easeOutQuart’
+easing: 'easeOutQuart'
 };
 ChartJS.defaults.responsive = true;
 ChartJS.defaults.maintainAspectRatio = false;
-ChartJS.defaults.color = ‘rgba(255, 255, 255, 0.8)’;
-ChartJS.defaults.borderColor = ‘rgba(255, 255, 255, 0.1)’;
+ChartJS.defaults.color = 'rgba(255, 255, 255, 0.8)';
+ChartJS.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
 
-const DATA_URL = “https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json”;
-const FOREX_PROXY = “/api/forex”;
-const PRIMARY_DOMAIN = “https://viewgold.vercel.app”;
+const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json";
+const FOREX_PROXY = "/api/forex";
+const PRIMARY_DOMAIN = "https://viewgold.vercel.app";
 
-// ─── FIX: Convert hex color to “r, g, b” string for use in rgba() ────────────
+// ─── FIX: Convert hex color to "r, g, b" string for use in rgba() ────────────
 const hexToRgb = (hex) => {
 const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 return result
 ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
-: ‘255, 255, 255’;
+: '255, 255, 255';
 };
 
 const getOrCreateTooltip = (chart) => {
-let tooltipEl = chart.canvas.parentNode.querySelector(‘div’);
+let tooltipEl = chart.canvas.parentNode.querySelector('div');
 if (!tooltipEl) {
-tooltipEl = document.createElement(‘div’);
-tooltipEl.style.background = ‘rgba(10, 10, 10, 0.7)’;
-tooltipEl.style.backdropFilter = ‘blur(20px)’;
-tooltipEl.style.WebkitBackdropFilter = ‘blur(20px)’;
-tooltipEl.style.borderRadius = ‘14px’;
-tooltipEl.style.color = ‘white’;
+tooltipEl = document.createElement('div');
+tooltipEl.style.background = 'rgba(10, 10, 10, 0.7)';
+tooltipEl.style.backdropFilter = 'blur(20px)';
+tooltipEl.style.WebkitBackdropFilter = 'blur(20px)';
+tooltipEl.style.borderRadius = '14px';
+tooltipEl.style.color = 'white';
 tooltipEl.style.opacity = 1;
-tooltipEl.style.pointerEvents = ‘none’;
-tooltipEl.style.position = ‘absolute’;
-tooltipEl.style.transform = ‘translate(-50%, 0)’;
-tooltipEl.style.transition = ‘all .12s ease’;
-tooltipEl.style.border = ‘1px solid rgba(255, 255, 255, 0.08)’;
-tooltipEl.style.padding = ‘8px 12px’;
-tooltipEl.style.zIndex = ‘100’;
-tooltipEl.style.boxShadow = ‘0 10px 30px rgba(0,0,0,0.5)’;
+tooltipEl.style.pointerEvents = 'none';
+tooltipEl.style.position = 'absolute';
+tooltipEl.style.transform = 'translate(-50%, 0)';
+tooltipEl.style.transition = 'all .12s ease';
+tooltipEl.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+tooltipEl.style.padding = '8px 12px';
+tooltipEl.style.zIndex = '100';
+tooltipEl.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
 chart.canvas.parentNode.appendChild(tooltipEl);
 }
 return tooltipEl;
@@ -65,28 +65,28 @@ if (tooltip.opacity === 0) { tooltipEl.style.opacity = 0; return; }
 if (tooltip.body) {
 const titleLines = tooltip.title || [];
 const bodyLines = tooltip.body.map(b => b.lines);
-const div = document.createElement(‘div’);
-div.style.display = ‘flex’;
-div.style.flexDirection = ‘column’;
-div.style.alignItems = ‘center’;
+const div = document.createElement('div');
+div.style.display = 'flex';
+div.style.flexDirection = 'column';
+div.style.alignItems = 'center';
 titleLines.forEach(title => {
-const span = document.createElement(‘span’);
-span.style.fontSize = ‘8px’;
-span.style.fontWeight = ‘800’;
-span.style.textTransform = ‘uppercase’;
-span.style.display = ‘block’;
-span.style.marginBottom = ‘2px’;
-span.style.opacity = ‘0.5’;
-span.style.whiteSpace = ‘nowrap’;
+const span = document.createElement('span');
+span.style.fontSize = '8px';
+span.style.fontWeight = '800';
+span.style.textTransform = 'uppercase';
+span.style.display = 'block';
+span.style.marginBottom = '2px';
+span.style.opacity = '0.5';
+span.style.whiteSpace = 'nowrap';
 span.innerText = title;
 div.appendChild(span);
 });
 bodyLines.forEach((body) => {
-const span = document.createElement(‘span’);
-span.style.fontSize = ‘14px’;
-span.style.fontWeight = ‘900’;
-span.style.letterSpacing = ‘-0.01em’;
-span.style.whiteSpace = ‘nowrap’;
+const span = document.createElement('span');
+span.style.fontSize = '14px';
+span.style.fontWeight = '900';
+span.style.letterSpacing = '-0.01em';
+span.style.whiteSpace = 'nowrap';
 span.innerText = body;
 div.appendChild(span);
 });
@@ -95,42 +95,42 @@ tooltipEl.appendChild(div);
 }
 const {offsetLeft: positionX = 0, offsetTop: positionY = 0} = chart.canvas || {};
 tooltipEl.style.opacity = 1;
-tooltipEl.style.left = positionX + tooltip.caretX + ‘px’;
-tooltipEl.style.top = positionY + tooltip.caretY - 60 + ‘px’;
+tooltipEl.style.left = positionX + tooltip.caretX + 'px';
+tooltipEl.style.top = positionY + tooltip.caretY - 60 + 'px';
 };
 
 export default function App() {
-const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem(‘gv_v18_metal’) || ‘[]’));
-const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem(‘gv_v18_forex’) || ‘[]’));
+const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('gv_v18_metal') || '[]'));
+const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('gv_v18_forex') || '[]'));
 const [loading, setLoading] = useState(priceData.length === 0);
 const [forexLoading, setForexLoading] = useState(true);
-const [view, setView] = useState(‘dashboard’);
-const [calcMode, setCalcMode] = useState(‘jewelry’);
-const [tradeMode, setTradeMode] = useState(‘buy’);
-const [activeMetal, setActiveMetal] = useState(‘gold’);
+const [view, setView] = useState('dashboard');
+const [calcMode, setCalcMode] = useState('jewelry');
+const [tradeMode, setTradeMode] = useState('buy');
+const [activeMetal, setActiveMetal] = useState('gold');
 const [selectedPoint, setSelectedPoint] = useState(null);
 const [timeframe, setTimeframe] = useState(7);
-const [calc, setCalc] = useState({ tola: ‘’, aana: ‘’, lal: ‘’, making: ‘’, vat: true });
-const [currCalc, setCurrCalc] = useState({ amount: ‘1’, source: ‘USD’, isSwapped: false });
-const [notifStatus, setNotifStatus] = useState(‘default’);
+const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
+const [currCalc, setCurrCalc] = useState({ amount: '1', source: 'USD', isSwapped: false });
+const [notifStatus, setNotifStatus] = useState('default');
 const [showIOSGuide, setShowIOSGuide] = useState(false);
 
 const chartRef = useRef(null);
 
 const currencyList = [
-{ code: ‘USD’, flag: ‘🇺🇸’ }, { code: ‘GBP’, flag: ‘🇬🇧’ },
-{ code: ‘AUD’, flag: ‘🇦🇺’ }, { code: ‘JPY’, flag: ‘🇯🇵’ },
-{ code: ‘KRW’, flag: ‘🇰🇷’ }, { code: ‘AED’, flag: ‘🇦🇪’ },
-{ code: ‘EUR’, flag: ‘🇪🇺’ }
+{ code: 'USD', flag: '🇺🇸' }, { code: 'GBP', flag: '🇬🇧' },
+{ code: 'AUD', flag: '🇦🇺' }, { code: 'JPY', flag: '🇯🇵' },
+{ code: 'KRW', flag: '🇰🇷' }, { code: 'AED', flag: '🇦🇪' },
+{ code: 'EUR', flag: '🇪🇺' }
 ];
 
 useEffect(() => {
-const metalCacheTime = localStorage.getItem(‘gv_v18_metal_time’);
-const forexCacheTime = localStorage.getItem(‘gv_v18_forex_time’);
+const metalCacheTime = localStorage.getItem('gv_v18_metal_time');
+const forexCacheTime = localStorage.getItem('gv_v18_forex_time');
 const now = Date.now();
 const CACHE_DURATION = 5 * 60 * 1000;
 
-```
+
 const shouldFetchMetal = !metalCacheTime || (now - parseInt(metalCacheTime)) > CACHE_DURATION;
 
 if (shouldFetchMetal) {
@@ -189,12 +189,12 @@ if (shouldFetchForex) {
 if ('Notification' in window) {
   setNotifStatus(Notification.permission);
 }
-```
+
 
 }, []);
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-const isStandalone = window.navigator.standalone || window.matchMedia(’(display-mode: standalone)’).matches;
+const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
 const handleNotificationRequest = async () => {
 if (isIOS && !isStandalone) {
@@ -202,7 +202,7 @@ setShowIOSGuide(true);
 return;
 }
 
-```
+
 if (!('Notification' in window) || !('serviceWorker' in navigator)) {
   alert("Notifications are not supported in this browser.");
   return;
@@ -241,22 +241,22 @@ try {
   console.error("[Notifications] Setup failed:", err);
   alert(`Notification setup failed: ${err.message}`);
 }
-```
+
 
 };
 
 const handleTestNotification = async () => {
 try {
 const registration = await navigator.serviceWorker.ready;
-await registration.showNotification(“GoldView Test”, {
-body: “This is a test notification. If you see this, notifications are working!”,
-icon: “/logo192.png”,
-badge: “/logo192.png”,
-tag: ‘test-notification-’ + Date.now(),
+await registration.showNotification("GoldView Test", {
+body: "This is a test notification. If you see this, notifications are working!",
+icon: "/logo192.png",
+badge: "/logo192.png",
+tag: 'test-notification-' + Date.now(),
 vibrate: [100, 50, 100]
 });
 } catch (err) {
-console.error(’[Notifications] Test failed:’, err);
+console.error('[Notifications] Test failed:', err);
 alert(`Test notification failed: ${err.message}`);
 }
 };
@@ -265,22 +265,22 @@ const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleStr
 
 const parsePrice = (val) => {
 if (val === undefined || val === null) return 0;
-if (typeof val === ‘number’) return val;
-const cleaned = String(val).replace(/,/g, ‘’).replace(/\s/g, ‘’).trim();
+if (typeof val === 'number') return val;
+const cleaned = String(val).replace(/,/g, '').replace(/\s/g, '').trim();
 const parsed = parseFloat(cleaned);
 return isNaN(parsed) ? 0 : parsed;
 };
 
 const themeColor = useMemo(() => {
-if (view === ‘calculator’ && calcMode === ‘currency’) return ‘#22c55e’;
-if (activeMetal === ‘gold’) return ‘#D4AF37’;
-if (activeMetal === ‘tejabi’) return ‘#CD7F32’;
-if (activeMetal === ‘silver’) return ‘#94a3b8’;
-return ‘#22c55e’;
+if (view === 'calculator' && calcMode === 'currency') return '#22c55e';
+if (activeMetal === 'gold') return '#D4AF37';
+if (activeMetal === 'tejabi') return '#CD7F32';
+if (activeMetal === 'silver') return '#94a3b8';
+return '#22c55e';
 }, [activeMetal, view, calcMode]);
 
 const activeDataList = useMemo(() => {
-if (activeMetal === ‘usd’) return forexHistory;
+if (activeMetal === 'usd') return forexHistory;
 return priceData;
 }, [activeMetal, forexHistory, priceData]);
 
@@ -290,35 +290,35 @@ return activeDataList.slice(-timeframe);
 
 const structuredData = useMemo(() => {
 return JSON.stringify({
-“@context”: “https://schema.org”,
-“@type”: “WebApplication”,
-“name”: “GoldView Nepal”,
-“url”: PRIMARY_DOMAIN,
-“description”: “Official live 24K Gold and Silver rates in Nepal.”,
-“applicationCategory”: “FinanceApplication”,
-“operatingSystem”: “All”
+"@context": "https://schema.org",
+"@type": "WebApplication",
+"name": "GoldView Nepal",
+"url": PRIMARY_DOMAIN,
+"description": "Official live 24K Gold and Silver rates in Nepal.",
+"applicationCategory": "FinanceApplication",
+"operatingSystem": "All"
 });
 }, []);
 
 const getDayDiff = (id) => {
-const source = id === ‘usd’ ? forexHistory : priceData;
-if (source.length < 2) return { val: ‘Rs. 0’, isUp: true };
-const currVal = id === ‘usd’ ? source[source.length-1].usdRate : source[source.length-1][id];
-const prevVal = id === ‘usd’ ? source[source.length-2].usdRate : source[source.length-2][id];
+const source = id === 'usd' ? forexHistory : priceData;
+if (source.length < 2) return { val: 'Rs. 0', isUp: true };
+const currVal = id === 'usd' ? source[source.length-1].usdRate : source[source.length-1][id];
+const prevVal = id === 'usd' ? source[source.length-2].usdRate : source[source.length-2][id];
 const diff = currVal - prevVal;
 return { val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, isUp: diff >= 0 };
 };
 
 const chartData = useMemo(() => {
 const labels = filteredData.map(d => {
-const date = new Date(d.date.replace(’ ’, ‘T’));
-return date.toLocaleDateString(‘en-US’, { month: ‘short’, day: ‘numeric’ });
+const date = new Date(d.date.replace(' ', 'T'));
+return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 });
 const dataPoints = filteredData.map(d =>
-parsePrice(activeMetal === ‘usd’ ? d.usdRate : d[activeMetal])
+parsePrice(activeMetal === 'usd' ? d.usdRate : d[activeMetal])
 );
 
-```
+
 // ─── FIX: Use rgba() strings instead of hex+alpha or 'transparent' ──────
 // Canvas gradients treat 'transparent' as rgba(0,0,0,0), causing a black
 // tint mid-gradient. We extract the RGB values and use proper rgba() syntax.
@@ -342,35 +342,35 @@ return {
       // ─── FIX: Fallback uses rgba() not 8-digit hex ──────────────────
       if (!chartArea) return `rgba(${rgb}, 0.12)`;
       const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-      // ─── FIX: End stop is rgba(r,g,b,0) — NOT 'transparent' ─────────
+      // ─── FIX: End stop is rgba(r,g,b,0) - NOT 'transparent' ─────────
       g.addColorStop(0, `rgba(${rgb}, 0.3)`);
       g.addColorStop(1, `rgba(${rgb}, 0)`);
       return g;
     },
   }]
 };
-```
+
 
 }, [filteredData, activeMetal, selectedPoint, themeColor]);
 
 const chartOptions = useMemo(() => ({
 responsive: true,
 maintainAspectRatio: false,
-interaction: { mode: ‘index’, intersect: false },
+interaction: { mode: 'index', intersect: false },
 plugins: {
 legend: { display: false },
 tooltip: { enabled: false, external: externalTooltipHandler }
 },
 scales: {
 x: {
-grid: { display: true, color: ‘rgba(255, 255, 255, 0.03)’ },
-ticks: { color: ‘rgba(255, 255, 255, 0.4)’, font: { size: 9 } }
+grid: { display: true, color: 'rgba(255, 255, 255, 0.03)' },
+ticks: { color: 'rgba(255, 255, 255, 0.4)', font: { size: 9 } }
 },
 y: {
-position: ‘right’,
-// ─── FIX: grace gives breathing room so the line isn’t clipped ───
-grace: ‘5%’,
-grid: { display: true, color: ‘rgba(255, 255, 255, 0.03)’ },
+position: 'right',
+// ─── FIX: grace gives breathing room so the line isn't clipped ───
+grace: '5%',
+grid: { display: true, color: 'rgba(255, 255, 255, 0.03)' },
 ticks: { display: false }
 }
 },
@@ -381,7 +381,7 @@ const d = filteredData[i];
 setSelectedPoint({
 index: i,
 date: d.date,
-price: activeMetal === ‘usd’ ? d.usdRate : parsePrice(d[activeMetal])
+price: activeMetal === 'usd' ? d.usdRate : parsePrice(d[activeMetal])
 });
 }
 }
@@ -404,7 +404,7 @@ return (
 <script type="application/ld+json">{structuredData}</script>
 </Helmet>
 
-```
+
     <header className="p-8 pt-16 flex justify-between items-end relative z-10">
       <div>
         <div className="flex items-center gap-2 mb-2">
@@ -712,7 +712,7 @@ return (
     <SpeedInsights />
   </div>
 </HelmetProvider>
-```
+
 
 );
 }
