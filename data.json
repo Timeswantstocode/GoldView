@@ -1,12 +1,5 @@
 [
     {
-        "date": "2025-08-01",
-        "gold": 193100,
-        "tejabi": 177015,
-        "silver": 2280,
-        "source": "Scraped/Verified"
-    },
-    {
         "date": "2025-08-02",
         "gold": 193100,
         "tejabi": 177015,
@@ -1400,5 +1393,13 @@
         "silver": 4860,
         "source": "Ashesh / Ashesh (Tejabi) (Unverified)",
         "verified": false
+    },
+    {
+        "date": "2026-02-17 11:23",
+        "gold": 301900,
+        "tejabi": 298900,
+        "silver": 4885,
+        "source": "FENEGOSIDA / Ashesh (Tejabi)",
+        "verified": true
     }
 ]
