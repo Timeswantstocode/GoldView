@@ -222,7 +222,7 @@ export default function App() {
   useEffect(() => {
   if (!chartRef.current) return;
   applyGradient();
-}, [chartData, themeColor]);
+}, [chartData, themeColor, filteredData]);
 
   // Logic: Data Analytics
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
@@ -459,12 +459,16 @@ export default function App() {
               </div>
 
               <div className="h-44 sm:h-56 relative w-full">
-                {filteredData.length > 0 && (
+                {filteredData.length > 0 ? (
                   <Line
                     ref={chartRef}
                     data={chartData}
                     options={chartOptions}
                   />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-sm">
+                    Loading chart data...
+                  </div>
                 )}
               </div>
               
