@@ -59,19 +59,25 @@ def main():
     current = price_data[-1]
     previous = price_data[-2]
 
-    # Calculate differences
-    gold_diff = current["gold"] - previous["gold"]
-    silver_diff = current["silver"] - previous["silver"]
+    # Helper for calculating percentage change
+    def get_change_str(curr, prev):
+        diff = curr - prev
+        pct = (diff / prev * 100) if prev != 0 else 0
+        sign = '+' if diff >= 0 else ''
+        return f"Rs. {curr:,} ({sign}{pct:.2f}%)"
 
-    gold_str = f"Gold: Rs. {current['gold']:,} ({'+' if gold_diff >= 0 else ''}{gold_diff:,})"
-    silver_str = f"Silver: Rs. {current['silver']:,} ({'+' if silver_diff >= 0 else ''}{silver_diff:,})"
+    gold_str = f"Gold(24K): {get_change_str(current['gold'], previous['gold'])}"
+    tejabi_str = f"Tejabi(22K): {get_change_str(current['tejabi'], previous['tejabi'])}"
+    silver_str = f"Silver: {get_change_str(current['silver'], previous['silver'])}"
 
     notification_data = {
-        "title": "GoldView Price Update 🔔",
-        "body": f"{gold_str}\n{silver_str}",
+        "title": "GoldView:Current Rates",
+        "body": f"{gold_str}\n{tejabi_str}\n{silver_str}",
         "data": {
             "url": "https://viewgold.vercel.app"
-        }
+        },
+        "icon": "/logo512.png",
+        "badge": "/logo512.png"
     }
 
     # Load subscriptions from Vercel Blob
