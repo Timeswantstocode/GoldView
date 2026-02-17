@@ -14,14 +14,16 @@ import { Helmet, HelmetProvider } from 'react-helmet-async';
 
 ChartJS.register(...registerables, Filler, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
 
-// Global Chart Defaults for smoother transitions
+// Global Chart Defaults for smoother UI transitions
 ChartJS.defaults.animation = { duration: 400, easing: 'easeOutQuart' };
 
+// Configuration Constants
 const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json";
 const FOREX_PROXY = "/api/forex";
 const PRIMARY_DOMAIN = "https://viewgold.vercel.app"; 
+const VAPID_PUBLIC_KEY = "BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ";
 
-// --- CHART UTILITIES ---
+// --- UTILITIES: Data Parsing & Visuals ---
 const parsePrice = (val) => {
   if (val == null) return 0;
   if (typeof val === 'number') return val;
@@ -31,9 +33,10 @@ const parsePrice = (val) => {
 
 const hexToRgb = (hex) => {
   const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return r ? `${parseInt(r[1],16)}, ${parseInt(r[2],16)}, ${parseInt(r[3],16)}` : '212, 175, 55';
+  return r ? `${parseInt(r[1], 16)}, ${parseInt(r[2], 16)}, ${parseInt(r[3], 16)}` : '212, 175, 55';
 };
 
+// --- CHART TOOLTIP ENGINE ---
 const getOrCreateTooltip = (chart) => {
   let tooltipEl = chart.canvas.parentNode.querySelector('div.gv-tooltip');
   if (!tooltipEl) {
@@ -93,18 +96,25 @@ const externalTooltipHandler = (context) => {
 };
 
 export default function App() {
+  // State: Data
   const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('gv_v18_metal') || '[]'));
   const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('gv_v18_forex') || '[]'));
   const [loading, setLoading] = useState(priceData.length === 0);
   const [forexLoading, setForexLoading] = useState(true);
+
+  // State: Navigation & Interaction
   const [view, setView] = useState('dashboard');
   const [calcMode, setCalcMode] = useState('jewelry'); 
   const [tradeMode, setTradeMode] = useState('buy'); 
   const [activeMetal, setActiveMetal] = useState('gold'); 
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [timeframe, setTimeframe] = useState(7);
+
+  // State: Calculators
   const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
   const [currCalc, setCurrCalc] = useState({ amount: '1', source: 'USD', isSwapped: false });
+
+  // State: Notification & PWA logic
   const [notifStatus, setNotifStatus] = useState('default');
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
@@ -119,10 +129,10 @@ export default function App() {
     { code: 'EUR', flag: '🇪🇺' }
   ];
 
-  // Logic: Data Fetching & Caching
+  // Logic: Market Data Fetching
   useEffect(() => {
     const now = Date.now();
-    const CACHE_LIMIT = 5 * 60 * 1000;
+    const CACHE_LIMIT = 5 * 60 * 1000; // 5 minutes cache
     const metalCacheTime = localStorage.getItem('gv_v18_metal_time');
 
     if (!metalCacheTime || now - parseInt(metalCacheTime) > CACHE_LIMIT) {
@@ -154,7 +164,7 @@ export default function App() {
 
   // Theme Logic
   const themeColor = useMemo(() => {
-    let color = '#22c55e';
+    let color = '#22c55e'; // Green for currency
     if (view !== 'calculator' || calcMode !== 'currency') {
       if (activeMetal === 'gold') color = '#D4AF37';
       else if (activeMetal === 'tejabi') color = '#CD7F32'; 
@@ -164,7 +174,21 @@ export default function App() {
     return color;
   }, [activeMetal, view, calcMode]);
 
-  // Imperative Gradient Engine (Fixes the blank/gray graph issue)
+  // SEO: Schema.org Logic
+  const structuredData = useMemo(() => {
+    return JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "GoldView Nepal",
+      "url": PRIMARY_DOMAIN,
+      "description": "Live 24K Chhapawal Gold, Silver and Forex rates in Nepal.",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "All",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "NPR" }
+    });
+  }, []);
+
+  // Logic: Chart Imperative Gradient Engine
   const applyGradient = useCallback(() => {
     if (gradientRafRef.current) cancelAnimationFrame(gradientRafRef.current);
     gradientRafRef.current = requestAnimationFrame(() => {
@@ -188,6 +212,7 @@ export default function App() {
 
   useEffect(() => { applyGradient(); });
 
+  // Logic: Formatters
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
   const activeDataList = useMemo(() => activeMetal === 'usd' ? forexHistory : priceData, [activeMetal, forexHistory, priceData]);
   const filteredData = useMemo(() => activeDataList.slice(-timeframe), [activeDataList, timeframe]);
@@ -204,6 +229,7 @@ export default function App() {
     };
   };
 
+  // Logic: Chart Config
   const chartData = useMemo(() => ({
     labels: filteredData.map(d => {
         const date = new Date(d.date.replace(' ', 'T'));
@@ -212,7 +238,7 @@ export default function App() {
     datasets: [{
       data: filteredData.map(d => parsePrice(activeMetal === 'usd' ? d.usdRate : d[activeMetal])),
       borderColor: themeColor,
-      borderWidth: 3,
+      borderWidth: 4,
       fill: true,
       tension: 0.4,
       pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 8 : 0),
@@ -233,10 +259,10 @@ export default function App() {
     },
     scales: {
       x: {
-        grid: { display: true, color: 'rgba(255, 255, 255, 0.04)' },
-        ticks: { color: 'rgba(255, 255, 255, 0.3)', font: { size: 9 }, maxRotation: 0 }
+        grid: { display: true, color: 'rgba(255, 255, 255, 0.04)', borderDash: [6, 6] },
+        ticks: { color: 'rgba(255, 255, 255, 0.3)', font: { size: 9, weight: '700' }, maxRotation: 0 }
       },
-      y: { position: 'right', grace: '10%', grid: { display: true, color: 'rgba(255, 255, 255, 0.04)' }, ticks: { display: false } }
+      y: { position: 'right', grace: '10%', grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5] }, ticks: { display: false } }
     },
     onClick: (e, elements) => {
       if (elements.length > 0) {
@@ -247,22 +273,53 @@ export default function App() {
     }
   }), [filteredData, activeMetal]);
 
+  // --- LOGIC: COMPREHENSIVE NOTIFICATIONS & PWA ---
   const handleNotificationRequest = async () => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-    if (isIOS && !isStandalone) { setShowIOSGuide(true); return; }
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+    
+    // 1. Check for iOS Installation Requirement
+    if (isIOS && !isStandalone) { 
+      setShowIOSGuide(true); 
+      return; 
+    }
+
+    // 2. Browser Support Check
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      alert("Notifications are not supported on this browser.");
+      return;
+    }
+
     try {
       const permission = await Notification.requestPermission();
       setNotifStatus(permission);
+      
       if (permission === 'granted') {
         const registration = await navigator.serviceWorker.ready;
-        const VAPID_KEY = "BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ";
-        const sub = await registration.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:VAPID_KEY });
-        await fetch('/api/subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(sub) });
-        registration.showNotification("GoldView Nepal", { body: "Price alerts enabled!", icon: "/logo192.png" });
+        
+        // 3. Subscription logic with VAPID Key
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: VAPID_PUBLIC_KEY
+        });
+
+        // 4. Send subscription to your Vercel API
+        await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(subscription)
+        });
+        
+        registration.showNotification("GoldView Nepal", {
+          body: "Live alerts enabled! You'll be notified of price changes.",
+          icon: "/logo192.png",
+          badge: "/logo192.png",
+          tag: 'welcome-notification'
+        });
       }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error("Push registration failed:", err);
+    }
   };
 
   if (loading) return (
@@ -276,18 +333,21 @@ export default function App() {
       <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-40 overflow-x-hidden relative">
         <Helmet>
             <title>Gold Price Nepal Today | 24K Gold Rate Live - GoldView</title>
-            <meta name="description" content="Official GoldView: Live 24K Chhapawal gold, silver and USD rates in Nepal today." />
-            <link rel="canonical" href="https://viewgold.vercel.app"/>
+            <meta name="description" content="Official GoldView: Live 24K Chhapawal gold, silver and USD rates in Nepal today. Professional charts and calculator." />
+            <link rel="canonical" href={PRIMARY_DOMAIN}/>
+            <meta name="robots" content="index, follow" />
+            <script type="application/ld+json">{structuredData}</script>
         </Helmet>
 
+        {/* --- HEADER --- */}
         <header className="p-8 pt-16 flex justify-between items-end relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: themeColor, boxShadow: `0 0 10px ${themeColor}` }}></div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em]" style={{ color: themeColor }}>Market Update</p>
+              <div className="w-2 h-2 rounded-full animate-pulse shadow-lg" style={{ backgroundColor: themeColor, boxShadow: `0 0 10px ${themeColor}` }}></div>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500" style={{ color: themeColor }}>Market Update</p>
             </div>
             <div className="flex items-center gap-3">
-              <img src="/logo192.png" alt="GoldView" className="w-10 h-10 rounded-xl border border-white/10" />
+              <img src="/logo192.png" alt="GoldView" className="w-10 h-10 rounded-xl border border-white/10 shadow-xl" />
               <h1 className="text-4xl font-black tracking-tighter text-white">GoldView</h1>
             </div>
           </div>
@@ -301,7 +361,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* DASHBOARD VIEW */}
+        {/* --- DASHBOARD VIEW --- */}
         <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
           <main className="px-6 space-y-6 relative z-10 animate-in fade-in duration-500">
             <div className="space-y-4">
@@ -342,13 +402,7 @@ export default function App() {
                 </div>
               </div>
               <div className="h-64 relative w-full">
-                {/* Fixed Line Component with Key and Ref */}
-                <Line 
-                  key={`${activeMetal}-${timeframe}`} 
-                  ref={chartRef} 
-                  data={chartData} 
-                  options={chartOptions} 
-                />
+                <Line key={`${activeMetal}-${timeframe}`} ref={chartRef} data={chartData} options={chartOptions} />
               </div>
               
               <div className={`mt-8 transition-all duration-500 overflow-hidden ${selectedPoint ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
@@ -379,7 +433,7 @@ export default function App() {
           </main>
         </div>
 
-        {/* CALCULATOR VIEW */}
+        {/* --- CALCULATOR VIEW --- */}
         <div style={{ display: view === 'calculator' ? 'block' : 'none' }}>
           <main className="px-6 relative z-10 animate-in zoom-in-95 duration-500">
             <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-3xl shadow-xl">
@@ -411,7 +465,7 @@ export default function App() {
                   {tradeMode === 'buy' && (
                     <>
                       <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none text-white focus:border-white/20" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
-                      <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer"><div className="flex items-center gap-3"><div className="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all" style={{ borderColor: calc.vat ? themeColor : '#27272a', backgroundColor: calc.vat ? themeColor : 'transparent' }}>{calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}</div><span className="font-bold text-zinc-300">13% Govt VAT</span></div></div>
+                      <div onClick={() => setCalc({...calc, vat: !calc.vat})} className="flex justify-between items-center p-6 bg-white/5 rounded-[2.2rem] border border-white/5 cursor-pointer transition-all"><div className="flex items-center gap-3"><div className="w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all" style={{ borderColor: calc.vat ? themeColor : '#27272a', backgroundColor: calc.vat ? themeColor : 'transparent' }}>{calc.vat && <Zap className="w-3.5 h-3.5 text-black fill-black" />}</div><span className="font-bold text-zinc-300">13% Govt VAT</span></div></div>
                     </>
                   )}
 
@@ -489,7 +543,7 @@ export default function App() {
           </main>
         </div>
 
-        {/* PWA iOS GUIDE */}
+        {/* --- iOS PWA GUIDE MODAL --- */}
         {showIOSGuide && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
             <div className="bg-[#121212] border border-white/10 rounded-[3rem] p-8 max-w-sm w-full shadow-2xl space-y-6 text-center">
@@ -497,17 +551,27 @@ export default function App() {
                 <Bell className="w-10 h-10 text-[#D4AF37]" />
               </div>
               <h3 className="text-2xl font-black text-white">Enable Alerts on iOS</h3>
+              <p className="text-zinc-400 text-sm">To enable price notifications on iPhone, you must add GoldView to your Home Screen:</p>
               <div className="space-y-4 text-left bg-white/5 p-6 rounded-3xl border border-white/5">
-                <p className="text-xs text-zinc-300 font-bold">1. Tap the <span className="text-blue-400">Share</span> icon in Safari</p>
-                <p className="text-xs text-zinc-300 font-bold">2. Select <span className="text-white">"Add to Home Screen"</span></p>
-                <p className="text-xs text-zinc-300 font-bold">3. Open from home screen to enable alerts</p>
+                <p className="text-xs text-zinc-300 font-bold flex gap-3">
+                  <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">1</span>
+                  Tap the <span className="text-blue-400">Share</span> icon in Safari
+                </p>
+                <p className="text-xs text-zinc-300 font-bold flex gap-3">
+                   <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">2</span>
+                   Select <span className="text-white">"Add to Home Screen"</span>
+                </p>
+                <p className="text-xs text-zinc-300 font-bold flex gap-3">
+                   <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">3</span>
+                   Open from home screen to enable alerts
+                </p>
               </div>
-              <button onClick={() => setShowIOSGuide(false)} className="w-full py-5 bg-[#D4AF37] text-black font-black rounded-3xl active:scale-95 transition-all">Got it</button>
+              <button onClick={() => setShowIOSGuide(false)} className="w-full py-5 bg-[#D4AF37] text-black font-black rounded-3xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">Got it</button>
             </div>
           </div>
         )}
 
-        {/* BOTTOM NAV */}
+        {/* --- BOTTOM NAVIGATION --- */}
         <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-2xl">
           <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'dashboard' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`} style={view === 'dashboard' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
             <LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} />
@@ -519,9 +583,10 @@ export default function App() {
           </button>
         </nav>
 
+        {/* --- FOOTER --- */}
         <footer className="mt-12 px-8 pb-12 text-zinc-600 text-[10px] leading-relaxed border-t border-white/5 pt-10">
           <h2 className="text-zinc-400 font-black mb-2 uppercase tracking-widest">Live Gold and Silver Prices in Nepal</h2>
-          <p>GoldView provides real-time updates for <strong>24K Chhapawal Gold</strong>, <strong>22K Tejabi Gold</strong> and <strong>Pure Silver</strong> rates in Nepal.</p>
+          <p>GoldView provides real-time updates for <strong>24K Chhapawal Gold</strong>, <strong>22K Tejabi Gold</strong> and <strong>Pure Silver</strong> rates in Nepal. All data is verified against official federation records.</p>
           <div className="mt-12 text-center">
             <p className="font-black uppercase tracking-[0.3em] text-zinc-500">Made by @Timeswantstocode</p>
           </div>
