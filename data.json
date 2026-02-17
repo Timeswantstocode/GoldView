@@ -515,21 +515,24 @@
         "gold": 248500,
         "tejabi": 227800,
         "silver": 3285,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.58
     },
     {
         "date": "2025-10-15",
         "gold": 238000,
         "tejabi": 218175,
         "silver": 3100,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 139.46
     },
     {
         "date": "2025-10-16",
         "gold": 238500,
         "tejabi": 218633,
         "silver": 3135,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 139.18
     },
     {
         "date": "2025-10-17",
@@ -550,35 +553,40 @@
         "gold": 239200,
         "tejabi": 219275,
         "silver": 3150,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 139.74
     },
     {
         "date": "2025-10-20",
         "gold": 239400,
         "tejabi": 219458,
         "silver": 3185,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 139.24
     },
     {
         "date": "2025-10-21",
         "gold": 239500,
         "tejabi": 219550,
         "silver": 3100,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 139.15
     },
     {
         "date": "2025-10-22",
         "gold": 239800,
         "tejabi": 219825,
         "silver": 3160,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 138.61
     },
     {
         "date": "2025-10-23",
         "gold": 240200,
         "tejabi": 220191,
         "silver": 3135,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 138.83
     },
     {
         "date": "2025-10-24",
@@ -606,35 +614,40 @@
         "gold": 241000,
         "tejabi": 220925,
         "silver": 3280,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 138.73
     },
     {
         "date": "2025-10-28",
         "gold": 240500,
         "tejabi": 220466,
         "silver": 3345,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 139.73
     },
     {
         "date": "2025-10-29",
         "gold": 240000,
         "tejabi": 220008,
         "silver": 3200,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 139.78
     },
     {
         "date": "2025-10-30",
         "gold": 239800,
         "tejabi": 219825,
         "silver": 3490,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 139.58
     },
     {
         "date": "2025-10-31",
         "gold": 239700,
         "tejabi": 219733,
         "silver": 3200,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.4
     },
     {
         "date": "2025-11-01",
@@ -655,35 +668,40 @@
         "gold": 239700,
         "tejabi": 237300,
         "silver": 3655,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 139.98
     },
     {
         "date": "2025-11-04",
         "gold": 238300,
         "tejabi": 235900,
         "silver": 3625,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.45
     },
     {
         "date": "2025-11-05",
         "gold": 237200,
         "tejabi": 234800,
         "silver": 3555,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.38
     },
     {
         "date": "2025-11-06",
         "gold": 237800,
         "tejabi": 235400,
         "silver": 3190,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.47
     },
     {
         "date": "2025-11-07",
         "gold": 238400,
         "tejabi": 236000,
         "silver": 3605,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.22
     },
     {
         "date": "2025-11-08",
@@ -704,35 +722,40 @@
         "gold": 241500,
         "tejabi": 239100,
         "silver": 3750,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.14
     },
     {
         "date": "2025-11-11",
         "gold": 246400,
         "tejabi": 243900,
         "silver": 3805,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.42
     },
     {
         "date": "2025-11-12",
         "gold": 244300,
         "tejabi": 241900,
         "silver": 3905,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.11
     },
     {
         "date": "2025-11-13",
         "gold": 250200,
         "tejabi": 247700,
         "silver": 3160,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.41
     },
     {
         "date": "2025-11-14",
         "gold": 249700,
         "tejabi": 247200,
         "silver": 3825,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.32
     },
     {
         "date": "2025-11-15",
@@ -753,35 +776,40 @@
         "gold": 243300,
         "tejabi": 240900,
         "silver": 4055,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.34
     },
     {
         "date": "2025-11-18",
         "gold": 239500,
         "tejabi": 237100,
         "silver": 4080,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.22
     },
     {
         "date": "2025-11-19",
         "gold": 242300,
         "tejabi": 239900,
         "silver": 4005,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.13
     },
     {
         "date": "2025-11-20",
         "gold": 243000,
         "tejabi": 240600,
         "silver": 3185,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.14
     },
     {
         "date": "2025-11-21",
         "gold": 241700,
         "tejabi": 239300,
         "silver": 4105,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.44
     },
     {
         "date": "2025-11-22",
@@ -802,35 +830,40 @@
         "gold": 242700,
         "tejabi": 240300,
         "silver": 3115,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 141.6
     },
     {
         "date": "2025-11-25",
         "gold": 247900,
         "tejabi": 245400,
         "silver": 3200,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 141.14
     },
     {
         "date": "2025-11-26",
         "gold": 248800,
         "tejabi": 246300,
         "silver": 3250,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 140.68
     },
     {
         "date": "2025-11-27",
         "gold": 248400,
         "tejabi": 245900,
         "silver": 3300,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 141.44
     },
     {
         "date": "2025-11-28",
         "gold": 250600,
         "tejabi": 248100,
         "silver": 3400,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 141.41
     },
     {
         "date": "2025-11-29",
@@ -851,35 +884,40 @@
         "gold": 253600,
         "tejabi": 251100,
         "silver": 3535,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 141.23
     },
     {
         "date": "2025-12-02",
         "gold": 253300,
         "tejabi": 250800,
         "silver": 3545,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.01
     },
     {
         "date": "2025-12-03",
         "gold": 254100,
         "tejabi": 251600,
         "silver": 3655,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.53
     },
     {
         "date": "2025-12-04",
         "gold": 253300,
         "tejabi": 250800,
         "silver": 3625,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.85
     },
     {
         "date": "2025-12-05",
         "gold": 252400,
         "tejabi": 249900,
         "silver": 3555,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.3
     },
     {
         "date": "2025-12-06",
@@ -900,35 +938,40 @@
         "gold": 252900,
         "tejabi": 250400,
         "silver": 3585,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.37
     },
     {
         "date": "2025-12-09",
         "gold": 251900,
         "tejabi": 249400,
         "silver": 3600,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.57
     },
     {
         "date": "2025-12-10",
         "gold": 252100,
         "tejabi": 249600,
         "silver": 3750,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.51
     },
     {
         "date": "2025-12-11",
         "gold": 253100,
         "tejabi": 250600,
         "silver": 3805,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 141.66
     },
     {
         "date": "2025-12-12",
         "gold": 256600,
         "tejabi": 254000,
         "silver": 3905,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.94
     },
     {
         "date": "2025-12-13",
@@ -949,35 +992,40 @@
         "gold": 260700,
         "tejabi": 258100,
         "silver": 3870,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.02
     },
     {
         "date": "2025-12-16",
         "gold": 259000,
         "tejabi": 256400,
         "silver": 3885,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.62
     },
     {
         "date": "2025-12-17",
         "gold": 259700,
         "tejabi": 257100,
         "silver": 4055,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.93
     },
     {
         "date": "2025-12-18",
         "gold": 260400,
         "tejabi": 257800,
         "silver": 4080,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.15
     },
     {
         "date": "2025-12-19",
         "gold": 258400,
         "tejabi": 255800,
         "silver": 4005,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.99
     },
     {
         "date": "2025-12-20",
@@ -998,21 +1046,24 @@
         "gold": 261700,
         "tejabi": 259100,
         "silver": 4235,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 141.92
     },
     {
         "date": "2025-12-23",
         "gold": 267200,
         "tejabi": 264500,
         "silver": 4255,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 141.96
     },
     {
         "date": "2025-12-24",
         "gold": 268100,
         "tejabi": 265400,
         "silver": 4420,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.02
     },
     {
         "date": "2025-12-25",
@@ -1026,7 +1077,8 @@
         "gold": 269300,
         "tejabi": 266600,
         "silver": 4565,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.02
     },
     {
         "date": "2025-12-27",
@@ -1047,21 +1099,24 @@
         "gold": 270000,
         "tejabi": 267300,
         "silver": 4895,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.33
     },
     {
         "date": "2025-12-30",
         "gold": 262100,
         "tejabi": 259500,
         "silver": 4590,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.43
     },
     {
         "date": "2025-12-31",
         "gold": 261000,
         "tejabi": 258400,
         "silver": 4470,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.32
     },
     {
         "date": "2026-01-01",
@@ -1075,7 +1130,8 @@
         "gold": 262500,
         "tejabi": 259900,
         "silver": 4525,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.67
     },
     {
         "date": "2026-01-03",
@@ -1096,35 +1152,40 @@
         "gold": 265000,
         "tejabi": 262300,
         "silver": 4685,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.87
     },
     {
         "date": "2026-01-06",
         "gold": 268100,
         "tejabi": 265400,
         "silver": 4880,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.9
     },
     {
         "date": "2026-01-07",
         "gold": 267700,
         "tejabi": 265000,
         "silver": 4935,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.77
     },
     {
         "date": "2026-01-08",
         "gold": 265700,
         "tejabi": 263000,
         "silver": 4835,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.52
     },
     {
         "date": "2026-01-09",
         "gold": 267800,
         "tejabi": 265100,
         "silver": 4780,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.37
     },
     {
         "date": "2026-01-10",
@@ -1145,35 +1206,40 @@
         "gold": 274700,
         "tejabi": 271900,
         "silver": 5195,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.76
     },
     {
         "date": "2026-01-13",
         "gold": 276500,
         "tejabi": 273700,
         "silver": 5340,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.98
     },
     {
         "date": "2026-01-14",
         "gold": 278000,
         "tejabi": 275200,
         "silver": 5655,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 142.96
     },
     {
         "date": "2026-01-15",
         "gold": 276500,
         "tejabi": 273700,
         "silver": 5485,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.03
     },
     {
         "date": "2026-01-16",
         "gold": 277200,
         "tejabi": 274400,
         "silver": 5645,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.07
     },
     {
         "date": "2026-01-17",
@@ -1194,35 +1260,40 @@
         "gold": 282000,
         "tejabi": 279200,
         "silver": 5810,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.87
     },
     {
         "date": "2026-01-20",
         "gold": 284700,
         "tejabi": 281800,
         "silver": 5880,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.82
     },
     {
         "date": "2026-01-21",
         "gold": 295100,
         "tejabi": 292100,
         "silver": 5920,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.96
     },
     {
         "date": "2026-01-22",
         "gold": 292200,
         "tejabi": 289300,
         "silver": 5870,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 145.0
     },
     {
         "date": "2026-01-23",
         "gold": 301400,
         "tejabi": 298400,
         "silver": 6190,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 145.02
     },
     {
         "date": "2026-01-24",
@@ -1243,35 +1314,40 @@
         "gold": 309000,
         "tejabi": 305900,
         "silver": 6765,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 144.3
     },
     {
         "date": "2026-01-27",
         "gold": 309300,
         "tejabi": 306200,
         "silver": 6870,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.74
     },
     {
         "date": "2026-01-28",
         "gold": 318800,
         "tejabi": 315600,
         "silver": 7300,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 145.14
     },
     {
         "date": "2026-01-29",
         "gold": 339300,
         "tejabi": 335900,
         "silver": 7505,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 145.47
     },
     {
         "date": "2026-01-30",
         "gold": 318800,
         "tejabi": 315600,
         "silver": 7065,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 145.77
     },
     {
         "date": "2026-01-31",
@@ -1292,35 +1368,40 @@
         "gold": 286600,
         "tejabi": 283700,
         "silver": 5200,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 146.67
     },
     {
         "date": "2026-02-03",
         "gold": 290300,
         "tejabi": 287400,
         "silver": 5335,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 145.04
     },
     {
         "date": "2026-02-04",
         "gold": 304700,
         "tejabi": 301600,
         "silver": 5600,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.05
     },
     {
         "date": "2026-02-05",
         "gold": 295200,
         "tejabi": 292200,
         "silver": 4980,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.31
     },
     {
         "date": "2026-02-06",
         "gold": 291000,
         "tejabi": 288100,
         "silver": 4710,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.2
     },
     {
         "date": "2026-02-07",
@@ -1341,35 +1422,40 @@
         "gold": 304600,
         "tejabi": 301500,
         "silver": 5250,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.07
     },
     {
         "date": "2026-02-10",
         "gold": 305500,
         "tejabi": 302400,
         "silver": 5240,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.53
     },
     {
         "date": "2026-02-11",
         "gold": 306600,
         "tejabi": 303500,
         "silver": 5290,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.37
     },
     {
         "date": "2026-02-12",
         "gold": 306500,
         "tejabi": 303400,
         "silver": 5340,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.61
     },
     {
         "date": "2026-02-13",
         "gold": 303500,
         "tejabi": 300500,
         "silver": 5000,
-        "source": "Scraped/Verified"
+        "source": "Scraped/Verified",
+        "usd": 143.62
     },
     {
         "date": "2026-02-14",
@@ -1392,13 +1478,15 @@
         "tejabi": 299800,
         "silver": 4860,
         "source": "Ashesh / Ashesh (Tejabi) (Unverified)",
-        "verified": false
+        "verified": false,
+        "usd": 143.34
     },
     {
-        "date": "2026-02-17 11:23",
+        "date": "2026-02-17 11:27",
         "gold": 301900,
         "tejabi": 298900,
         "silver": 4885,
+        "usd": 145.07,
         "source": "FENEGOSIDA / Ashesh (Tejabi)",
         "verified": true
     }
