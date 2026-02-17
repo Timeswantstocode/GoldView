@@ -40,7 +40,8 @@ export default async function handler(req, res) {
       await put(BLOB_PATH, JSON.stringify(subscriptions, null, 2), {
         access: 'public',
         contentType: 'application/json',
-        addRandomSuffix: true // Generate a unique filename to avoid overwrite errors
+        addRandomSuffix: false, // Keep the filename consistent
+        allowOverwrite: true    // Allow overwriting the existing file to "append" data
       });
       
       console.log('Subscription added. Total:', subscriptions.length);
