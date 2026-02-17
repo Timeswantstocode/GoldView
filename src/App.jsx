@@ -219,12 +219,18 @@ export default function App() {
     });
   }, []);
 
-  useEffect(() => { applyGradient(); });
+  useEffect(() => {
+  if (!chartRef.current) return;
+  applyGradient();
+}, [chartData, themeColor]);
 
   // Logic: Data Analytics
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
   const activeDataList = useMemo(() => activeMetal === 'usd' ? forexHistory : priceData, [activeMetal, forexHistory, priceData]);
-  const filteredData = useMemo(() => activeDataList.slice(-timeframe), [activeDataList, timeframe]);
+  const filteredData = useMemo(() => {
+  if (!activeDataList || activeDataList.length === 0) return [];
+  return activeDataList.slice(-timeframe);
+}, [activeDataList, timeframe]);
 
   const getDayDiff = (id) => {
     const source = id === 'usd' ? forexHistory : priceData;
@@ -239,24 +245,33 @@ export default function App() {
   };
 
   // Logic: Chart Configuration
-  const chartData = useMemo(() => ({
-    labels: filteredData.map(d => {
-        const date = new Date(d.date.replace(' ', 'T'));
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }),
-    datasets: [{
-      data: filteredData.map(d => parsePrice(activeMetal === 'usd' ? d.usdRate : d[activeMetal])),
-      borderColor: themeColor,
-      borderWidth: 3,
-      fill: true,
-      tension: 0.45,
-      pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 6 : 0),
-      pointHoverRadius: 10,
-      pointBackgroundColor: '#fff',
-      pointBorderColor: themeColor,
-      pointBorderWidth: 3,
-    }]
-  }), [filteredData, activeMetal, selectedPoint, themeColor]);
+  const chartData = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) {
+      return {
+        labels: [],
+        datasets: []
+      };
+    }
+
+    return {
+      labels: filteredData.map(d => {
+          const date = new Date(d.date.replace(' ', 'T'));
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }),
+      datasets: [{
+        data: filteredData.map(d => parsePrice(activeMetal === 'usd' ? d.usdRate : d[activeMetal])),
+        borderColor: themeColor,
+        borderWidth: 3,
+        fill: true,
+        tension: 0.45,
+        pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 6 : 0),
+        pointHoverRadius: 10,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: themeColor,
+        pointBorderWidth: 3,
+      }]
+    };
+  }, [filteredData, activeMetal, selectedPoint, themeColor]);
 
   const chartOptions = useMemo(() => ({
     responsive: true,
@@ -359,7 +374,7 @@ export default function App() {
 
   return (
     <HelmetProvider>
-      <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-36 overflow-x-hidden relative">
+      <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-28 overflow-x-hidden relative px-4 sm:px-6">
         <Helmet>
             <title>Gold Price Nepal Today | Live 24K Chhapawal Gold Rate - GoldView</title>
             <meta name="description" content="GoldView: Live Chhapawal 24K Gold, Tejabi 22K Gold, and Pure Silver rates in Nepal today. Official historical charts and jewelry calculation engine." />
@@ -371,15 +386,15 @@ export default function App() {
         </Helmet>
 
         {/* --- APP HEADER (Reduced Padding & Sizes) --- */}
-        <header className="p-6 pt-12 flex justify-between items-end relative z-10">
+        <header className="pt-8 pb-4 flex justify-between items-end relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full animate-pulse shadow-lg" style={{ backgroundColor: themeColor, boxShadow: `0 0 10px ${themeColor}` }}></div>
               <p className="text-[9px] font-black uppercase tracking-[0.3em] transition-colors duration-500" style={{ color: themeColor }}>Live Market</p>
             </div>
             <div className="flex items-center gap-3">
-              <img src="/logo192.png" alt="GoldView Logo" className="w-9 h-9 rounded-xl border border-white/10 shadow-2xl" />
-              <h1 className="text-2xl font-black tracking-tighter text-white">GoldView</h1>
+              <img src="/logo192.png" alt="GoldView Logo" className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl border border-white/10 shadow-2xl" />
+              <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-white">GoldView</h1>
             </div>
           </div>
           <div className="flex gap-3">
@@ -408,7 +423,7 @@ export default function App() {
                  }[type];
                  return (
                   <div key={type} onClick={() => { setActiveMetal(type); setSelectedPoint(null); }}
-                    className={`p-6 rounded-3xl border-[1.5px] transition-all duration-500 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden group ${
+                    className={`p-4 sm:p-6 rounded-2xl sm:rounded-3xl border-[1.5px] transition-all duration-500 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden group ${
                       isActive ? `${meta.grad} border-white/20 scale-[1.01] shadow-2xl` : 'border-white/5 bg-white/5 opacity-50 hover:opacity-70'
                     }`}>
                     <div className="flex justify-between items-start mb-2 text-[10px] font-black uppercase tracking-widest">
@@ -416,7 +431,7 @@ export default function App() {
                       {type === 'usd' && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /> : 
                       <div className={`px-2 py-1 rounded-xl border text-[9px] ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
                     </div>
-                    <div className="flex justify-between items-end text-3xl font-black tracking-tighter">
+                    <div className="flex justify-between items-end text-2xl sm:text-3xl font-black tracking-tighter">
                       <h2>{type === 'usd' ? `रू ${val.toFixed(2)}` : formatRS(val)}</h2>
                       {isActive && <TrendingUp className={`w-6 h-6 ${diff.isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
                     </div>
@@ -426,7 +441,7 @@ export default function App() {
             </div>
 
             {/* --- PRICE CHART SECTION (Smaller padding & rounded) --- */}
-            <section className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 backdrop-blur-[60px] shadow-2xl relative overflow-hidden">
+            <section className="bg-white/5 border border-white/10 rounded-3xl p-4 sm:p-6 backdrop-blur-[60px] shadow-2xl relative overflow-hidden">
               <div className="flex justify-between items-center mb-6 px-1">
                 <h3 className="text-lg font-black tracking-tight flex items-center gap-3">
                     <Activity className="w-5 h-5" style={{ color: themeColor }} /> 
@@ -443,13 +458,14 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="h-56 relative w-full">
-                <Line 
-                    key={`${activeMetal}-${timeframe}`} 
-                    ref={chartRef} 
-                    data={chartData} 
-                    options={chartOptions} 
-                />
+              <div className="h-44 sm:h-56 relative w-full">
+                {filteredData.length > 0 && (
+                  <Line
+                    ref={chartRef}
+                    data={chartData}
+                    options={chartOptions}
+                  />
+                )}
               </div>
               
               <div className={`mt-6 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] overflow-hidden ${selectedPoint ? 'max-h-60 opacity-100 translate-y-0' : 'max-h-0 opacity-0 translate-y-10'}`}>
@@ -631,16 +647,16 @@ export default function App() {
         )}
 
         {/* --- BOTTOM NAVIGATION BAR (Height & Padding Adjusted) --- */}
-        <nav className="fixed bottom-6 left-6 right-6 h-20 bg-zinc-900/80 backdrop-blur-[40px] rounded-[2rem] border border-white/15 flex justify-around items-center px-4 z-50 shadow-2xl">
+        <nav className="fixed bottom-4 left-4 right-4 h-16 sm:h-20 bg-zinc-900/80 backdrop-blur-[40px] rounded-[2rem] border border-white/15 flex justify-around items-center px-4 z-50 shadow-2xl">
           <button onClick={() => setView('dashboard')} 
-            className={`flex flex-col items-center gap-1.5 px-8 py-4 rounded-2xl transition-all duration-500 ${view === 'dashboard' ? 'text-black' : 'text-zinc-500 hover:text-zinc-300'}`} 
+            className={`flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-all duration-500 ${view === 'dashboard' ? 'text-black' : 'text-zinc-500 hover:text-zinc-300'}`} 
             style={view === 'dashboard' ? { backgroundColor: themeColor } : {}}>
                 <LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} />
                 <span className="text-[8px] font-black uppercase tracking-widest">Market</span>
           </button>
           
           <button onClick={() => { setView('calculator'); if(activeMetal === 'usd') setActiveMetal('gold'); }} 
-            className={`flex flex-col items-center gap-1.5 px-8 py-4 rounded-2xl transition-all duration-500 ${view === 'calculator' ? 'text-black' : 'text-zinc-500 hover:text-zinc-300'}`} 
+            className={`flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-all duration-500 ${view === 'calculator' ? 'text-black' : 'text-zinc-500 hover:text-zinc-300'}`} 
             style={view === 'calculator' ? { backgroundColor: themeColor } : {}}>
                 <Calculator className={`w-6 h-6 ${view === 'calculator' ? 'fill-black' : ''}`} />
                 <span className="text-[8px] font-black uppercase tracking-widest">Compute</span>
