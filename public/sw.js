@@ -1,8 +1,10 @@
 self.addEventListener('install', (event) => {
+  console.log('[SW] Service Worker installing...');
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
+  console.log('[SW] Service Worker activated');
   event.waitUntil(clients.claim());
 });
 
@@ -28,10 +30,19 @@ const showBeautifulNotification = (title, body, data) => {
 };
 
 self.addEventListener('push', (event) => {
+  console.log('[SW] Push notification received!', event);
   let payload = {};
   try {
-    payload = event.data ? event.data.json() : {};
+    if (event.data) {
+      const rawData = event.data.text();
+      console.log('[SW] Raw push data:', rawData);
+      payload = JSON.parse(rawData);
+      console.log('[SW] Parsed payload:', payload);
+    } else {
+      console.warn('[SW] Push event has no data');
+    }
   } catch (e) {
+    console.error('[SW] Error parsing push data:', e);
     payload = { title: 'GoldView Update', body: 'Check the latest gold prices!' };
   }
   
@@ -40,21 +51,29 @@ self.addEventListener('push', (event) => {
       payload.title || 'GoldView Nepal',
       payload.body || 'New market rates are available.',
       payload.data || {}
-    )
+    ).then(() => {
+      console.log('[SW] Notification displayed successfully');
+    }).catch(err => {
+      console.error('[SW] Failed to show notification:', err);
+    })
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
+  console.log('[SW] Notification clicked:', event.notification.tag);
   event.notification.close();
   
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then((clientList) => {
+      console.log('[SW] Found', clientList.length, 'open windows');
       for (const client of clientList) {
         if (client.url === '/' && 'focus' in client) {
+          console.log('[SW] Focusing existing window');
           return client.focus();
         }
       }
       if (clients.openWindow) {
+        console.log('[SW] Opening new window');
         return clients.openWindow('/');
       }
     })
