@@ -197,6 +197,31 @@ def verify_price(primary, backup, tolerance=0.05):
             return primary, False
     return primary or backup, False
 
+def fetch_usd_history(days=90):
+    """Fetches historical USD/NPR rates from Yahoo Finance"""
+    try:
+        url = f"https://query2.finance.yahoo.com/v8/finance/chart/USDNPR=X?interval=1d&range={days}d"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(url, headers=headers, timeout=15)
+        r.raise_for_status()
+        data = r.json()
+        result = data.get('chart', {}).get('result', [{}])[0]
+        if not result or 'timestamp' not in result:
+            return {}
+        
+        timestamps = result['timestamp']
+        closes = result.get('indicators', {}).get('quote', [{}])[0].get('close', [])
+        
+        history = {}
+        for i, ts in enumerate(timestamps):
+            if i < len(closes) and closes[i] is not None:
+                date_str = datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).strftime("%Y-%m-%d")
+                history[date_str] = round(float(closes[i]), 2)
+        return history
+    except Exception as e:
+        print(f"WARNING: Could not fetch USD history: {e}")
+        return {}
+
 def update():
     file = 'data.json'
     widget_url = "https://www.ashesh.com.np/gold/widget.php?api=521224q192"
@@ -208,6 +233,14 @@ def update():
     a_gold = get_candidates(widget_url, "gold")
     a_tejabi = get_candidates(widget_url, "tejabi")
     a_silver = get_candidates(widget_url, "silver")
+    
+    # Fetch live USD rate for today
+    usd_history_map = fetch_usd_history(days=90)
+    live_usd = 0
+    if usd_history_map:
+        # Get the latest available rate
+        sorted_dates = sorted(usd_history_map.keys(), reverse=True)
+        live_usd = usd_history_map[sorted_dates[0]]
 
     primary_gold = max(f_gold) if f_gold else 0
     backup_gold = max(a_gold) if a_gold else 0
@@ -267,17 +300,30 @@ def update():
         "gold": final_gold,
         "tejabi": final_tejabi,
         "silver": final_silver,
+        "usd": live_usd,
         "source": source_info,
         "verified": gold_verified and silver_verified and tejabi_verified
     }
 
+    # Fill in missing USD history for existing entries if possible
+    if usd_history_map:
+        for entry in history:
+            entry_date = entry['date'].split(' ')[0]
+            if 'usd' not in entry or entry['usd'] == 0:
+                if entry_date in usd_history_map:
+                    entry['usd'] = usd_history_map[entry_date]
+
     if history and history[-1]['date'].startswith(today_str):
+        # Preserve USD if we already have it and live fetch failed
+        if new_entry['usd'] == 0:
+            new_entry['usd'] = history[-1].get('usd', 0)
         history[-1] = new_entry
     else:
         history.append(new_entry)
 
+    # Keep a generous amount of history (e.g., 1000 entries) to support the 90-day view
     with open(file, 'w') as f:
-        json.dump(history[-200:], f, indent=4)
+        json.dump(history[-1000:], f, indent=4)
     
     print(f"SUCCESS: Gold {final_gold}, Tejabi {final_tejabi}, Silver {final_silver} via {source_info}")
 

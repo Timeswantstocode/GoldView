@@ -210,7 +210,15 @@ export default function App() {
     return '#22c55e'; 
   }, [activeMetal, view, calcMode]);
 
-  const activeDataList = useMemo(() => activeMetal === 'usd' ? forexHistory : priceData, [activeMetal, forexHistory, priceData]);
+  const activeDataList = useMemo(() => {
+    if (activeMetal === 'usd') {
+      // If we have USD in priceData (from data.json), we can use it for longer history
+      // but forexHistory is still our primary source for the 90-day NRB+Yahoo view.
+      return forexHistory;
+    }
+    return priceData;
+  }, [activeMetal, forexHistory, priceData]);
+  
   const filteredData = useMemo(() => activeDataList.slice(-timeframe), [activeDataList, timeframe]);
 
   const structuredData = useMemo(() => {

@@ -107,17 +107,16 @@ export default async function handler(req, res) {
     };
 
     // 5. Combine: Current (Yahoo) + History (NRB)
-    // We want to use Yahoo for the last 90 days for USD, but NRB for other currencies and older history
-    // Create a map of Yahoo USD rates for quick lookup
+    // We prioritize Yahoo data for USD for the last 90 days.
     const yahooUsdMap = new Map(usdHistory.map(h => [h.date, h.rate]));
 
     const finalRates = historyRates.map(entry => {
-      const yahooRate = yahooUsdMap.get(entry.date);
-      if (yahooRate) {
-        // Update the USD rate in this entry with Yahoo's data
+      let usdRate = yahooUsdMap.get(entry.date);
+      
+      if (usdRate) {
         const updatedCurrencies = entry.currencies.map(c => {
           if (c.code === "USD") {
-            return { ...c, buy: Number(yahooRate.toFixed(2)), sell: Number(yahooRate.toFixed(2)) };
+            return { ...c, buy: Number(usdRate.toFixed(2)), sell: Number(usdRate.toFixed(2)) };
           }
           return c;
         });
@@ -126,13 +125,9 @@ export default async function handler(req, res) {
       return entry;
     });
 
-    // Ensure today's entry is included and prioritized
-    const hasToday = finalRates.some(r => r.date === today);
-    if (!hasToday || (finalRates[0] && finalRates[0].date === today)) {
-        // Replace or add today with currentEntry (live)
-        const historyWithoutToday = finalRates.filter(entry => entry.date !== today);
-        finalRates.splice(0, finalRates.length, currentEntry, ...historyWithoutToday);
-    }
+    // Always ensure today's live data is at the top
+    const historyWithoutToday = finalRates.filter(entry => entry.date !== today);
+    finalRates.splice(0, finalRates.length, currentEntry, ...historyWithoutToday);
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return res.status(200).json({
