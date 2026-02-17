@@ -40,7 +40,7 @@ export default async function handler(req, res) {
       await put(BLOB_PATH, JSON.stringify(subscriptions, null, 2), {
         access: 'public',
         contentType: 'application/json',
-        addRandomSuffix: false // Keep the filename consistent for the GitHub Action
+        addRandomSuffix: true // Generate a unique filename to avoid overwrite errors
       });
       
       console.log('Subscription added. Total:', subscriptions.length);
