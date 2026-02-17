@@ -85,10 +85,8 @@ const externalTooltipHandler = (context) => {
 export default function App() {
   const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('gv_v18_metal') || '[]'));
   const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('gv_v18_forex') || '[]'));
-  const [goldHistory, setGoldHistory] = useState(() => JSON.parse(localStorage.getItem('gv_v18_gold_hist') || '[]'));
   const [loading, setLoading] = useState(priceData.length === 0);
   const [forexLoading, setForexLoading] = useState(true);
-  const [goldHistLoading, setGoldHistLoading] = useState(false);
   const [view, setView] = useState('dashboard');
   const [calcMode, setCalcMode] = useState('jewelry'); 
   const [tradeMode, setTradeMode] = useState('buy'); 
@@ -110,34 +108,37 @@ export default function App() {
   ];
 
   useEffect(() => {
-    fetch(`${DATA_URL}?t=${Date.now()}`).then(res => res.json()).then(json => {
-        setPriceData(json);
-        localStorage.setItem('gv_v18_metal', JSON.stringify(json));
+    fetch(`${DATA_URL}?t=${Date.now()}`).then(res => {
+        if (!res.ok) throw new Error("Data file not found");
+        return res.json();
+    }).then(json => {
+        if (Array.isArray(json)) {
+          setPriceData(json);
+          localStorage.setItem('gv_v18_metal', JSON.stringify(json));
+        }
         setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch((err) => {
+        console.error("Metal data fetch failed:", err);
+        setLoading(false);
+    });
 
     fetch(FOREX_PROXY).then(res => res.json()).then(json => {
-        const transformed = (json.rates || []).map(day => ({
-          date: day.date,
-          usdRate: parseFloat(day.currencies.find(c => c.code === 'USD')?.buy || 0),
-          rates: day.currencies
-        })).sort((a, b) => new Date(a.date) - new Date(b.date));
-        setForexHistory(transformed);
-        localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
+        if (json.status === "success" && Array.isArray(json.rates)) {
+          const transformed = json.rates.map(day => ({
+            date: day.date,
+            usdRate: parseFloat(day.currencies.find(c => c.code === 'USD')?.buy || 0),
+            rates: day.currencies
+          })).sort((a, b) => new Date(a.date) - new Date(b.date));
+          setForexHistory(transformed);
+          localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
+        }
         setForexLoading(false);
     }).catch((err) => {
         console.error("Forex fetch failed:", err);
         setForexLoading(false);
     });
 
-    setGoldHistLoading(true);
-    fetch('/api/gold-history').then(res => res.json()).then(json => {
-        if (json.status === "success") {
-          setGoldHistory(json.history);
-          localStorage.setItem('gv_v18_gold_hist', JSON.stringify(json.history));
-        }
-        setGoldHistLoading(false);
-    }).catch(() => setGoldHistLoading(false));
+
 
     if ('Notification' in window) {
       setNotifStatus(Notification.permission);
@@ -209,16 +210,8 @@ export default function App() {
     return '#22c55e'; 
   }, [activeMetal, view, calcMode]);
 
-  const activeDataList = useMemo(() => {
-    if (activeMetal === 'usd') return forexHistory;
-    if (activeMetal === 'gold' && timeframe === 90 && goldHistory.length > 0) return goldHistory;
-    return priceData;
-  }, [activeMetal, forexHistory, priceData, goldHistory, timeframe]);
-
-  const filteredData = useMemo(() => {
-    if (activeMetal === 'gold' && timeframe === 90 && goldHistory.length > 0) return goldHistory;
-    return activeDataList.slice(-timeframe);
-  }, [activeDataList, timeframe, activeMetal, goldHistory]);
+  const activeDataList = useMemo(() => activeMetal === 'usd' ? forexHistory : priceData, [activeMetal, forexHistory, priceData]);
+  const filteredData = useMemo(() => activeDataList.slice(-timeframe), [activeDataList, timeframe]);
 
   const structuredData = useMemo(() => {
     return JSON.stringify({
@@ -247,11 +240,7 @@ export default function App() {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }),
     datasets: [{
-      data: filteredData.map(d => {
-        if (activeMetal === 'usd') return d.usdRate;
-        if (activeMetal === 'gold' && timeframe === 90 && d.price) return d.price;
-        return Number(d[activeMetal]) || 0;
-      }),
+      data: filteredData.map(d => activeMetal === 'usd' ? d.usdRate : Number(d[activeMetal]) || 0),
       borderColor: themeColor,
       borderWidth: 4,
       fill: true,
@@ -297,10 +286,7 @@ export default function App() {
       if (elements.length > 0) {
         const index = elements[0].index;
         const point = filteredData[index];
-        let price = point[activeMetal];
-        if (activeMetal === 'usd') price = point.usdRate;
-        if (activeMetal === 'gold' && timeframe === 90) price = point.price;
-        setSelectedPoint({ index, date: point.date, price });
+        setSelectedPoint({ index, date: point.date, price: activeMetal === 'usd' ? point.usdRate : point[activeMetal] });
       }
     }
   }), [filteredData, activeMetal, timeframe]);
@@ -400,12 +386,8 @@ export default function App() {
                     </div>
                     <div className="flex items-center gap-8">
                       <div className="text-right">
-                        <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">{activeMetal === 'gold' && timeframe === 90 ? 'Global Rate (USD/oz)' : 'Market Rate'}</p>
-                        <p className="text-3xl font-black text-white">
-                          {activeMetal === 'usd' ? `रू ${selectedPoint.price.toFixed(2)}` : 
-                           (activeMetal === 'gold' && timeframe === 90) ? `$${selectedPoint.price.toFixed(2)}` : 
-                           formatRS(selectedPoint.price)}
-                        </p>
+                        <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Market Rate</p>
+                        <p className="text-3xl font-black text-white">{activeMetal === 'usd' ? `रू ${selectedPoint.price.toFixed(2)}` : formatRS(selectedPoint.price)}</p>
                       </div>
                       <button onClick={() => setSelectedPoint(null)} className="p-3 bg-white/5 rounded-full hover:bg-white/10 active:scale-90 transition-all border border-white/5"><X className="w-5 h-5 text-zinc-400" /></button>
                     </div>

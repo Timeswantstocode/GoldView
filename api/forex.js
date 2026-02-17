@@ -7,21 +7,38 @@ export default async function handler(req, res) {
   const startDate = new Date(Date.now() - 95 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   try {
-    // 1. Fetch LIVE quotes from Yahoo Finance
+    // 1. Fetch LIVE quotes and 90-day history from Yahoo Finance
     const tickers = [
       "USDNPR=X", "USDEUR=X", "USDGBP=X", "USDAED=X", "USDQAR=X", "USDSAR=X", 
       "USDMYR=X", "USDKRW=X", "USDAUD=X", "USDCAD=X", "USDSGD=X", "USDJPY=X", "USDINR=X"
     ];
     
     let liveMarket = {};
+    let usdHistory = [];
+
     await Promise.all(tickers.map(async (ticker) => {
       try {
-        const yRes = await fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1m&range=1d`, {
+        // For USDNPR, fetch 90 days of history
+        const range = ticker === "USDNPR=X" ? "90d" : "1d";
+        const interval = ticker === "USDNPR=X" ? "1d" : "1m";
+        
+        const yRes = await fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${interval}&range=${range}`, {
           headers: { 'User-Agent': 'Mozilla/5.0' }
         });
         const yData = await yRes.json();
-        const price = yData?.chart?.result?.[0]?.meta?.regularMarketPrice;
-        if (price) liveMarket[ticker] = price;
+        const result = yData?.chart?.result?.[0];
+        
+        if (result) {
+          const price = result.meta?.regularMarketPrice;
+          if (price) liveMarket[ticker] = price;
+
+          if (ticker === "USDNPR=X" && result.timestamp) {
+            usdHistory = result.timestamp.map((ts, i) => ({
+              date: new Date(ts * 1000).toISOString().split('T')[0],
+              rate: result.indicators.quote[0].close[i]
+            })).filter(h => h.rate !== null);
+          }
+        }
       } catch (e) {
         console.error(`Yahoo Fetch Failed for ${ticker}:`, e);
       }
@@ -90,9 +107,32 @@ export default async function handler(req, res) {
     };
 
     // 5. Combine: Current (Yahoo) + History (NRB)
-    // Ensure we only have one entry per date, prioritizing our currentEntry (Yahoo) for today
-    const historyWithoutToday = historyRates.filter(entry => entry.date !== today);
-    const finalRates = [currentEntry, ...historyWithoutToday];
+    // We want to use Yahoo for the last 90 days for USD, but NRB for other currencies and older history
+    // Create a map of Yahoo USD rates for quick lookup
+    const yahooUsdMap = new Map(usdHistory.map(h => [h.date, h.rate]));
+
+    const finalRates = historyRates.map(entry => {
+      const yahooRate = yahooUsdMap.get(entry.date);
+      if (yahooRate) {
+        // Update the USD rate in this entry with Yahoo's data
+        const updatedCurrencies = entry.currencies.map(c => {
+          if (c.code === "USD") {
+            return { ...c, buy: Number(yahooRate.toFixed(2)), sell: Number(yahooRate.toFixed(2)) };
+          }
+          return c;
+        });
+        return { ...entry, currencies: updatedCurrencies };
+      }
+      return entry;
+    });
+
+    // Ensure today's entry is included and prioritized
+    const hasToday = finalRates.some(r => r.date === today);
+    if (!hasToday || (finalRates[0] && finalRates[0].date === today)) {
+        // Replace or add today with currentEntry (live)
+        const historyWithoutToday = finalRates.filter(entry => entry.date !== today);
+        finalRates.splice(0, finalRates.length, currentEntry, ...historyWithoutToday);
+    }
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return res.status(200).json({

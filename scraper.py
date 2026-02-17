@@ -232,12 +232,19 @@ def update():
     history = []
     if os.path.exists(file):
         try:
-            with open(file, 'r') as f: history = json.load(f)
-        except: pass
+            with open(file, 'r') as f: 
+                content = f.read().strip()
+                if content:
+                    history = json.loads(content)
+        except Exception as e:
+            print(f"WARNING: Could not read data.json: {e}")
+            history = []
 
+    # If data.json is missing or empty, and we failed to fetch new data, we can't do much
+    # but we should at least prevent a crash.
     if (final_gold == 0 or final_silver == 0) and history:
-        final_gold = final_gold or history[-1]['gold']
-        final_silver = final_silver or history[-1]['silver']
+        final_gold = final_gold or history[-1].get('gold', 0)
+        final_silver = final_silver or history[-1].get('silver', 0)
         final_tejabi = final_tejabi or history[-1].get('tejabi', int(final_gold * 0.9167))
         source_info = "Recovery (Last Known)"
     
