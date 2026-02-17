@@ -59,6 +59,13 @@ def main():
     current = price_data[-1]
     previous = price_data[-2]
 
+    # Check if any price changed
+    if (current['gold'] == previous['gold'] and
+        current['tejabi'] == previous['tejabi'] and
+        current['silver'] == previous['silver']):
+        print("PUSH SKIPPED: No price change detected between current and previous record.")
+        return
+
     # Helper for calculating percentage change
     def get_change_str(curr, prev):
         diff = curr - prev
