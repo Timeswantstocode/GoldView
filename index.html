@@ -28,17 +28,12 @@
         -webkit-tap-highlight-color: transparent;
       }
       
-      /* GPU acceleration for animations - exclude canvas elements */
-      .animate-spin, .animate-pulse {
+      /* GPU acceleration for animations */
+      .animate-spin, .animate-pulse, [class*="transition"], [class*="animate"] {
         will-change: transform, opacity;
         transform: translateZ(0);
         backface-visibility: hidden;
         perspective: 1000px;
-      }
-      
-      /* Only apply transition optimizations to specific elements, not all */
-      button, a {
-        will-change: transform;
       }
       
       /* Optimize backdrop-filter performance */
