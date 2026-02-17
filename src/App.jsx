@@ -299,15 +299,15 @@ export default function App() {
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
 
-  // Parse price string to number - handles commas and spaces in data
-  const parsePrice = useCallback((value) => {
-    if (!value) return 0;
-    if (typeof value === 'number') return value;
-    // Remove commas and spaces, then parse
-    const cleaned = String(value).replace(/[,/\s]/g, '');
+  // Parse price string to number - handles commas in data
+  const parsePrice = (val) => {
+    if (val === undefined || val === null) return 0;
+    if (typeof val === 'number') return val;
+    // This line removes commas so the graph can read the number
+    const cleaned = String(val).replace(/,/g, '').replace(/\s/g, '').trim();
     const parsed = parseFloat(cleaned);
     return isNaN(parsed) ? 0 : parsed;
-  }, []);
+  };
 
   const themeColor = useMemo(() => {
     if (view === 'calculator' && calcMode === 'currency') return '#22c55e';
@@ -392,61 +392,34 @@ export default function App() {
     };
   }, [filteredData, activeMetal, selectedPoint, themeColor]);
 
-  const chartOptions = useMemo(() => {
-    console.log('[Graph] Creating chart options, activeMetal:', activeMetal, 'themeColor:', themeColor);
-    const options = {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: {
-        duration: 200, // Faster animations for low-powered devices
-        easing: 'easeOutQuart'
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: false, external: externalTooltipHandler }
+    },
+    scales: {
+      x: {
+        grid: { display: true, color: 'rgba(255, 255, 255, 0.03)', borderDash: [6, 6] },
+        ticks: { color: 'rgba(255, 255, 255, 0.4)', font: { size: 9 } }
       },
-      devicePixelRatio: window.devicePixelRatio || 1,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-          legend: { display: false },
-          tooltip: {
-              enabled: false,
-              external: externalTooltipHandler,
-              callbacks: {
-                  label: (ctx) => `रू ${ctx.raw.toLocaleString(undefined, {minimumFractionDigits: activeMetal === 'usd' ? 2 : 0})}`,
-              }
-          },
-          decimation: {
-            enabled: true,
-            algorithm: 'lttb', // Downsample data for better performance
-            samples: timeframe > 30 ? 50 : undefined
-          }
-      },
-      scales: {
-        x: {
-          display: true,
-          grid: { display: true, color: 'rgba(255, 255, 255, 0.15)', borderDash: [6, 6], drawTicks: false },
-          ticks: { color: 'rgba(255, 255, 255, 0.8)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 8 }
-        },
-        y: { 
-          display: true, 
-          position: 'right', 
-          grid: { display: true, color: 'rgba(255, 255, 255, 0.15)', borderDash: [5, 5], drawBorder: false }, 
-          ticks: { 
-            display: true,
-            color: 'rgba(255, 255, 255, 0.8)',
-            font: { size: 10, weight: '600' },
-            callback: function(value) { return 'रू ' + value.toLocaleString(); }
-          } 
-        }
-      },
-      onClick: (e, elements) => {
-        if (elements.length > 0) {
-          const index = elements[0].index;
-          const point = filteredData[index];
-          setSelectedPoint({ index, date: point.date, price: activeMetal === 'usd' ? point.usdRate : point[activeMetal] });
-        }
+      y: {
+        position: 'right',
+        grid: { display: true, color: 'rgba(255, 255, 255, 0.03)', borderDash: [5, 5] },
+        ticks: { display: false } // This removes the "Rs 300,000" labels
       }
-    };
-    console.log('[Graph] Chart options created, devicePixelRatio:', window.devicePixelRatio);
-    return options;
-  }, [filteredData, activeMetal, timeframe]);
+    },
+    // This ensures the dot and tooltip trigger correctly
+    onClick: (e, els) => {
+      if (els.length > 0) {
+        const i = els[0].index;
+        const d = filteredData[i];
+        setSelectedPoint({ index: i, date: d.date, price: activeMetal === 'usd' ? d.usdRate : parsePrice(d[activeMetal]) });
+      }
+    }
+  }), [filteredData, activeMetal]);
 
   if (loading) return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#D4AF37]">
@@ -525,7 +498,7 @@ export default function App() {
                   {[7, 30, 90].map((t) => (<button key={t} onClick={() => { setTimeframe(t); setSelectedPoint(null); }} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === t ? `text-black shadow-lg shadow-white/5` : 'text-zinc-500'}`} style={timeframe === t ? { backgroundColor: themeColor } : {}}>{t === 7 ? '7D' : t === 30 ? '1M' : '3M'}</button>))}
                 </div>
               </div>
-              <div className="h-64 relative w-full" style={{ minHeight: '256px' }}>
+              <div className="h-72 w-full relative">
                 {filteredData.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-zinc-500">
                     <p>No data available for the selected timeframe</p>
@@ -533,11 +506,10 @@ export default function App() {
                 ) : (
                   <div style={{ width: '100%', height: '100%' }}>
                     <Line 
-                      key={`${activeMetal}-${timeframe}`}
+                      key={`${activeMetal}-${timeframe}`} // This is the secret to making it switch
                       ref={chartRef} 
                       data={chartData} 
                       options={chartOptions} 
-                      redraw={false}
                     />
                   </div>
                 )}
