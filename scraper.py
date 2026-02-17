@@ -11,8 +11,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- WEB PUSH CONFIGURATION ---
 VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
-VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY')
-VAPID_EMAIL = os.getenv('VAPID_EMAIL', 'mailto:admin@example.com')
+VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY', 'BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ')
+VAPID_EMAIL = os.getenv('VAPID_EMAIL', 'mailto:timesbaral11@gmail.com')
 
 def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t, change_s):
     """Broadcasts native device notifications via Web Push"""
@@ -104,17 +104,26 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         if "dummy-endpoint" in sub.get('endpoint', ''):
             continue
         try:
+            # Ensure proper VAPID claims format
+            vapid_claims = {"sub": VAPID_EMAIL}
+            
             webpush(
                 subscription_info=sub,
                 data=json.dumps(payload),
                 vapid_private_key=VAPID_PRIVATE_KEY,
-                vapid_claims={"sub": VAPID_EMAIL}
+                vapid_claims=vapid_claims
             )
             success_count += 1
         except WebPushException as ex:
-            print(f"Push failed for one device: {ex}")
+            print(f"Push failed for one device: WebPushException: {ex}")
+            # Log response details if available
+            if hasattr(ex, 'response') and ex.response:
+                try:
+                    print(f"Response body: {ex.response.text}, Response {ex.response.json()}")
+                except:
+                    print(f"Response status: {ex.response.status_code if hasattr(ex.response, 'status_code') else 'unknown'}")
         except Exception as e:
-            print(f"Unexpected push error: {e}")
+            print(f"Unexpected push error: {type(e).__name__}: {e}")
 
     print(f"PUSH STATUS: Sent to {success_count} active devices.")
 
