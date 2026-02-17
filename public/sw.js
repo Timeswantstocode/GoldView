@@ -9,11 +9,11 @@ self.addEventListener('activate', (event) => {
 });
 
 // Function to show a notification
-const showBeautifulNotification = (title, body, data) => {
+const showBeautifulNotification = (title, body, data, icon, badge) => {
   const options = {
     body: body,
-    icon: '/logo192.png',
-    badge: '/logo192.png',
+    icon: icon || '/logo512.png',
+    badge: badge || '/logo512.png',
     vibrate: [100, 50, 100],
     data: data,
     actions: [
@@ -50,7 +50,9 @@ self.addEventListener('push', (event) => {
     showBeautifulNotification(
       payload.title || 'GoldView Nepal',
       payload.body || 'New market rates are available.',
-      payload.data || {}
+      payload.data || {},
+      payload.icon,
+      payload.badge
     ).then(() => {
       console.log('[SW] Notification displayed successfully');
     }).catch(err => {

@@ -167,8 +167,8 @@ export default function App() {
         if (VAPID_PUBLIC_KEY === "YOUR_VAPID_PUBLIC_KEY") {
           registration.showNotification("GoldView Nepal", {
             body: "Local alerts enabled! (Server-side push requires VAPID setup)",
-            icon: "/logo192.png",
-            badge: "/logo192.png",
+            icon: "/logo512.png",
+            badge: "/logo512.png",
             tag: 'welcome-notification'
           });
           return;
@@ -187,8 +187,8 @@ export default function App() {
         
         registration.showNotification("GoldView Nepal", {
           body: "Price alerts enabled! You'll be notified when rates change.",
-          icon: "/logo192.png",
-          badge: "/logo192.png",
+          icon: "/logo512.png",
+          badge: "/logo512.png",
           tag: 'welcome-notification'
         });
       }
@@ -312,7 +312,7 @@ export default function App() {
               <p className="text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500" style={{ color: themeColor }}>Market Update</p>
             </div>
             <div className="flex items-center gap-3">
-              <img src="/logo192.png" alt="GoldView Logo" className="w-10 h-10 rounded-xl shadow-lg border border-white/10" />
+              <img src="/logo512.png" alt="GoldView Logo" className="w-10 h-10 rounded-xl shadow-lg border border-white/10" />
               <h1 className="text-4xl font-black tracking-tighter text-white">GoldView</h1>
             </div>
           </div>
