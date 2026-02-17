@@ -305,23 +305,23 @@ export default function App() {
             <script type="application/ld+json">{structuredData}</script>
         </Helmet>
 
-        <header className="p-8 pt-16 flex justify-between items-end relative z-10">
-          <div>
+        <header className="px-4 sm:px-8 pt-12 sm:pt-16 flex justify-between items-end relative z-10">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full shadow-lg animate-pulse" style={{ backgroundColor: themeColor, boxShadow: `0 0 10px ${themeColor}` }}></div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500" style={{ color: themeColor }}>Market Update</p>
+              <div className="w-2 h-2 rounded-full shadow-lg animate-pulse shrink-0" style={{ backgroundColor: themeColor, boxShadow: `0 0 10px ${themeColor}` }}></div>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500 truncate" style={{ color: themeColor }}>Market Update</p>
             </div>
-            <div className="flex items-center gap-3">
-              <img src="/logo512.png" alt="GoldView Logo" className="w-10 h-10 rounded-xl shadow-lg border border-white/10" />
-              <h1 className="text-4xl font-black tracking-tighter text-white">GoldView</h1>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <img src="/logo512.png" alt="GoldView Logo" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg border border-white/10 shrink-0" />
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-white truncate">GoldView</h1>
             </div>
           </div>
-          <div className="flex gap-3">
-            <button onClick={handleNotificationRequest} className={`p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`}>
-              <Bell className={`w-5 h-5 ${notifStatus === 'granted' ? 'text-[#D4AF37]' : 'text-zinc-400'}`} />
+          <div className="flex gap-2 sm:gap-3 ml-2 shrink-0">
+            <button onClick={handleNotificationRequest} className={`p-3 sm:p-4 bg-white/5 backdrop-blur-3xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`}>
+              <Bell className={`w-4 h-4 sm:w-5 sm:h-5 ${notifStatus === 'granted' ? 'text-[#D4AF37]' : 'text-zinc-400'}`} />
             </button>
-            <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all">
-              <RefreshCcw className="w-5 h-5 text-zinc-400" />
+            <button onClick={() => window.location.reload()} className="p-3 sm:p-4 bg-white/5 backdrop-blur-3xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 transition-all">
+              <RefreshCcw className={`w-4 h-4 sm:w-5 sm:h-5 text-zinc-400`} />
             </button>
           </div>
         </header>
@@ -420,13 +420,13 @@ export default function App() {
 
                   <div className="grid grid-cols-3 gap-4">
                     {['tola', 'aana', 'lal'].map((unit) => (<div key={unit}><label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{unit}</label>
-                    <input type="number" style={{ caretColor: themeColor }} className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-3xl text-center font-black text-2xl text-white outline-none focus:border-white/20" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} /></div>))}
+                    <input type="number" style={{ caretColor: themeColor }} className="w-full bg-black/60 border-2 border-zinc-800 px-2 py-5 rounded-3xl text-center font-black text-xl sm:text-2xl text-white outline-none focus:border-white/20" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} /></div>))}
                   </div>
                   
                   {tradeMode === 'buy' && (
                     <>
-                      <input type="number" placeholder="Making Charges (रू)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
-                      <div className="flex items-center justify-between px-6 py-4 bg-white/5 rounded-3xl border border-white/5">
+                      <input type="number" placeholder="Making Charges (रू)" className="w-full bg-black/60 border-2 border-zinc-800 p-5 sm:p-6 rounded-3xl font-black text-base sm:text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
+                      <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-white/5 rounded-3xl border border-white/5">
                         <span className="text-xs font-black text-zinc-400 uppercase tracking-widest">Include 13% VAT</span>
                         <button onClick={() => setCalc({...calc, vat: !calc.vat})} className={`w-14 h-8 rounded-full transition-all relative ${calc.vat ? 'bg-green-500' : 'bg-zinc-700'}`}>
                           <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${calc.vat ? 'left-7' : 'left-1'}`} />
@@ -435,16 +435,15 @@ export default function App() {
                     </>
                   )}
 
-                  <div className="p-12 rounded-[3.5rem] text-black text-center shadow-2xl transition-all" style={{ background: `linear-gradient(135deg, ${themeColor}, ${activeMetal === 'gold' ? '#b8860b' : activeMetal === 'tejabi' ? '#8B4513' : '#4b5563'})` }}>
+                  <div className="p-8 sm:p-12 rounded-[3.5rem] text-black text-center shadow-2xl transition-all" style={{ background: `linear-gradient(135deg, ${themeColor}, ${activeMetal === 'gold' ? '#b8860b' : activeMetal === 'tejabi' ? '#8B4513' : '#4b5563'})` }}>
                      <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">{tradeMode === 'buy' ? 'Estimated Total' : 'Buyback Value (Market - 5%)'}</p>
-                     <h3 className="text-5xl font-black tracking-tighter">
-                        {(() => {
-                            const weight = (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192;
-                            const rate = priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal] || 0;
-                            if (tradeMode === 'sell') return formatRS(weight * rate * 0.95);
-                            return formatRS((weight * rate + (Number(calc.making)||0)) * (calc.vat ? 1.13 : 1));
-                        })()}
-                     </h3>
+                     {(() => {
+                        const weight = (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192;
+                        const rate = priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal] || 0;
+                        const result = tradeMode === 'sell' ? formatRS(weight * rate * 0.95) : formatRS((weight * rate + (Number(calc.making)||0)) * (calc.vat ? 1.13 : 1));
+                        const fontSize = result.length > 15 ? 'text-2xl' : result.length > 12 ? 'text-3xl' : result.length > 10 ? 'text-4xl' : 'text-5xl';
+                        return <h3 className={`${fontSize} font-black tracking-tighter break-all`}>{result}</h3>;
+                     })()}
                   </div>
                 </div>
               ) : (
@@ -476,12 +475,12 @@ export default function App() {
                             </div>
                         </div>
                         <div className="relative">
-                            <input type="number" placeholder="Amount" className="w-full bg-black/60 border-2 border-zinc-800 p-8 rounded-[2.5rem] font-black text-4xl outline-none focus:border-green-500 text-white text-center transition-all" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
-                            <div className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20"><Globe className="w-8 h-8 text-[#22c55e]" /></div>
+                            <input type="number" placeholder="Amount" className="w-full bg-black/60 border-2 border-zinc-800 p-6 sm:p-8 rounded-[2.5rem] font-black text-2xl sm:text-4xl outline-none focus:border-green-500 text-white text-center transition-all" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
+                            <div className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 hidden sm:block"><Globe className="w-8 h-8 text-[#22c55e]" /></div>
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-green-500 to-green-700 p-12 rounded-[3.5rem] text-black text-center shadow-xl relative overflow-hidden group">
+                    <div className="bg-gradient-to-br from-green-500 to-green-700 p-8 sm:p-12 rounded-[3.5rem] text-black text-center shadow-xl relative overflow-hidden group">
                        <div className="absolute top-4 right-6 text-7xl opacity-10 font-bold pointer-events-none">{currCalc.isSwapped ? currencyList.find(c => c.code === currCalc.source)?.flag : '🇳🇵'}</div>
                        <div className="flex flex-col items-center gap-2 mb-2 relative z-10">
                           <div className="flex items-center gap-2 px-3 py-1.5 bg-black/10 rounded-full border border-black/5">
@@ -491,17 +490,16 @@ export default function App() {
                           </div>
                           <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-60">Payout Estimate</p>
                        </div>
-                       <h3 className="text-5xl font-black tracking-tighter relative z-10">
-                          {(() => {
-                            const latestRates = forexHistory[forexHistory.length - 1]?.rates || [];
-                            const rateData = latestRates.find(r => r.code === currCalc.source);
-                            const rawRate = parseFloat(rateData?.buy || 133);
-                            const unit = parseInt(rateData?.unit || 1);
-                            const amt = Number(currCalc.amount) || 0;
-                            if (currCalc.isSwapped) return ((amt / rawRate) * unit).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                            return formatRS((amt / unit) * rawRate);
-                          })()}
-                       </h3>
+                       {(() => {
+                          const latestRates = forexHistory[forexHistory.length - 1]?.rates || [];
+                          const rateData = latestRates.find(r => r.code === currCalc.source);
+                          const rawRate = parseFloat(rateData?.buy || 133);
+                          const unit = parseInt(rateData?.unit || 1);
+                          const amt = Number(currCalc.amount) || 0;
+                          const result = currCalc.isSwapped ? ((amt / rawRate) * unit).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : formatRS((amt / unit) * rawRate);
+                          const fontSize = result.length > 15 ? 'text-2xl' : result.length > 12 ? 'text-3xl' : result.length > 10 ? 'text-4xl' : 'text-5xl';
+                          return <h3 className={`${fontSize} font-black tracking-tighter relative z-10 break-all`}>{result}</h3>;
+                       })()}
                     </div>
                 </div>
               )}
