@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
 import { Line } from 'react-chartjs-2';
-import { 
-  Chart as ChartJS, registerables, Filler, Tooltip, 
-  Legend, CategoryScale, LinearScale, PointElement, LineElement 
+import {
+  Chart as ChartJS, registerables, Filler, Tooltip,
+  Legend, CategoryScale, LinearScale, PointElement, LineElement
 } from 'chart.js';
-import { 
-  LayoutDashboard, Calculator, RefreshCcw, TrendingUp, 
+import {
+  LayoutDashboard, Calculator, RefreshCcw, TrendingUp,
   X, Calendar, Zap, Activity, Coins, ArrowRightLeft, Globe, ArrowDown, Bell
 } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
@@ -13,6 +13,14 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 
 ChartJS.register(...registerables, Filler, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
+
+// Optimize chart defaults for performance
+ChartJS.defaults.animation = {
+  duration: 300, // Reduced from default 1000ms
+  easing: 'easeOutQuart'
+};
+ChartJS.defaults.responsive = true;
+ChartJS.defaults.maintainAspectRatio = false;
 
 const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json";
 const FOREX_PROXY = "/api/forex";
@@ -271,16 +279,25 @@ export default function App() {
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: 200, // Faster animations for low-powered devices
+      easing: 'easeOutQuart'
+    },
     interaction: { mode: 'index', intersect: false },
-    plugins: { 
-        legend: false, 
-        tooltip: { 
+    plugins: {
+        legend: false,
+        tooltip: {
             enabled: false,
             external: externalTooltipHandler,
             callbacks: {
                 label: (ctx) => `रू ${ctx.raw.toLocaleString(undefined, {minimumFractionDigits: activeMetal === 'usd' ? 2 : 0})}`,
             }
-        } 
+        },
+        decimation: {
+          enabled: true,
+          algorithm: 'lttb', // Downsample data for better performance
+          samples: timeframe > 30 ? 50 : undefined
+        }
     },
     scales: {
       x: {
