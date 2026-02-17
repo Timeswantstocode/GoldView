@@ -129,12 +129,15 @@ export default async function handler(req, res) {
     const historyWithoutToday = finalRates.filter(entry => entry.date !== today);
     finalRates.splice(0, finalRates.length, currentEntry, ...historyWithoutToday);
 
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    // Cache for 5 minutes to reduce API load
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+    res.setHeader('CDN-Cache-Control', 'max-age=300');
     return res.status(200).json({
       status: "success",
       source: "Yahoo Finance (Live) + Nepal Rastra Bank (History)",
       last_updated: new Date().toISOString(),
-      rates: finalRates
+      rates: finalRates,
+      cache_duration: '5 minutes'
     });
 
   } catch (error) {

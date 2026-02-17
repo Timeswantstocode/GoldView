@@ -116,37 +116,80 @@ export default function App() {
   ];
 
   useEffect(() => {
-    fetch(`${DATA_URL}?t=${Date.now()}`).then(res => {
-        if (!res.ok) throw new Error("Data file not found");
+    // Check cache age
+    const metalCacheTime = localStorage.getItem('gv_v18_metal_time');
+    const forexCacheTime = localStorage.getItem('gv_v18_forex_time');
+    const now = Date.now();
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    
+    // Fetch metal prices
+    const shouldFetchMetal = !metalCacheTime || (now - parseInt(metalCacheTime)) > CACHE_DURATION;
+    
+    if (shouldFetchMetal) {
+      console.log('[Data] Fetching fresh metal prices...');
+      fetch(`${DATA_URL}?t=${Date.now()}`, {
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      }).then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}: Data file not found`);
+          return res.json();
+      }).then(json => {
+          if (Array.isArray(json) && json.length > 0) {
+            console.log('[Data] Metal prices loaded:', json.length, 'entries');
+            setPriceData(json);
+            localStorage.setItem('gv_v18_metal', JSON.stringify(json));
+            localStorage.setItem('gv_v18_metal_time', now.toString());
+          } else {
+            throw new Error('Invalid data format');
+          }
+          setLoading(false);
+      }).catch((err) => {
+          console.error("[Data] Metal data fetch failed:", err);
+          if (priceData.length > 0) {
+            console.log('[Data] Using cached metal data');
+          }
+          setLoading(false);
+      });
+    } else {
+      console.log('[Data] Using cached metal prices');
+      setLoading(false);
+    }
+
+    // Fetch forex rates
+    const shouldFetchForex = !forexCacheTime || (now - parseInt(forexCacheTime)) > CACHE_DURATION;
+    
+    if (shouldFetchForex) {
+      console.log('[Data] Fetching fresh forex rates...');
+      fetch(FOREX_PROXY, {
+        signal: AbortSignal.timeout(15000) // 15 second timeout
+      }).then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}: Forex API error`);
         return res.json();
-    }).then(json => {
-        if (Array.isArray(json)) {
-          setPriceData(json);
-          localStorage.setItem('gv_v18_metal', JSON.stringify(json));
-        }
-        setLoading(false);
-    }).catch((err) => {
-        console.error("Metal data fetch failed:", err);
-        setLoading(false);
-    });
-
-    fetch(FOREX_PROXY).then(res => res.json()).then(json => {
-        if (json.status === "success" && Array.isArray(json.rates)) {
-          const transformed = json.rates.map(day => ({
-            date: day.date,
-            usdRate: parseFloat(day.currencies.find(c => c.code === 'USD')?.buy || 0),
-            rates: day.currencies
-          })).sort((a, b) => new Date(a.date) - new Date(b.date));
-          setForexHistory(transformed);
-          localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
-        }
-        setForexLoading(false);
-    }).catch((err) => {
-        console.error("Forex fetch failed:", err);
-        setForexLoading(false);
-    });
-
-
+      }).then(json => {
+          if (json.status === "success" && Array.isArray(json.rates)) {
+            const transformed = json.rates.map(day => ({
+              date: day.date,
+              usdRate: parseFloat(day.currencies.find(c => c.code === 'USD')?.buy || 0),
+              rates: day.currencies
+            })).sort((a, b) => new Date(a.date) - new Date(b.date));
+            console.log('[Data] Forex rates loaded:', transformed.length, 'days');
+            setForexHistory(transformed);
+            localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
+            localStorage.setItem('gv_v18_forex_time', now.toString());
+          } else {
+            throw new Error('Invalid forex data format');
+          }
+          setForexLoading(false);
+      }).catch((err) => {
+          console.error("[Data] Forex fetch failed:", err);
+          if (forexHistory.length > 0) {
+            console.log('[Data] Using cached forex data');
+          }
+          setForexLoading(false);
+      });
+    } else {
+      console.log('[Data] Using cached forex rates');
+      setForexLoading(false);
+    }
 
     if ('Notification' in window) {
       setNotifStatus(Notification.permission);
@@ -157,25 +200,35 @@ export default function App() {
   const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
   const handleNotificationRequest = async () => {
+    console.log('[Notifications] Request initiated');
+    
     if (isIOS && !isStandalone) {
+      console.log('[Notifications] iOS detected, showing install guide');
       setShowIOSGuide(true);
       return;
     }
 
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      console.error('[Notifications] Not supported in this browser');
       alert("Notifications are not supported in this browser.");
       return;
     }
 
     try {
+      console.log('[Notifications] Requesting permission...');
       const permission = await Notification.requestPermission();
+      console.log('[Notifications] Permission result:', permission);
       setNotifStatus(permission);
       
       if (permission === 'granted') {
+        console.log('[Notifications] Permission granted, setting up subscription...');
         const registration = await navigator.serviceWorker.ready;
-        const VAPID_PUBLIC_KEY = "BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ"; 
+        console.log('[Notifications] Service worker ready:', registration);
+        
+        const VAPID_PUBLIC_KEY = "BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ";
         
         if (VAPID_PUBLIC_KEY === "YOUR_VAPID_PUBLIC_KEY") {
+          console.warn('[Notifications] VAPID key not configured');
           registration.showNotification("GoldView Nepal", {
             body: "Local alerts enabled! (Server-side push requires VAPID setup)",
             icon: "/logo192.png",
@@ -185,26 +238,60 @@ export default function App() {
           return;
         }
 
+        console.log('[Notifications] Subscribing to push manager...');
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: VAPID_PUBLIC_KEY
         });
+        console.log('[Notifications] Subscription created:', JSON.stringify(subscription));
 
-        await fetch('/api/subscribe', {
+        console.log('[Notifications] Sending subscription to server...');
+        const response = await fetch('/api/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(subscription)
         });
         
+        const result = await response.json();
+        console.log('[Notifications] Server response:', result);
+        
+        if (!response.ok) {
+          throw new Error(`Subscription failed: ${result.error || 'Unknown error'}`);
+        }
+        
+        console.log('[Notifications] Showing welcome notification...');
         registration.showNotification("GoldView Nepal", {
           body: "Price alerts enabled! You'll be notified when rates change.",
           icon: "/logo192.png",
           badge: "/logo192.png",
           tag: 'welcome-notification'
         });
+        
+        console.log('[Notifications] Setup complete!');
+      } else {
+        console.warn('[Notifications] Permission denied or dismissed');
       }
     } catch (err) {
-      console.error("Notification request failed:", err);
+      console.error("[Notifications] Setup failed:", err);
+      alert(`Notification setup failed: ${err.message}`);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    console.log('[Notifications] Test notification triggered');
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification("GoldView Test", {
+        body: "This is a test notification. If you see this, notifications are working!",
+        icon: "/logo192.png",
+        badge: "/logo192.png",
+        tag: 'test-notification-' + Date.now(),
+        vibrate: [100, 50, 100]
+      });
+      console.log('[Notifications] Test notification shown');
+    } catch (err) {
+      console.error('[Notifications] Test failed:', err);
+      alert(`Test notification failed: ${err.message}`);
     }
   };
 
@@ -345,10 +432,15 @@ export default function App() {
             </div>
           </div>
           <div className="flex gap-3">
-            <button onClick={handleNotificationRequest} className={`p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`}>
+            <button onClick={handleNotificationRequest} className={`p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`} title="Enable Notifications">
               <Bell className={`w-5 h-5 ${notifStatus === 'granted' ? 'text-[#D4AF37]' : 'text-zinc-400'}`} />
             </button>
-            <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all">
+            {notifStatus === 'granted' && (
+              <button onClick={handleTestNotification} className="p-4 bg-green-500/10 backdrop-blur-3xl rounded-3xl border border-green-500/30 active:scale-90 transition-all" title="Test Notification">
+                <Zap className="w-5 h-5 text-green-500" />
+              </button>
+            )}
+            <button onClick={() => window.location.reload()} className="p-4 bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 active:scale-90 transition-all" title="Refresh Data">
               <RefreshCcw className="w-5 h-5 text-zinc-400" />
             </button>
           </div>

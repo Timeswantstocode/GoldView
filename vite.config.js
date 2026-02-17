@@ -3,6 +3,25 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  // Remove or comment out the base line below:
-  // base: '/GoldView/', 
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'chart': ['chart.js', 'react-chartjs-2'],
+          'vendor': ['react', 'react-dom']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console logs in production
+        drop_debugger: true
+      }
+    }
+  },
+  server: {
+    port: 3000
+  }
 })
