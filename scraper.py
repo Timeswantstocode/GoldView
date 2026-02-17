@@ -22,24 +22,22 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         print("PUSH SKIPPED: VAPID keys missing in GitHub Secrets.")
         return
 
-    # ONLY send if at least one price has changed
-    msg_parts = []
-    if change_g != 0:
-        diff = f"(+{change_g})" if change_g > 0 else f"({change_g})"
-        msg_parts.append(f"Gold: रू {new_gold} {diff}")
-    if change_s != 0:
-        diff = f"(+{change_s})" if change_s > 0 else f"({change_s})"
-        msg_parts.append(f"Silver: रू {new_silver} {diff}")
-    if change_t != 0:
-        diff = f"(+{change_t})" if change_t > 0 else f"({change_t})"
-        msg_parts.append(f"Tejabi: रू {new_tejabi} {diff}")
-    
-    # If no changes are detected in any metal, exit immediately
-    if not msg_parts: 
+    if change_g == 0 and change_t == 0 and change_s == 0:
         print("PUSH SKIPPED: No price change detected.")
         return
+
+    # Helper for calculating percentage change
+    def get_change_str(curr, diff):
+        prev = curr - diff
+        pct = (diff / prev * 100) if prev != 0 else 0
+        sign = '+' if diff >= 0 else ''
+        return f"रू {curr:,} ({sign}{pct:.2f}%)"
+
+    gold_str = f"Gold(24K): {get_change_str(new_gold, change_g)}"
+    tejabi_str = f"Tejabi(22K): {get_change_str(new_tejabi, change_t)}"
+    silver_str = f"Silver: {get_change_str(new_silver, change_s)}"
     
-    full_msg = " | ".join(msg_parts)
+    full_msg = f"{gold_str}\n{tejabi_str}\n{silver_str}"
     
     blob_token = os.getenv('BLOB_READ_WRITE_TOKEN')
     if not blob_token:
@@ -87,12 +85,13 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         print("PUSH SKIPPED: No subscribers found.")
         return
 
-    import time
     payload = {
-        "title": "GoldView Nepal: Price Update 📈",
+        "title": "GoldView:Current Rates",
         "body": full_msg,
-        "data": {"url": "/", "tag": f"price-update-{int(time.time())}"},
-        "tag": f"price-update-{int(time.time())}",
+        "icon": "/logo512.png",
+        "badge": "/logo512.png",
+        "data": {"url": "/", "tag": "price-update"},
+        "tag": "price-update",
         "renotify": True
     }
 

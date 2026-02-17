@@ -165,8 +165,8 @@ export default function App() {
         const VAPID_PUBLIC_KEY = "BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ"; 
         
         if (VAPID_PUBLIC_KEY === "YOUR_VAPID_PUBLIC_KEY") {
-          registration.showNotification("GoldView Nepal", {
-            body: "Local alerts enabled! (Server-side push requires VAPID setup)",
+          registration.showNotification("GoldView", {
+            body: "Local alerts enabled!",
             icon: "/logo512.png",
             badge: "/logo512.png",
             tag: 'welcome-notification'
@@ -185,7 +185,7 @@ export default function App() {
           body: JSON.stringify(subscription)
         });
         
-        registration.showNotification("GoldView Nepal", {
+        registration.showNotification("GoldView", {
           body: "Price alerts enabled! You'll be notified when rates change.",
           icon: "/logo512.png",
           badge: "/logo512.png",
@@ -224,11 +224,11 @@ export default function App() {
   
   const getDayDiff = (id) => {
     const source = id === 'usd' ? forexHistory : priceData;
-    if (source.length < 2) return { val: 'Rs. 0', isUp: true };
+    if (source.length < 2) return { val: 'रू 0', isUp: true };
     const currVal = id === 'usd' ? source[source.length-1].usdRate : source[source.length-1][id];
     const prevVal = id === 'usd' ? source[source.length-2].usdRate : source[source.length-2][id];
     const diff = currVal - prevVal;
-    return { val: `Rs. ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, isUp: diff >= 0 };
+    return { val: `रू ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, isUp: diff >= 0 };
   };
 
   const chartData = useMemo(() => ({
@@ -425,7 +425,7 @@ export default function App() {
                   
                   {tradeMode === 'buy' && (
                     <>
-                      <input type="number" placeholder="Making Charges (Rs)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
+                      <input type="number" placeholder="Making Charges (रू)" className="w-full bg-black/60 border-2 border-zinc-800 p-6 rounded-3xl font-black text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
                       <div className="flex items-center justify-between px-6 py-4 bg-white/5 rounded-3xl border border-white/5">
                         <span className="text-xs font-black text-zinc-400 uppercase tracking-widest">Include 13% VAT</span>
                         <button onClick={() => setCalc({...calc, vat: !calc.vat})} className={`w-14 h-8 rounded-full transition-all relative ${calc.vat ? 'bg-green-500' : 'bg-zinc-700'}`}>
