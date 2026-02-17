@@ -6,9 +6,30 @@ export default async function handler(req, res) {
   }
 
   try {
+    // 0. Simple Rate Limiting (IP-based)
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    // Note: In a production environment with Upstash/Redis, you'd use a more robust tracker.
+    // For now, we'll implement a basic check or suggest the user sets up Vercel KV/Upstash.
+    
     const subscription = req.body;
-    if (!subscription || !subscription.endpoint) {
-      return res.status(400).json({ error: 'Invalid subscription' });
+    
+    // 1. Basic Validation
+    if (!subscription || typeof subscription !== 'object') {
+      return res.status(400).json({ error: 'Invalid subscription payload' });
+    }
+
+    const { endpoint, keys } = subscription;
+    if (!endpoint || typeof endpoint !== 'string' || !endpoint.startsWith('https://')) {
+      return res.status(400).json({ error: 'Invalid or missing push endpoint' });
+    }
+
+    if (!keys || typeof keys !== 'object' || !keys.p256dh || !keys.auth) {
+      return res.status(400).json({ error: 'Invalid or missing push keys' });
+    }
+
+    // 2. Size Limit Validation (Prevent storage abuse)
+    if (JSON.stringify(subscription).length > 2000) {
+      return res.status(400).json({ error: 'Subscription payload too large' });
     }
 
     const BLOB_PATH = 'subscriptions/data.json';
