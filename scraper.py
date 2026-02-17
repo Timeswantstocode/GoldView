@@ -22,6 +22,7 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         print("PUSH SKIPPED: VAPID keys missing in GitHub Secrets.")
         return
 
+    # ONLY send if at least one price has changed
     msg_parts = []
     if change_g != 0:
         diff = f"(+{change_g})" if change_g > 0 else f"({change_g})"
@@ -29,75 +30,54 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
     if change_s != 0:
         diff = f"(+{change_s})" if change_s > 0 else f"({change_s})"
         msg_parts.append(f"Silver: रू {new_silver} {diff}")
+    if change_t != 0:
+        diff = f"(+{change_t})" if change_t > 0 else f"({change_t})"
+        msg_parts.append(f"Tejabi: रू {new_tejabi} {diff}")
     
-    if not msg_parts: return
+    # If no changes are detected in any metal, exit immediately
+    if not msg_parts: 
+        print("PUSH SKIPPED: No price change detected.")
+        return
     
     full_msg = " | ".join(msg_parts)
     
-    # Load subscriptions from Vercel Blob
-    # The BLOB_READ_WRITE_TOKEN must be in GitHub Secrets
     blob_token = os.getenv('BLOB_READ_WRITE_TOKEN')
     if not blob_token:
         print("PUSH SKIPPED: BLOB_READ_WRITE_TOKEN missing.")
         return
 
+    subscriptions = []
     try:
-        # Use Vercel Blob API to find the subscriptions file
-        # We use the public URL if possible, or the API if token is provided
-        # Since we need to read it, we'll try to fetch it from the known path
-        # Note: In a production environment, you might want to store the specific URL in a secret
-        # or use the @vercel/blob python client if available, but simple requests works too.
-        
-        # Extremely robust subscription fetching
         headers = {"Authorization": f"Bearer {blob_token}"}
-        subscriptions = []
+        list_url = "https://blob.vercel-storage.com"
+        resp = requests.get(list_url, headers=headers, timeout=10)
         
-        # Method 1: List all blobs and look for the path (handles different API behaviors)
-        try:
-            list_url = "https://blob.vercel-storage.com/"
-            resp = requests.get(list_url, headers=headers, timeout=10)
-            if resp.status_code == 200:
-                blobs = resp.json().get('blobs', [])
-                # Search for 'subscriptions/data.json' anywhere in the pathname
-                target = next((b for b in blobs if 'subscriptions/data.json' in b['pathname']), None)
-                if target:
-                    sub_resp = requests.get(target['url'], timeout=10)
-                    if sub_resp.status_code == 200:
-                        subscriptions = sub_resp.json()
-                        print(f"DEBUG: Found subscriptions via listing: {len(subscriptions)}")
-        except Exception as e:
-            print(f"DEBUG: Listing method failed: {e}")
-
-        # Method 2: If Method 1 failed, try a common public URL pattern as fallback
-        if not subscriptions:
-            try:
-                # Many Vercel Blobs are accessible via a predictable public URL if they are public
-                # This is a fallback in case listing fails but the file exists
-                # We'll use the one from the most recent successful sub if we had it, 
-                # but since we don't, we rely on the listing being the primary way.
-                pass
-            except: pass
-
-        if not subscriptions:
-            print("PUSH SKIPPED: subscriptions/data.json not found or empty in Blob.")
-            # Final attempt: check if subscriptions.json exists locally (from repo)
-            if os.path.exists('subscriptions.json'):
-                with open('subscriptions.json', 'r') as f:
-                    subscriptions = json.load(f)
-                    print(f"DEBUG: Using local subscriptions.json fallback: {len(subscriptions)}")
+        if resp.status_code == 200:
+            blobs = resp.json().get('blobs', [])
+            target = next((b for b in blobs if b['pathname'] == 'subscriptions/data.json'), None)
             
-            if not subscriptions:
-                return
+            if target:
+                sub_resp = requests.get(target['url'], timeout=10)
+                if sub_resp.status_code == 200:
+                    subscriptions = sub_resp.json()
+                    print(f"DEBUG: Successfully loaded {len(subscriptions)} subscriptions from Blob.")
+            else:
+                print("DEBUG: 'subscriptions/data.json' not found in Blob storage.")
+        else:
+            print(f"DEBUG: Blob API returned error {resp.status_code}")
+
+        if not subscriptions and os.path.exists('subscriptions.json'):
+            with open('subscriptions.json', 'r') as f:
+                subscriptions = json.load(f)
+                print(f"DEBUG: Using local subscriptions.json fallback: {len(subscriptions)}")
+                
     except Exception as e:
-        print(f"PUSH ERROR: Could not fetch subscriptions from Blob: {e}")
-        return
+        print(f"PUSH ERROR: Could not fetch subscriptions: {e}")
 
     if not subscriptions:
-        print("PUSH SKIPPED: Subscriptions list is empty.")
+        print("PUSH SKIPPED: No subscribers found.")
         return
 
-    # Optimization: Use a unique tag and clear title to avoid spam flagging
-    # Using a dynamic tag helps avoid Android/Chrome spam flagging for repeated content
     import time
     payload = {
         "title": "GoldView Nepal: Price Update 📈",
@@ -121,14 +101,13 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
             success_count += 1
         except WebPushException as ex:
             print(f"Push failed for one device: {ex}")
-            pass
         except Exception as e:
             print(f"Unexpected push error: {e}")
 
-    print(f"PUSH STATUS: Sent to {success_count}/{len(subscriptions)} devices - {full_msg}")
+    print(f"PUSH STATUS: Sent to {success_count}/{len(subscriptions)} devices.")
 
 def get_candidates(url, metal):
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+    headers = {'User-Agent': 'Mozilla/5.0'}
     purity = [999, 9999, 9990, 9167, 9583, 916, 750]
     weights = [1166, 11664]
     office_nums = [453227, 453228, 4532270]
@@ -139,7 +118,7 @@ def get_candidates(url, metal):
         r = requests.get(url, headers=headers, timeout=25, verify=False)
         r.raise_for_status()
         raw_html = r.text.replace(',', '')
-        raw_html = re.sub(r'(\d+)\s*रु\s*(\d+)', r'\1\2', raw_html)
+        raw_html = re.sub(r'(\d+)\s*रू\s*(\d+)', r'\1\2', raw_html)
         soup = BeautifulSoup(raw_html, 'html.parser')
         
         if "ashesh.com.np" in url:
@@ -198,7 +177,6 @@ def verify_price(primary, backup, tolerance=0.05):
     return primary or backup, False
 
 def fetch_usd_history(days=90):
-    """Fetches historical USD/NPR rates from Yahoo Finance"""
     try:
         url = f"https://query2.finance.yahoo.com/v8/finance/chart/USDNPR=X?interval=1d&range={days}d"
         headers = {'User-Agent': 'Mozilla/5.0'}
@@ -234,11 +212,9 @@ def update():
     a_tejabi = get_candidates(widget_url, "tejabi")
     a_silver = get_candidates(widget_url, "silver")
     
-    # Fetch live USD rate for today
     usd_history_map = fetch_usd_history(days=90)
     live_usd = 0
     if usd_history_map:
-        # Get the latest available rate
         sorted_dates = sorted(usd_history_map.keys(), reverse=True)
         live_usd = usd_history_map[sorted_dates[0]]
 
@@ -259,9 +235,7 @@ def update():
     if a_tejabi: sources.append("Ashesh (Tejabi)")
     
     source_info = " / ".join(sources) if sources else "None"
-    if not gold_verified or not silver_verified:
-        source_info += " (Unverified)"
-
+    
     history = []
     if os.path.exists(file):
         try:
@@ -269,28 +243,27 @@ def update():
                 content = f.read().strip()
                 if content:
                     history = json.loads(content)
-        except Exception as e:
-            print(f"WARNING: Could not read data.json: {e}")
+        except:
             history = []
 
-    # If data.json is missing or empty, and we failed to fetch new data, we can't do much
-    # but we should at least prevent a crash.
     if (final_gold == 0 or final_silver == 0) and history:
         final_gold = final_gold or history[-1].get('gold', 0)
         final_silver = final_silver or history[-1].get('silver', 0)
         final_tejabi = final_tejabi or history[-1].get('tejabi', int(final_gold * 0.9167))
         source_info = "Recovery (Last Known)"
     
-    # Trigger notification only if there's a real change and not just a re-scrape of the same data
+    # NOTIFICATION LOGIC: Compare with the very last saved record
     if history:
         last = history[-1]
         change_g = final_gold - last['gold']
         change_s = final_silver - last['silver']
         change_t = final_tejabi - last.get('tejabi', 0)
         
-        # Optimization: Only notify if the change is significant or if it's the first update of the day
+        # Only trigger if at least one value changed
         if change_g != 0 or change_s != 0 or change_t != 0:
             send_push_notification(final_gold, final_tejabi, final_silver, change_g, change_t, change_s)
+        else:
+            print("INFO: No price change since last scrape. Skipping notification.")
 
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
     today_str = now.strftime("%Y-%m-%d")
@@ -305,32 +278,23 @@ def update():
         "verified": gold_verified and silver_verified and tejabi_verified
     }
 
-    # Fill in missing USD history for existing entries if possible
-    if usd_history_map:
-        for entry in history:
-            entry_date = entry['date'].split(' ')[0]
-            if 'usd' not in entry or entry['usd'] == 0:
-                if entry_date in usd_history_map:
-                    entry['usd'] = usd_history_map[entry_date]
-
     if history and history[-1]['date'].startswith(today_str):
-        # Preserve USD if we already have it and live fetch failed
         if new_entry['usd'] == 0:
             new_entry['usd'] = history[-1].get('usd', 0)
         history[-1] = new_entry
     else:
         history.append(new_entry)
 
-    # Keep a generous amount of history (e.g., 1000 entries) to support the 90-day view
     with open(file, 'w') as f:
         json.dump(history[-1000:], f, indent=4)
     
-    print(f"SUCCESS: Gold {final_gold}, Tejabi {final_tejabi}, Silver {final_silver} via {source_info}")
+    print(f"SUCCESS: Gold {final_gold}, Silver {final_silver} via {source_info}")
 
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "--test-notify":
         print("RUNNING NOTIFICATION TEST...")
+        # Force a non-zero change during a test so it doesn't skip
         send_push_notification(120000, 119000, 1450, 100, 100, 10)
     else:
         update()
