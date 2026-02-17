@@ -86,7 +86,7 @@ const externalTooltipHandler = (context) => {
     while (tooltipEl.firstChild) { tooltipEl.firstChild.remove(); }
     tooltipEl.appendChild(div);
   }
-  const {offsetLeft: positionX, offsetTop: positionY} = chart.canvas;
+  const {offsetLeft: positionX = 0, offsetTop: positionY = 0} = chart.canvas || {};
   tooltipEl.style.opacity = 1;
   tooltipEl.style.left = positionX + tooltip.caretX + 'px';
   tooltipEl.style.top = positionY + tooltip.caretY - 60 + 'px';
@@ -515,7 +515,7 @@ export default function App() {
                     ref={chartRef} 
                     data={chartData} 
                     options={chartOptions} 
-                    redraw={true}
+                    redraw={false}
                   />
                 )}
               </div>
