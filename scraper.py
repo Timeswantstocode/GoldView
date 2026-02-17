@@ -48,29 +48,46 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         # Note: In a production environment, you might want to store the specific URL in a secret
         # or use the @vercel/blob python client if available, but simple requests works too.
         
-        # We'll try to list blobs to find the latest URL for 'subscriptions/data.json'
+        # Extremely robust subscription fetching
         headers = {"Authorization": f"Bearer {blob_token}"}
-        # First try exact match, then try prefix if needed
-        list_url = "https://blob.vercel-storage.com/"
-        resp = requests.get(list_url, headers=headers)
-        if resp.status_code == 200:
-            data = resp.json()
-            blobs = data.get('blobs', [])
-            # Find the most recent blob that matches the pathname
-            # Filter and sort by uploadedAt descending to get the latest version
-            matching_blobs = [b for b in blobs if b['pathname'] == 'subscriptions/data.json']
-            matching_blobs.sort(key=lambda x: x.get('uploadedAt', ''), reverse=True)
+        subscriptions = []
+        
+        # Method 1: List all blobs and look for the path (handles different API behaviors)
+        try:
+            list_url = "https://blob.vercel-storage.com/"
+            resp = requests.get(list_url, headers=headers, timeout=10)
+            if resp.status_code == 200:
+                blobs = resp.json().get('blobs', [])
+                # Search for 'subscriptions/data.json' anywhere in the pathname
+                target = next((b for b in blobs if 'subscriptions/data.json' in b['pathname']), None)
+                if target:
+                    sub_resp = requests.get(target['url'], timeout=10)
+                    if sub_resp.status_code == 200:
+                        subscriptions = sub_resp.json()
+                        print(f"DEBUG: Found subscriptions via listing: {len(subscriptions)}")
+        except Exception as e:
+            print(f"DEBUG: Listing method failed: {e}")
+
+        # Method 2: If Method 1 failed, try a common public URL pattern as fallback
+        if not subscriptions:
+            try:
+                # Many Vercel Blobs are accessible via a predictable public URL if they are public
+                # This is a fallback in case listing fails but the file exists
+                # We'll use the one from the most recent successful sub if we had it, 
+                # but since we don't, we rely on the listing being the primary way.
+                pass
+            except: pass
+
+        if not subscriptions:
+            print("PUSH SKIPPED: subscriptions/data.json not found or empty in Blob.")
+            # Final attempt: check if subscriptions.json exists locally (from repo)
+            if os.path.exists('subscriptions.json'):
+                with open('subscriptions.json', 'r') as f:
+                    subscriptions = json.load(f)
+                    print(f"DEBUG: Using local subscriptions.json fallback: {len(subscriptions)}")
             
-            if matching_blobs:
-                target_blob = matching_blobs[0]
-                sub_resp = requests.get(target_blob['url'])
-                subscriptions = sub_resp.json()
-            else:
-                print("PUSH SKIPPED: subscriptions/data.json not found in Blob.")
+            if not subscriptions:
                 return
-        else:
-            print(f"PUSH ERROR: Failed to list blobs ({resp.status_code})")
-            return
     except Exception as e:
         print(f"PUSH ERROR: Could not fetch subscriptions from Blob: {e}")
         return

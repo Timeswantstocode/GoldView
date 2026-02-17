@@ -64,28 +64,30 @@ def main():
         print("Error: BLOB_READ_WRITE_TOKEN missing")
         return
 
+    subscriptions = []
     try:
         headers = {"Authorization": f"Bearer {blob_token}"}
         list_url = "https://blob.vercel-storage.com/"
-        resp = requests.get(list_url, headers=headers)
+        resp = requests.get(list_url, headers=headers, timeout=10)
         if resp.status_code == 200:
-            data = resp.json()
-            blobs = data.get('blobs', [])
-            matching_blobs = [b for b in blobs if b['pathname'] == 'subscriptions/data.json']
-            matching_blobs.sort(key=lambda x: x.get('uploadedAt', ''), reverse=True)
-            
-            if matching_blobs:
-                target_blob = matching_blobs[0]
-                sub_resp = requests.get(target_blob['url'])
-                subscriptions = sub_resp.json()
-            else:
-                print("No subscriptions found in Blob")
-                return
-        else:
-            print(f"Error listing blobs: {resp.status_code}")
-            return
+            blobs = resp.json().get('blobs', [])
+            target = next((b for b in blobs if 'subscriptions/data.json' in b['pathname']), None)
+            if target:
+                sub_resp = requests.get(target['url'], timeout=10)
+                if sub_resp.status_code == 200:
+                    subscriptions = sub_resp.json()
+        
+        if not subscriptions:
+            print("No subscriptions found in Blob, checking local fallback...")
+            if os.path.exists('subscriptions.json'):
+                with open('subscriptions.json', 'r') as f:
+                    subscriptions = json.load(f)
     except Exception as e:
-        print(f"Error loading subscriptions from Blob: {e}")
+        print(f"Error loading subscriptions: {e}")
+        return
+
+    if not subscriptions:
+        print("PUSH SKIPPED: No subscriptions available.")
         return
 
     print(f"Sending notifications to {len(subscriptions)} users...")
