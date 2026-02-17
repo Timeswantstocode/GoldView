@@ -394,7 +394,7 @@ export default function App() {
       devicePixelRatio: window.devicePixelRatio || 1,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-          legend: false,
+          legend: { display: false },
           tooltip: {
               enabled: false,
               external: externalTooltipHandler,
@@ -411,10 +411,20 @@ export default function App() {
       scales: {
         x: {
           display: true,
-          grid: { display: true, color: 'rgba(255, 255, 255, 0.04)', borderDash: [6, 6], drawTicks: false },
-          ticks: { color: 'rgba(255, 255, 255, 0.25)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 8 }
+          grid: { display: true, color: 'rgba(255, 255, 255, 0.15)', borderDash: [6, 6], drawTicks: false },
+          ticks: { color: 'rgba(255, 255, 255, 0.8)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 8 }
         },
-        y: { display: true, position: 'right', grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5], drawBorder: false }, ticks: { display: false } }
+        y: { 
+          display: true, 
+          position: 'right', 
+          grid: { display: true, color: 'rgba(255, 255, 255, 0.15)', borderDash: [5, 5], drawBorder: false }, 
+          ticks: { 
+            display: true,
+            color: 'rgba(255, 255, 255, 0.8)',
+            font: { size: 10, weight: '600' },
+            callback: function(value) { return 'रू ' + value.toLocaleString(); }
+          } 
+        }
       },
       onClick: (e, elements) => {
         if (elements.length > 0) {
@@ -505,18 +515,20 @@ export default function App() {
                   {[7, 30, 90].map((t) => (<button key={t} onClick={() => { setTimeframe(t); setSelectedPoint(null); }} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === t ? `text-black shadow-lg shadow-white/5` : 'text-zinc-500'}`} style={timeframe === t ? { backgroundColor: themeColor } : {}}>{t === 7 ? '7D' : t === 30 ? '1M' : '3M'}</button>))}
                 </div>
               </div>
-              <div className="h-64 relative w-full" style={{ minHeight: '256px', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '20px' }}>
+              <div className="h-64 relative w-full" style={{ minHeight: '256px' }}>
                 {filteredData.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-zinc-500">
                     <p>No data available for the selected timeframe</p>
                   </div>
                 ) : (
-                  <Line 
-                    ref={chartRef} 
-                    data={chartData} 
-                    options={chartOptions} 
-                    redraw={false}
-                  />
+                  <div style={{ width: '100%', height: '100%' }}>
+                    <Line 
+                      ref={chartRef} 
+                      data={chartData} 
+                      options={chartOptions} 
+                      redraw={false}
+                    />
+                  </div>
                 )}
               </div>
               
