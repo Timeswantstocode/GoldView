@@ -1,5 +1,11 @@
 {
   "version": 2,
+  "crons": [
+    {
+      "path": "/api/rates-history",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "framework": "vite",
   "redirects": [
     {
