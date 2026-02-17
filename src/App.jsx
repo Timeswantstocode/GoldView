@@ -299,6 +299,16 @@ export default function App() {
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
 
+  // Parse price string to number - handles commas and spaces in data
+  const parsePrice = useCallback((value) => {
+    if (!value) return 0;
+    if (typeof value === 'number') return value;
+    // Remove commas and spaces, then parse
+    const cleaned = String(value).replace(/[,/\s]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  }, []);
+
   const themeColor = useMemo(() => {
     if (view === 'calculator' && calcMode === 'currency') return '#22c55e';
     if (activeMetal === 'gold') return '#D4AF37';
@@ -351,7 +361,7 @@ export default function App() {
         const date = new Date(d.date.replace(' ', 'T'));
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     });
-    const dataPoints = filteredData.map(d => activeMetal === 'usd' ? d.usdRate : Number(d[activeMetal]) || 0);
+    const dataPoints = filteredData.map(d => parsePrice(activeMetal === 'usd' ? d.usdRate : d[activeMetal]));
     
     console.log('[Graph] Chart data prepared - Labels:', labels.length, 'Data points:', dataPoints.length);
     console.log('[Graph] First 3 data points:', dataPoints.slice(0, 3));
@@ -523,6 +533,7 @@ export default function App() {
                 ) : (
                   <div style={{ width: '100%', height: '100%' }}>
                     <Line 
+                      key={`${activeMetal}-${timeframe}`}
                       ref={chartRef} 
                       data={chartData} 
                       options={chartOptions} 
