@@ -66,14 +66,16 @@ def main():
 
     try:
         headers = {"Authorization": f"Bearer {blob_token}"}
-        list_url = "https://blob.vercel-storage.com/?prefix=subscriptions/data.json"
+        list_url = "https://blob.vercel-storage.com/"
         resp = requests.get(list_url, headers=headers)
         if resp.status_code == 200:
             data = resp.json()
             blobs = data.get('blobs', [])
-            target_blob = next((b for b in blobs if b['pathname'] == 'subscriptions/data.json'), None)
+            matching_blobs = [b for b in blobs if b['pathname'] == 'subscriptions/data.json']
+            matching_blobs.sort(key=lambda x: x.get('uploadedAt', ''), reverse=True)
             
-            if target_blob:
+            if matching_blobs:
+                target_blob = matching_blobs[0]
                 sub_resp = requests.get(target_blob['url'])
                 subscriptions = sub_resp.json()
             else:

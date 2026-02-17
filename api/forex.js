@@ -90,13 +90,9 @@ export default async function handler(req, res) {
     };
 
     // 5. Combine: Current (Yahoo) + History (NRB)
-    // If the latest NRB entry is from today, we replace it with our live entry
-    let finalRates;
-    if (historyRates.length > 0 && historyRates[0].date === today) {
-      finalRates = [currentEntry, ...historyRates.slice(1)];
-    } else {
-      finalRates = [currentEntry, ...historyRates];
-    }
+    // Ensure we only have one entry per date, prioritizing our currentEntry (Yahoo) for today
+    const historyWithoutToday = historyRates.filter(entry => entry.date !== today);
+    const finalRates = [currentEntry, ...historyWithoutToday];
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return res.status(200).json({

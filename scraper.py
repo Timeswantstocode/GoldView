@@ -50,14 +50,19 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         
         # We'll try to list blobs to find the latest URL for 'subscriptions/data.json'
         headers = {"Authorization": f"Bearer {blob_token}"}
-        list_url = "https://blob.vercel-storage.com/?prefix=subscriptions/data.json"
+        # First try exact match, then try prefix if needed
+        list_url = "https://blob.vercel-storage.com/"
         resp = requests.get(list_url, headers=headers)
         if resp.status_code == 200:
             data = resp.json()
             blobs = data.get('blobs', [])
-            target_blob = next((b for b in blobs if b['pathname'] == 'subscriptions/data.json'), None)
+            # Find the most recent blob that matches the pathname
+            # Filter and sort by uploadedAt descending to get the latest version
+            matching_blobs = [b for b in blobs if b['pathname'] == 'subscriptions/data.json']
+            matching_blobs.sort(key=lambda x: x.get('uploadedAt', ''), reverse=True)
             
-            if target_blob:
+            if matching_blobs:
+                target_blob = matching_blobs[0]
                 sub_resp = requests.get(target_blob['url'])
                 subscriptions = sub_resp.json()
             else:
