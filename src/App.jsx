@@ -134,10 +134,18 @@ export default function App() {
     }
   }, []);
 
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  const isIOS = useMemo(() => {
+    return (/iPad|iPhone|iPod/.test(navigator.userAgent) || 
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) && 
+           !window.MSStream;
+  }, []);
+
+  const isStandalone = useMemo(() => {
+    return window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  }, []);
 
   const handleNotificationRequest = async () => {
+    // On iOS/iPadOS, Web Push is ONLY available when the app is added to the Home Screen (Standalone mode)
     if (isIOS && !isStandalone) {
       setShowIOSGuide(true);
       return;
