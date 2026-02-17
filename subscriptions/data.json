@@ -1,0 +1,1 @@
+[{"endpoint":"https://fcm.googleapis.com/fcm/send/dummy-endpoint","keys":{"p256dh":"dummy-p256dh","auth":"dummy-auth"}}]

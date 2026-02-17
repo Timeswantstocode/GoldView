@@ -118,42 +118,52 @@ def get_candidates(url, metal):
         r = requests.get(url, headers=headers, timeout=25, verify=False)
         r.raise_for_status()
         raw_html = r.text.replace(',', '')
-        raw_html = re.sub(r'(\d+)\s*रू\s*(\d+)', r'\1\2', raw_html)
+        # Normalize spaces and remove commas for easier regex matching
+        raw_html = re.sub(r'\s+', ' ', raw_html)
+        
         soup = BeautifulSoup(raw_html, 'html.parser')
         
         if "ashesh.com.np" in url:
-            rows = soup.find_all('tr')
+            rows = soup.find_all('div', class_='country')
             prices = []
             for row in rows:
-                text = row.get_text()
-                if metal == "gold" and ("Gold Hallmark" in text or "छापावाल" in text) and "Tola" in text:
-                    m = re.search(r'(\d{5,6})', text)
-                    if m: prices.append(int(m.group(1)))
-                elif metal == "tejabi" and ("Gold Tajabi" in text or "तेजाबी" in text) and "Tola" in text:
-                    m = re.search(r'(\d{5,6})', text)
-                    if m: prices.append(int(m.group(1)))
-                elif metal == "silver" and ("Silver" in text or "चाँदी" in text) and "Tola" in text:
-                    m = re.search(r'(\d{4,5})', text)
-                    if m: prices.append(int(m.group(1)))
+                text = row.get_text(separator=' ')
+                # Check for Tola and the specific metal
+                if "Tola" in text:
+                    if metal == "gold" and ("Gold Hallmark" in text or "छापावाल" in text):
+                        m = re.search(r'(\d{5,6})', text)
+                        if m: prices.append(int(m.group(1)))
+                    elif metal == "tejabi" and ("Gold Tajabi" in text or "Gold Tejabi" in text or "तेजाबी" in text):
+                        m = re.search(r'(\d{5,6})', text)
+                        if m: prices.append(int(m.group(1)))
+                    elif metal == "silver" and ("Silver" in text or "चाँदी" in text):
+                        m = re.search(r'(\d{4,5})', text)
+                        if m: prices.append(int(m.group(1)))
             if prices: return prices
 
+        # For FENEGOSIDA and others
         for junk in soup(["script", "style", "footer", "header", "nav", "aside"]):
             junk.decompose()
         content = soup.get_text(separator=' ')
 
         if metal == "gold":
-            pattern = r"(?:FINE|Hallmark|Tola|छापावाल).{0,50}?(\d{6})"
+            # Look for Hallmark/Fine Gold followed by a price
+            pattern = r"(?:FINE|Hallmark|Tola|छापावाल).{0,100}?(\d{5,6})"
             min_p, max_p = 100000, 1000000
         elif metal == "tejabi":
-            pattern = r"(?:Tejabi|तेजाबी|Tola).{0,50}?(\d{6})"
+            # Look for Tejabi/Tajabi followed by a price
+            pattern = r"(?:Tejabi|Tajabi|तेजाबी|Tola).{0,100}?(\d{5,6})"
             min_p, max_p = 100000, 1000000
         else:
-            pattern = r"(?:SILVER|Tola|चाँदी).{0,50}?(\d{4,5})"
+            # Look for Silver followed by a price
+            pattern = r"(?:SILVER|Tola|चाँदी).{0,100}?(\d{4,5})"
             min_p, max_p = 1000, 15000
 
         matches = re.findall(pattern, content, re.IGNORECASE | re.DOTALL)
+        
+        # Fallback to raw numbers if no pattern matches
         if not matches:
-            raw_p = r"(\d{6})" if metal in ["gold", "tejabi"] else r"(\d{4,5})"
+            raw_p = r"(\d{5,6})" if metal in ["gold", "tejabi"] else r"(\d{4,5})"
             matches = re.findall(raw_p, content)
 
         valid = []
@@ -163,7 +173,8 @@ def get_candidates(url, metal):
             if min_p <= val <= max_p:
                 valid.append(val)
         return valid
-    except:
+    except Exception as e:
+        print(f"DEBUG: Error fetching {metal} from {url}: {e}")
         return []
 
 def verify_price(primary, backup, tolerance=0.05):
@@ -206,6 +217,7 @@ def update():
     fenegosida_url = "https://fenegosida.org/"
     
     f_gold = get_candidates(fenegosida_url, "gold")
+    f_tejabi = get_candidates(fenegosida_url, "tejabi")
     f_silver = get_candidates(fenegosida_url, "silver")
     
     a_gold = get_candidates(widget_url, "gold")
@@ -226,13 +238,26 @@ def update():
     backup_silver = max(a_silver) if a_silver else 0
     final_silver, silver_verified = verify_price(primary_silver, backup_silver)
     
-    final_tejabi = max(a_tejabi) if a_tejabi else int(final_gold * 0.9167)
-    tejabi_verified = True if a_tejabi else False
+    # Tejabi logic: Prefer FENEGOSIDA, then Ashesh, then calculated
+    primary_tejabi = max(f_tejabi) if f_tejabi else 0
+    backup_tejabi = max(a_tejabi) if a_tejabi else 0
+    
+    if primary_tejabi > 0:
+        final_tejabi = primary_tejabi
+        tejabi_verified = True
+    elif backup_tejabi > 0:
+        final_tejabi = backup_tejabi
+        tejabi_verified = True
+    else:
+        final_tejabi = int(final_gold * 0.991) # Tejabi is usually ~99.1% of Hallmark
+        tejabi_verified = False
 
     sources = []
     if f_gold and final_gold == primary_gold: sources.append("FENEGOSIDA")
     elif a_gold: sources.append("Ashesh")
-    if a_tejabi: sources.append("Ashesh (Tejabi)")
+    
+    if primary_tejabi > 0: sources.append("FENEGOSIDA (Tejabi)")
+    elif backup_tejabi > 0: sources.append("Ashesh (Tejabi)")
     
     source_info = " / ".join(sources) if sources else "None"
     
@@ -249,7 +274,7 @@ def update():
     if (final_gold == 0 or final_silver == 0) and history:
         final_gold = final_gold or history[-1].get('gold', 0)
         final_silver = final_silver or history[-1].get('silver', 0)
-        final_tejabi = final_tejabi or history[-1].get('tejabi', int(final_gold * 0.9167))
+        final_tejabi = final_tejabi or history[-1].get('tejabi', int(final_gold * 0.991))
         source_info = "Recovery (Last Known)"
     
     # NOTIFICATION LOGIC: Compare with the very last saved record
@@ -288,7 +313,7 @@ def update():
     with open(file, 'w') as f:
         json.dump(history[-1000:], f, indent=4)
     
-    print(f"SUCCESS: Gold {final_gold}, Silver {final_silver} via {source_info}")
+    print(f"SUCCESS: Gold {final_gold}, Tejabi {final_tejabi}, Silver {final_silver} via {source_info}")
 
 if __name__ == "__main__":
     import sys
