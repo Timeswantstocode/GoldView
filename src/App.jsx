@@ -365,11 +365,12 @@ export default function App() {
         tension: 0.4,
         pointRadius: (ctx) => (selectedPoint?.index === ctx.dataIndex ? 8 : 0),
         pointHoverRadius: 10,
-        pointBackgroundColor: '#fff',
+        pointBackgroundColor: '#ffffff',
+        pointBorderColor: themeColor,
         pointBorderWidth: 3,
         backgroundColor: (context) => {
           const {ctx, chartArea} = context.chart;
-          if (!chartArea) return null;
+          if (!chartArea) return `${themeColor}20`; // Fallback to semi-transparent color
           const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
           g.addColorStop(0, `${themeColor}40`);
           g.addColorStop(1, 'transparent');
@@ -379,45 +380,51 @@ export default function App() {
     };
   }, [filteredData, activeMetal, selectedPoint, themeColor]);
 
-  const chartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: {
-      duration: 200, // Faster animations for low-powered devices
-      easing: 'easeOutQuart'
-    },
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-        legend: false,
-        tooltip: {
-            enabled: false,
-            external: externalTooltipHandler,
-            callbacks: {
-                label: (ctx) => `रू ${ctx.raw.toLocaleString(undefined, {minimumFractionDigits: activeMetal === 'usd' ? 2 : 0})}`,
-            }
-        },
-        decimation: {
-          enabled: true,
-          algorithm: 'lttb', // Downsample data for better performance
-          samples: timeframe > 30 ? 50 : undefined
-        }
-    },
-    scales: {
-      x: {
-        display: true,
-        grid: { display: true, color: 'rgba(255, 255, 255, 0.04)', borderDash: [6, 6], drawTicks: false },
-        ticks: { color: 'rgba(255, 255, 255, 0.25)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 8 }
+  const chartOptions = useMemo(() => {
+    console.log('[Graph] Creating chart options, activeMetal:', activeMetal, 'themeColor:', themeColor);
+    const options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 200, // Faster animations for low-powered devices
+        easing: 'easeOutQuart'
       },
-      y: { display: true, position: 'right', grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5], drawBorder: false }, ticks: { display: false } }
-    },
-    onClick: (e, elements) => {
-      if (elements.length > 0) {
-        const index = elements[0].index;
-        const point = filteredData[index];
-        setSelectedPoint({ index, date: point.date, price: activeMetal === 'usd' ? point.usdRate : point[activeMetal] });
+      devicePixelRatio: window.devicePixelRatio || 1,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+          legend: false,
+          tooltip: {
+              enabled: false,
+              external: externalTooltipHandler,
+              callbacks: {
+                  label: (ctx) => `रू ${ctx.raw.toLocaleString(undefined, {minimumFractionDigits: activeMetal === 'usd' ? 2 : 0})}`,
+              }
+          },
+          decimation: {
+            enabled: true,
+            algorithm: 'lttb', // Downsample data for better performance
+            samples: timeframe > 30 ? 50 : undefined
+          }
+      },
+      scales: {
+        x: {
+          display: true,
+          grid: { display: true, color: 'rgba(255, 255, 255, 0.04)', borderDash: [6, 6], drawTicks: false },
+          ticks: { color: 'rgba(255, 255, 255, 0.25)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 8 }
+        },
+        y: { display: true, position: 'right', grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5], drawBorder: false }, ticks: { display: false } }
+      },
+      onClick: (e, elements) => {
+        if (elements.length > 0) {
+          const index = elements[0].index;
+          const point = filteredData[index];
+          setSelectedPoint({ index, date: point.date, price: activeMetal === 'usd' ? point.usdRate : point[activeMetal] });
+        }
       }
-    }
-  }), [filteredData, activeMetal, timeframe]);
+    };
+    console.log('[Graph] Chart options created, devicePixelRatio:', window.devicePixelRatio);
+    return options;
+  }, [filteredData, activeMetal, timeframe]);
 
   if (loading) return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#D4AF37]">
@@ -502,7 +509,13 @@ export default function App() {
                     <p>No data available for the selected timeframe</p>
                   </div>
                 ) : (
-                  <Line ref={chartRef} data={chartData} options={chartOptions} redraw={false} />
+                  <Line 
+                    ref={chartRef} 
+                    data={chartData} 
+                    options={chartOptions} 
+                    redraw={false}
+                    onContentVisible={(e) => console.log('[Graph] Chart rendered, canvas available:', !!e?.target)}
+                  />
                 )}
               </div>
               
