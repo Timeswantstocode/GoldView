@@ -204,6 +204,7 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
                 value={type.toUpperCase()}
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => onCurrencyChange(e.target.value.toLowerCase())}
+                aria-label="Select Currency"
               >
                 {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code} to NPR</option>)}
               </select>
@@ -215,7 +216,7 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
           <p className="text-[8px] opacity-50">{meta.sub}</p>
         </div>
         {isForex && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /> :
-        <div className={`px-2.5 py-1 rounded-xl border ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
+        <div className={`px-2.5 py-1 rounded-xl border ${diff.isUp ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'}`}>{diff.val}</div>}
       </div>
       <div className="flex justify-between items-end text-4xl font-extrabold tracking-tighter">
         <h2>{formatValue(val, type)}</h2>
@@ -630,7 +631,7 @@ export default function App() {
     const text = date.toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     return (
       <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10 shrink-0">
-        <Calendar className="w-3 h-3 text-zinc-500" />
+        <Calendar className="w-3 h-3 text-zinc-400" />
         <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">{text}</span>
       </div>
     );
@@ -640,7 +641,7 @@ export default function App() {
     <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
       <main className="px-6 mt-14 space-y-6 relative z-10 animate-in fade-in duration-500 pb-20">
         <div className="flex justify-between items-center px-1">
-           <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">{t('dashboard')}</h2>
+           <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">{t('dashboard')}</h2>
            {lastUpdatedBadge}
         </div>
         <div className="space-y-4">
@@ -683,6 +684,7 @@ export default function App() {
                     className="bg-transparent text-[11px] font-black text-zinc-400 outline-none uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
                     value={activeMetal.toUpperCase()}
                     onChange={(e) => handleCurrencyChange(e.target.value.toLowerCase())}
+                    aria-label="Select Currency for Chart"
                   >
                     {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.flag} {c.code} / NPR</option>)}
                   </select>
@@ -690,7 +692,7 @@ export default function App() {
               )}
             </div>
             <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
-              {[7, 30, 90].map((tf) => (<button key={tf} onClick={() => handleTimeframeChange(tf)} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === tf ? `text-black shadow-lg shadow-white/5` : 'text-zinc-500'}`} style={timeframe === tf ? { backgroundColor: themeColor } : {}}>{tf === 7 ? '7D' : tf === 30 ? '1M' : '3M'}</button>))}
+              {[7, 30, 90].map((tf) => (<button key={tf} onClick={() => handleTimeframeChange(tf)} className={`px-4 py-2.5 rounded-full text-[9px] font-black transition-all ${timeframe === tf ? `text-black shadow-lg shadow-white/5` : 'text-zinc-400'}`} style={timeframe === tf ? { backgroundColor: themeColor } : {}}>{tf === 7 ? '7D' : tf === 30 ? '1M' : '3M'}</button>))}
             </div>
           </div>
           <div className="h-64 relative w-full">
@@ -766,7 +768,7 @@ export default function App() {
 
           <div className="space-y-4">
             <div className="flex justify-between items-center px-4">
-               <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500">{t('myGold')}</h3>
+               <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">{t('myGold')}</h3>
                <button
                 onClick={() => setShowPortfolioAdd(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[10px] uppercase shadow-lg shadow-[#D4AF37]/20 active:scale-95 transition-all">
@@ -776,7 +778,7 @@ export default function App() {
 
             {portfolio.length === 0 ? (
               <div className="p-12 text-center bg-white/5 rounded-[3rem] border border-white/5 border-dashed">
-                <p className="text-zinc-500 font-bold italic">{t('noAssets')}</p>
+                <p className="text-zinc-400 font-bold italic">{t('noAssets')}</p>
               </div>
             ) : (
               portfolio.map((asset, index) => {
@@ -791,13 +793,13 @@ export default function App() {
                        </div>
                        <div>
                          <p className="text-[10px] font-black uppercase text-white">{t(asset.type === 'gold' ? 'gold24K' : asset.type === 'tejabi' ? 'gold22K' : 'silver')}</p>
-                         <p className="text-[10px] font-bold text-zinc-500">{asset.weight} {t('tola')}</p>
+                         <p className="text-[10px] font-bold text-zinc-400">{asset.weight} {t('tola')}</p>
                        </div>
                     </div>
                     <div className="text-right flex items-center gap-6">
                        <div>
                          <p className="text-lg font-black text-white">{formatRS(currentValue)}</p>
-                         <p className={`text-[10px] font-black ${pl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                         <p className={`text-[10px] font-black ${pl >= 0 ? 'text-green-300' : 'text-red-300'}`}>
                            {pl >= 0 ? '+' : ''}{formatRS(pl)}
                          </p>
                        </div>
@@ -830,7 +832,7 @@ export default function App() {
                       key={type}
                       onClick={() => setNewAsset({...newAsset, type})}
                       style={{ backgroundColor: newAsset.type === type ? (type === 'gold' ? '#D4AF37' : type === 'tejabi' ? '#CD7F32' : '#94a3b8') : 'transparent' }}
-                      className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${newAsset.type === type ? 'text-black' : 'text-zinc-500'}`}>
+                      className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${newAsset.type === type ? 'text-black' : 'text-zinc-400'}`}>
                       {t(type === 'gold' ? 'gold24K' : type === 'tejabi' ? 'gold22K' : 'silver')}
                     </button>
                   ))}
@@ -838,7 +840,7 @@ export default function App() {
                 <div className="grid grid-cols-3 gap-4">
                   {['tola', 'aana', 'lal'].map((unit) => (
                     <div key={unit}>
-                      <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-widest">{t(unit)}</label>
+                      <label className="text-[10px] font-black text-zinc-400 uppercase mb-2 block ml-3 tracking-widest">{t(unit)}</label>
                       <input
                         type="number"
                         className="w-full bg-black/60 border-2 border-zinc-800 p-4 rounded-2xl text-center font-black text-white outline-none focus:border-[#D4AF37]"
@@ -849,7 +851,7 @@ export default function App() {
                   ))}
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3">{t('purchasePrice')} (रू)</label>
+                  <label className="text-[10px] font-black text-zinc-400 uppercase mb-2 block ml-3">{t('purchasePrice')} (रू)</label>
                   <input type="number" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-2xl font-black text-white outline-none focus:border-[#D4AF37]" value={newAsset.pricePaid} onChange={(e) => setNewAsset({...newAsset, pricePaid: e.target.value})} />
                 </div>
               </div>
@@ -885,27 +887,27 @@ export default function App() {
       <main className="px-6 mt-14 relative z-10 animate-in zoom-in-95 duration-500 pb-20">
         <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-xl shadow-xl">
           <div className="flex p-1 bg-black/40 rounded-3xl mb-10 border border-white/5">
-              <button onClick={() => setCalcMode('jewelry')} style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'text-black' : 'text-zinc-500'}`}>{t('jewelry')}</button>
-              <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black' : 'text-zinc-500'}`}>{t('currency')}</button>
+              <button onClick={() => setCalcMode('jewelry')} style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'text-black' : 'text-zinc-400'}`}>{t('jewelry')}</button>
+              <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black' : 'text-zinc-400'}`}>{t('currency')}</button>
           </div>
 
           {calcMode === 'jewelry' ? (
             <div className="space-y-6">
               <div className="flex p-1 bg-black/40 rounded-[2rem] border border-white/5 mb-2">
-                 <button onClick={() => setTradeMode('buy')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 ${tradeMode === 'buy' ? 'text-black' : 'text-zinc-500'}`} style={tradeMode === 'buy' ? { backgroundColor: '#22c55e' } : {}}>{t('purchase')}</button>
-                 <button onClick={() => setTradeMode('sell')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 ${tradeMode === 'sell' ? 'text-black' : 'text-zinc-500'}`} style={tradeMode === 'sell' ? { backgroundColor: '#ef4444' } : {}}>{t('sellBack')}</button>
+                 <button onClick={() => setTradeMode('buy')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 ${tradeMode === 'buy' ? 'text-black' : 'text-zinc-400'}`} style={tradeMode === 'buy' ? { backgroundColor: '#22c55e' } : {}}>{t('purchase')}</button>
+                 <button onClick={() => setTradeMode('sell')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 ${tradeMode === 'sell' ? 'text-black' : 'text-zinc-400'}`} style={tradeMode === 'sell' ? { backgroundColor: '#ef4444' } : {}}>{t('sellBack')}</button>
               </div>
 
               <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto gap-1">
-                  {['gold', 'tejabi', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (metal === 'gold' ? '#D4AF37' : metal === 'tejabi' ? '#CD7F32' : '#94a3b8') : 'transparent' }} className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black' : 'text-zinc-500'}`}>{t(metal === 'gold' ? 'gold24K' : metal === 'tejabi' ? 'gold22K' : 'silver')}</button>))}
+                  {['gold', 'tejabi', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (metal === 'gold' ? '#D4AF37' : metal === 'tejabi' ? '#CD7F32' : '#94a3b8') : 'transparent' }} className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black' : 'text-zinc-400'}`}>{t(metal === 'gold' ? 'gold24K' : metal === 'tejabi' ? 'gold22K' : 'silver')}</button>))}
               </div>
               <div className="mb-8 p-6 rounded-[2.2rem] border-2 flex items-center justify-between" style={{ borderColor: `${themeColor}80`, backgroundColor: `${themeColor}10` }}>
                 <div className="flex items-center gap-4"><Coins className="w-8 h-8" style={{ color: themeColor }} /><p className="text-xl font-black uppercase text-white">{activeMetal === 'gold' ? t('gold24K') : activeMetal === 'tejabi' ? t('gold22K') : t('silver')}</p></div>
-                <div className="text-right text-[10px] font-black text-zinc-500">{formatRS(priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal])}</div>
+                <div className="text-right text-[10px] font-black text-zinc-400">{formatRS(priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal])}</div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
-                {['tola', 'aana', 'lal'].map((unit) => (<div key={unit}><label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{t(unit)}</label>
+                {['tola', 'aana', 'lal'].map((unit) => (<div key={unit}><label className="text-[10px] font-black text-zinc-400 uppercase mb-2 block ml-3 tracking-[0.2em]">{t(unit)}</label>
                 <input type="number" style={{ caretColor: themeColor }} className="w-full bg-black/60 border-2 border-zinc-800 px-2 py-5 rounded-3xl text-center font-black text-xl sm:text-2xl text-white outline-none focus:border-white/20" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} /></div>))}
               </div>
 
@@ -940,11 +942,11 @@ export default function App() {
                 <div className="bg-black/40 rounded-[3rem] p-7 border border-white/10 space-y-10">
                     <div className="flex items-start justify-between px-1">
                         <div className="flex-1 flex flex-col items-start gap-4">
-                            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">{t('youSend')}</p>
+                            <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.2em]">{t('youSend')}</p>
                             <div className="flex flex-col items-center gap-1.5 w-fit">
                                 <span className="text-4xl leading-none">{currCalc.isSwapped ? '🇳🇵' : CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag}</span>
                                 {currCalc.isSwapped ? <span className="text-[11px] font-black text-white mt-1">NPR</span> :
-                                <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
+                                <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})} aria-label="Select Source Currency">
                                     {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
                                 </select>}
                             </div>
@@ -958,11 +960,11 @@ export default function App() {
                             </button>
                         </div>
                         <div className="flex-1 flex flex-col items-end gap-4 text-right">
-                            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">{t('receiverGets')}</p>
+                            <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.2em]">{t('receiverGets')}</p>
                             <div className="flex flex-col items-center gap-1.5 w-fit ml-auto">
                                 <span className="text-4xl leading-none">{!currCalc.isSwapped ? '🇳🇵' : CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag}</span>
                                 {!currCalc.isSwapped ? <span className="text-[11px] font-black text-white mt-1">NPR</span> :
-                                <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
+                                <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})} aria-label="Select Target Currency">
                                     {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
                                 </select>}
                             </div>
@@ -1021,7 +1023,7 @@ export default function App() {
               <p className="text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500 truncate" style={{ color: themeColor }}>{t('marketUpdate')}</p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <img src="/logo192.webp" alt="GoldView Logo" width="40" height="40" fetchpriority="high" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg border border-white/10 shrink-0" />
+              <img src="/logo60.webp" alt="GoldView Logo" width="60" height="60" fetchpriority="high" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg border border-white/10 shrink-0" />
               <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-white">GoldView</h1>
             </div>
           </div>
@@ -1086,10 +1088,10 @@ export default function App() {
                   <div className="flex p-1 bg-black/40 rounded-xl border border-white/5">
                     <button
                       onClick={() => { setLang('en'); localStorage.setItem('gv_lang', 'en'); setShowMenu(false); }}
-                      className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${lang === 'en' ? 'bg-[#D4AF37] text-black' : 'text-zinc-500'}`}>EN</button>
+                      className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${lang === 'en' ? 'bg-[#D4AF37] text-black' : 'text-zinc-400'}`}>EN</button>
                     <button
                       onClick={() => { setLang('ne'); localStorage.setItem('gv_lang', 'ne'); setShowMenu(false); }}
-                      className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${lang === 'ne' ? 'bg-[#D4AF37] text-black' : 'text-zinc-500'}`}>नेपाली</button>
+                      className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${lang === 'ne' ? 'bg-[#D4AF37] text-black' : 'text-zinc-400'}`}>नेपाली</button>
                   </div>
                 </div>
               </div>
@@ -1117,12 +1119,12 @@ export default function App() {
                        {['gold', 'tejabi', 'silver'].map(m => (
                          <div key={m} className="flex justify-between items-end border-b border-white/10 pb-6">
                             <div>
-                               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
+                               <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
                                <p className="text-xs font-bold text-zinc-600">{t('perTola')}</p>
                             </div>
                             <div className="text-right">
                                <p className="text-3xl font-black text-white">{formatRS(priceData[priceData.length-1]?.[m])}</p>
-                               <p className={`text-[10px] font-black ${allDiffs[m].isUp ? 'text-green-500' : 'text-red-500'}`}>{allDiffs[m].val}</p>
+                               <p className={`text-[10px] font-black ${allDiffs[m].isUp ? 'text-green-300' : 'text-red-300'}`}>{allDiffs[m].val}</p>
                             </div>
                          </div>
                        ))}
@@ -1131,7 +1133,7 @@ export default function App() {
 
                   <div className="relative z-10 flex justify-between items-end border-t border-white/5 pt-8">
                      <div>
-                       <p className="text-[10px] font-black text-zinc-500 uppercase mb-2">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                       <p className="text-[10px] font-black text-zinc-400 uppercase mb-2">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                        <p className="text-xs font-black text-[#D4AF37] tracking-[0.3em] uppercase">WWW.GOLDVIEW.TECH</p>
                      </div>
                      <div className="w-12 h-12 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
@@ -1203,11 +1205,11 @@ export default function App() {
         )}
 
         <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-2xl">
-          <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'dashboard' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`} style={view === 'dashboard' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
+          <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'dashboard' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-400'}`} style={view === 'dashboard' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
             <LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} />
             <span className="text-[9px] font-black uppercase tracking-widest">{t('dashboard')}</span>
           </button>
-          <button onClick={() => { setView('calculator'); if(activeMetal === 'usd') setActiveMetal('gold'); }} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'calculator' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-500'}`} style={view === 'calculator' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
+          <button onClick={() => { setView('calculator'); if(activeMetal === 'usd') setActiveMetal('gold'); }} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'calculator' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-400'}`} style={view === 'calculator' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
             <Calculator className={`w-6 h-6 ${view === 'calculator' ? 'fill-black' : ''}`} />
             <span className="text-[9px] font-black uppercase tracking-widest">{t('calculator')}</span>
           </button>
@@ -1217,7 +1219,7 @@ export default function App() {
           <h2 className="text-zinc-400 font-black mb-2 uppercase tracking-widest">GoldView Nepal - Live Gold & Silver Prices</h2>
           <p>GoldView provides real-time updates for <strong>24K Chhapawal Gold</strong>, <strong>22K Tejabi Gold</strong> and <strong>Pure Silver</strong> rates in Nepal.</p>
           <div className="mt-12 text-center">
-            <p className="font-black uppercase tracking-[0.3em] text-zinc-500">Made by @Timeswantstocode</p>
+            <p className="font-black uppercase tracking-[0.3em] text-zinc-400">Made by @Timeswantstocode</p>
           </div>
         </footer>
 

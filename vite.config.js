@@ -9,7 +9,8 @@ export default defineConfig({
         manualChunks: {
           'vendor': ['react', 'react-dom'],
           'chart': ['chart.js', 'react-chartjs-2'],
-          'icons': ['lucide-react']
+          'icons': ['lucide-react'],
+          'html-to-image': ['html-to-image']
         }
       }
     },
