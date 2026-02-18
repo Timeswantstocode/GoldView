@@ -8,7 +8,6 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Noto Sans Devanagari"', 'sans-serif'],
-        montserrat: ['Montserrat', 'sans-serif'],
       },
       colors: {
         gold: {
