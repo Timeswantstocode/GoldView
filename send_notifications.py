@@ -46,7 +46,7 @@ def main():
 
     # Load data
     try:
-        with open("data.json", "r") as f:
+        with open("public/data.json", "r") as f:
             price_data = json.load(f)
     except Exception as e:
         print(f"Error loading price data: {e}")
@@ -71,7 +71,7 @@ def main():
         diff = curr - prev
         pct = (diff / prev * 100) if prev != 0 else 0
         sign = '+' if diff >= 0 else ''
-        return f"रू {curr:,} ({sign}{pct:.2f}%)"
+        return f"Rs {curr:,} ({sign}{pct:.2f}%)"
 
     gold_str = f"Gold(24K): {get_change_str(current['gold'], previous['gold'])}"
     tejabi_str = f"Tejabi(22K): {get_change_str(current['tejabi'], previous['tejabi'])}"
