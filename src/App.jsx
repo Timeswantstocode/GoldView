@@ -121,7 +121,7 @@ const CurrencyResult = React.memo(({ forexHistory, currCalc, formatRS }) => {
   const rawRate = parseFloat(rateData?.buy || 133);
   const unit = parseInt(rateData?.unit || 1);
   const amt = Number(currCalc.amount) || 0;
-  const result = currCalc.isSwapped ? ((amt / rawRate) * unit).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : formatRS((amt / unit) * rawRate);
+  const result = currCalc.isSwapped ? ((amt / rawRate) * unit).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : formatRS((amt / unit) * rawRate);
   const fontSize = result.length > 15 ? 'text-2xl' : result.length > 12 ? 'text-3xl' : result.length > 10 ? 'text-4xl' : 'text-5xl';
   return <h3 className={`${fontSize} font-black tracking-tighter relative z-10 break-all`}>{result}</h3>;
 });
@@ -299,10 +299,10 @@ export default function App() {
     }
   };
 
-  const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
+  const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString('en-IN')}`, []);
   const formatValue = useCallback((val, metal) => {
     const isForex = !['gold', 'tejabi', 'silver'].includes(metal);
-    if (isForex) return `रू ${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (isForex) return `रू ${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     return formatRS(val);
   }, [formatRS]);
 
@@ -354,7 +354,7 @@ export default function App() {
 
       const diff = currVal - prevVal;
       return {
-        val: `रू ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {
+        val: `रू ${diff >= 0 ? '+' : ''}${diff.toLocaleString('en-IN', {
           minimumFractionDigits: isForex ? 2 : 0,
           maximumFractionDigits: isForex ? 2 : 0
         })}`,
