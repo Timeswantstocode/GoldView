@@ -1,8 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Plugin to make CSS non-render-blocking
+function nonBlockingCssPlugin() {
+  return {
+    name: 'non-blocking-css',
+    transformIndexHtml(html) {
+      // Replace stylesheet links with preload + onload pattern and add noscript fallback
+      return html.replace(
+        /<link rel="stylesheet" crossorigin href="([^"]+)">/g,
+        '<link rel="preload" as="style" onload="this.onload=null;this.rel=\'stylesheet\'" href="$1">\n    <noscript><link rel="stylesheet" href="$1"></noscript>'
+      )
+    }
+  }
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), nonBlockingCssPlugin()],
   build: {
     rollupOptions: {
       output: {
