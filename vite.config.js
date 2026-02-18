@@ -47,7 +47,6 @@ export default defineConfig({
         loops: true,
         unused: true,
         hoist_funs: true,
-        keep_fargs: false,
         hoist_vars: false,
         if_return: true,
         join_vars: true,
@@ -79,7 +78,6 @@ export default defineConfig({
   },
   // Optimize dependencies loading
   optimizeDeps: {
-    include: ['react', 'react-dom'],
-    exclude: ['chart.js', 'react-chartjs-2']
+    include: ['react', 'react-dom', 'lucide-react']
   }
 })
