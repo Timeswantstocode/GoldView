@@ -13,9 +13,18 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="icon" type="image/webp" sizes="512x512" href="/logo512.webp">
     <link rel="manifest" href="/manifest.json">
+    
+    <!-- Resource hints for faster loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    
+    <!-- Font loading with display swap for faster FCP -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Preload critical data -->
+    <link rel="preload" href="/data.json" as="fetch" crossorigin="anonymous">
 
     <title>GoldView Nepal - Gold Price Today in Nepal | Live Rates</title>
 
