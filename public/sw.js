@@ -1,11 +1,72 @@
+const CACHE_NAME = 'goldview-cache-v2';
+const ASSETS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/logo512.png',
+  '/logo192.png',
+  '/apple-touch-icon.png',
+  '/logo_raw.png'
+];
+
 self.addEventListener('install', (event) => {
   console.log('[SW] Service Worker installing...');
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[SW] Pre-caching static assets');
+      return cache.addAll(ASSETS_TO_CACHE);
+    })
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   console.log('[SW] Service Worker activated');
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('[SW] Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Special handling for data.json - Stale-While-Revalidate
+  // This allows charts to load instantly from cache while updating in background
+  if (url.pathname.includes('data.json')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(event.request).then((cachedResponse) => {
+          const fetchPromise = fetch(event.request).then((networkResponse) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+          return cachedResponse || fetchPromise;
+        });
+      })
+    );
+    return;
+  }
+
+  // For static assets, try cache then network
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request).catch(() => {
+        // Fallback if both fail
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+      });
+    })
+  );
 });
 
 // Function to show a notification
@@ -19,10 +80,9 @@ const showBeautifulNotification = (title, body, data, icon, badge) => {
     actions: [
       { action: 'view', title: 'View Rates' }
     ],
-    // Using a static tag allows new notifications to replace old ones
     tag: data.tag || 'price-update',
     renotify: true,
-    requireInteraction: false // Don't force interaction for simple updates
+    requireInteraction: false
   };
 
   return self.registration.showNotification(title, options);
@@ -33,12 +93,9 @@ self.addEventListener('push', (event) => {
   let payload = {};
   try {
     if (event.data) {
-      const rawData = event.data.text();
-      console.log('[SW] Raw push data:', rawData);
-      payload = JSON.parse(rawData);
-      console.log('[SW] Parsed payload:', payload);
+      payload = event.data.json();
     } else {
-      console.warn('[SW] Push event has no data');
+      payload = { title: 'GoldView Update', body: 'New market rates are available.' };
     }
   } catch (e) {
     console.error('[SW] Error parsing push data:', e);
@@ -52,31 +109,18 @@ self.addEventListener('push', (event) => {
       payload.data || {},
       payload.icon,
       payload.badge
-    ).then(() => {
-      console.log('[SW] Notification displayed successfully');
-    }).catch(err => {
-      console.error('[SW] Failed to show notification:', err);
-    })
+    )
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.notification.tag);
   event.notification.close();
-  
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then((clientList) => {
-      console.log('[SW] Found', clientList.length, 'open windows');
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
-          console.log('[SW] Focusing existing window');
-          return client.focus();
-        }
+        if (client.url === '/' && 'focus' in client) return client.focus();
       }
-      if (clients.openWindow) {
-        console.log('[SW] Opening new window');
-        return clients.openWindow('/');
-      }
+      if (clients.openWindow) return clients.openWindow('/');
     })
   );
 });
