@@ -72,6 +72,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Cache-First for JS, CSS, and Fonts to ensure instant loading
+  if (url.pathname.includes('/assets/') ||
+      url.pathname.endsWith('.js') ||
+      url.pathname.endsWith('.css') ||
+      url.hostname.includes('fonts.gstatic.com') ||
+      url.hostname.includes('fonts.googleapis.com')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(event.request).then((cachedResponse) => {
+          const fetchPromise = fetch(event.request).then((networkResponse) => {
+            if (networkResponse.ok || networkResponse.type === 'opaque') {
+              cache.put(event.request, networkResponse.clone());
+            }
+            return networkResponse;
+          });
+          return cachedResponse || fetchPromise;
+        });
+      })
+    );
+    return;
+  }
+
   // For other static assets, try cache then network
   event.respondWith(
     caches.match(event.request).then((response) => {

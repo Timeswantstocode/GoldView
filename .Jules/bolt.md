@@ -9,3 +9,7 @@
 ## 2026-02-18 - [Optimizing Optional Heavy Libraries]
 **Learning:** Libraries like `html-to-image` are relatively heavy (~15kB gzipped) and often used for optional features (like downloading a screenshot). Including them in the main bundle increases initial load time for all users.
 **Action:** Use dynamic `import()` for optional libraries to move them into separate chunks that are only downloaded when the specific feature is triggered. This reduced the main bundle size by ~15% in this project.
+
+## 2026-02-18 - [Instant Load: Lazy Loading + Local Data]
+**Learning:** Fetching data from GitHub Raw is significantly slower than serving it from the local origin (Vercel edge). Also, heavy visualization libraries like Chart.js block the main thread during hydration.
+**Action:** Move large data files to `public/` and serve them via local paths. Combine with `React.lazy` for heavy UI components (like Charts) to keep the initial critical bundle under 100kB, ensuring "instant" feeling on mobile devices.
