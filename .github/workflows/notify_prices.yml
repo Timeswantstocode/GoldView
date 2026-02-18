@@ -33,4 +33,4 @@ jobs:
           VAPID_EMAIL: ${{ secrets.VAPID_EMAIL }}
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
         run: |
-          python -c "from scraper import send_push_notification; import json; f=open('public/data.json'); d=json.load(f); cur=d[-1]; prev=d[-2] if len(d)>1 else cur; diff_g=cur['gold']-prev['gold']; diff_s=cur['silver']-prev['silver']; diff_t=cur.get('tejabi',0)-prev.get('tejabi',0); send_push_notification(cur['gold'], cur.get('tejabi', 0), cur['silver'], diff_g, diff_t, diff_s) if (diff_g!=0 or diff_s!=0 or diff_t!=0) else print('No change detected between last two records. Notification skipped.')"
+          python -c "from scraper import send_push_notification; import json; f=open('public/data.json'); d=json.load(f); f.close(); cur=d[-1]; prev=d[-2] if len(d)>1 else cur; diff_g=cur['gold']-prev['gold']; diff_s=cur['silver']-prev['silver']; diff_t=cur.get('tejabi',0)-prev.get('tejabi',0); send_push_notification(cur['gold'], cur.get('tejabi', 0), cur['silver'], diff_g, diff_t, diff_s) if (diff_g!=0 or diff_s!=0 or diff_t!=0) else print('No change detected between last two records. Notification skipped.')"
