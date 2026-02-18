@@ -13,9 +13,6 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/logo512.png">
     <link rel="manifest" href="/manifest.json">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
     <title>Gold Price Today in Nepal | Live USD to NPR Rate - GoldView</title>
 
     <script>
@@ -27,6 +24,8 @@
       }
     </script>
   <meta name="description" content="Check live 24K Chhapawal Gold and Silver rates in Nepal. Official NRB USD to NPR exchange rates. Use our jewelry cost calculator and currency converter." />
+    <!-- Tailwind via CDN is fine for a quick setup -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
       /* Performance optimizations for low-powered devices */
       * {
@@ -49,7 +48,7 @@
       }
       
       /* Reduce paint areas */
-      button, a, .PriceCard, .gv-card {
+      button, a {
         contain: layout style paint;
       }
       
