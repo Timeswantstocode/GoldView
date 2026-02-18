@@ -118,8 +118,9 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
     updated_subscriptions = []  # Track subscriptions with updated failure counts
     
     for sub in subscriptions:
-        # Skip dummy endpoints
+        # Skip dummy endpoints but ensure failureCount is initialized
         if "dummy-endpoint" in sub.get('endpoint', ''):
+            sub['failureCount'] = sub.get('failureCount', 0)
             updated_subscriptions.append(sub)
             continue
         
@@ -139,37 +140,32 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
             updated_subscriptions.append(sub)
         except WebPushException as ex:
             print(f"Push failed for one device: WebPushException: {ex}")
+            # Increment failure count for any push failure
+            failure_count = sub.get('failureCount', 0) + 1
+            sub['failureCount'] = failure_count
+            
             # Log response details if available
             if hasattr(ex, 'response') and ex.response:
                 try:
                     status_code = ex.response.status_code if hasattr(ex.response, 'status_code') else 0
                     print(f"Response body: {ex.response.text}, Response {ex.response.json()}")
-                    # Increment failure count for 410, 404, or other errors
-                    if status_code in [410, 404]:
-                        failure_count = sub.get('failureCount', 0) + 1
-                        sub['failureCount'] = failure_count
-                        print(f"Subscription failed (count: {failure_count}/{FAILURE_THRESHOLD})")
-                        if failure_count < FAILURE_THRESHOLD:
-                            updated_subscriptions.append(sub)
-                        else:
-                            print(f"Removing subscription after {failure_count} consecutive failures")
-                    else:
-                        # For other errors, keep the subscription but increment count
-                        failure_count = sub.get('failureCount', 0) + 1
-                        sub['failureCount'] = failure_count
-                        updated_subscriptions.append(sub)
+                    print(f"Subscription failed (HTTP {status_code}, count: {failure_count}/{FAILURE_THRESHOLD})")
                 except Exception:
-                    # If we can't parse the response, keep the subscription but increment failure count
-                    failure_count = sub.get('failureCount', 0) + 1
-                    sub['failureCount'] = failure_count
-                    if failure_count < FAILURE_THRESHOLD:
-                        updated_subscriptions.append(sub)
                     print(f"Could not parse response details (failure count: {failure_count})")
+            else:
+                print(f"No response available (failure count: {failure_count})")
+            
+            # Keep subscription only if below threshold
+            if failure_count < FAILURE_THRESHOLD:
+                updated_subscriptions.append(sub)
+            else:
+                print(f"Removing subscription after {failure_count} consecutive failures")
         except Exception as e:
             print(f"Unexpected push error: {type(e).__name__}: {e}")
-            # For unexpected errors, keep subscription but increment failure count
+            # For unexpected errors, increment failure count
             failure_count = sub.get('failureCount', 0) + 1
             sub['failureCount'] = failure_count
+            print(f"Failure count: {failure_count}/{FAILURE_THRESHOLD}")
             if failure_count < FAILURE_THRESHOLD:
                 updated_subscriptions.append(sub)
 

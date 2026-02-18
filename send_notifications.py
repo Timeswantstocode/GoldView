@@ -149,10 +149,11 @@ def main():
     updated_subscriptions = []  # Track subscriptions with updated failure counts
     
     for sub in subscriptions:
-        # Skip dummy/test endpoints
+        # Skip dummy/test endpoints but ensure failureCount is initialized
         endpoint = sub.get('endpoint', '')
         if 'dummy' in endpoint.lower() or not endpoint:
             print(f"DEBUG: Skipping dummy/invalid endpoint")
+            sub['failureCount'] = sub.get('failureCount', 0)
             updated_subscriptions.append(sub)
             continue
             
