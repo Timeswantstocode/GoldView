@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Noto Sans Devanagari"', 'sans-serif'],
+      },
       colors: {
         gold: {
           DEFAULT: '#D4AF37',

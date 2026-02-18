@@ -29,12 +29,13 @@ const CURRENCY_LIST = [
 
 const STRUCTURED_DATA = JSON.stringify({
   "@context": "https://schema.org",
-  "@type": "WebApplication",
+  "@type": "FinancialService",
   "name": "GoldView Nepal",
   "url": PRIMARY_DOMAIN,
-  "description": "Official live 24K Gold and Silver rates in Nepal.",
+  "description": "Real-time Gold, Silver and Forex rates in Nepal with integrated calculators and portfolio management.",
   "applicationCategory": "FinanceApplication",
-  "operatingSystem": "All"
+  "operatingSystem": "All",
+  "keywords": "gold price nepal, silver price nepal, forex nepal, jewelry calculator"
 });
 
 const TRANSLATIONS = {
@@ -175,7 +176,7 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
       role="button"
       tabIndex={0}
       aria-label={`Select ${meta.label}`}
-      className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${
+      className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-xl relative overflow-hidden focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${
         isActive ? `${meta.grad} border-white/20 scale-[1.02]` : 'border-white/5 bg-white/5 opacity-40'
       }`}>
       <div className="flex justify-between items-start mb-2 text-[10px] font-black uppercase tracking-widest">
@@ -318,12 +319,17 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [portfolio, setPortfolio] = useState(() => JSON.parse(localStorage.getItem('gv_portfolio') || '[]'));
   const [showPortfolioAdd, setShowPortfolioAdd] = useState(false);
-  const [newAsset, setNewAsset] = useState({ type: 'gold', weight: '', pricePaid: '' });
+  const [newAsset, setNewAsset] = useState({ type: 'gold', tola: '', aana: '', lal: '', pricePaid: '' });
+  const [showGuide, setShowGuide] = useState(false);
 
   const chartRef = useRef(null);
   const shareCardRef = useRef(null);
 
   const t = useCallback((key) => TRANSLATIONS[lang][key] || key, [lang]);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   useEffect(() => {
     fetch(`${DATA_URL}?t=${Date.now()}`).then(res => res.json()).then(json => {
@@ -604,12 +610,11 @@ export default function App() {
     if (!priceData.length) return null;
     const last = priceData[priceData.length - 1];
     const date = new Date(last.date.replace(' ', 'T'));
-    const diff = Math.floor((new Date() - date) / 60000);
-    const text = diff < 1 ? t('justNow') : `${diff} ${t('minutesAgo')}`;
+    const text = date.toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     return (
       <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10 shrink-0">
-        <Clock className="w-3 h-3 text-zinc-500" />
-        <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">{t('lastUpdated')}: {text}</span>
+        <Calendar className="w-3 h-3 text-zinc-500" />
+        <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">{text}</span>
       </div>
     );
   }, [priceData, t]);
@@ -650,7 +655,7 @@ export default function App() {
           })}
         </div>
 
-        <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-3xl shadow-xl">
+        <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-xl shadow-xl">
           <div className="flex justify-between items-start mb-8 px-1 w-full">
             <div className="flex flex-col gap-1">
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> {t('priceTrend')}</h3>
@@ -798,17 +803,29 @@ export default function App() {
             <div className="bg-[#121212] border border-white/10 rounded-[3rem] p-8 max-w-sm w-full shadow-2xl space-y-6 relative z-10">
               <h3 className="text-xl font-black text-white tracking-tight">{t('addAsset')}</h3>
               <div className="space-y-4">
-                <div className="flex p-1 bg-black/40 rounded-2xl border border-white/5">
+                <div className="flex p-1 bg-white/5 rounded-2xl mb-2 border border-white/5 w-fit mx-auto gap-1">
                   {['gold', 'tejabi', 'silver'].map(type => (
                     <button
                       key={type}
                       onClick={() => setNewAsset({...newAsset, type})}
-                      className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase transition-all ${newAsset.type === type ? 'bg-[#D4AF37] text-black' : 'text-zinc-500'}`}>{t(type === 'gold' ? 'gold24K' : type === 'tejabi' ? 'gold22K' : 'silver')}</button>
+                      style={{ backgroundColor: newAsset.type === type ? (type === 'gold' ? '#D4AF37' : type === 'tejabi' ? '#CD7F32' : '#94a3b8') : 'transparent' }}
+                      className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${newAsset.type === type ? 'text-black' : 'text-zinc-500'}`}>
+                      {t(type === 'gold' ? 'gold24K' : type === 'tejabi' ? 'gold22K' : 'silver')}
+                    </button>
                   ))}
                 </div>
-                <div>
-                  <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3">{t('weight')} ({t('tola')})</label>
-                  <input type="number" step="0.001" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-2xl font-black text-white outline-none focus:border-[#D4AF37]" value={newAsset.weight} onChange={(e) => setNewAsset({...newAsset, weight: e.target.value})} />
+                <div className="grid grid-cols-3 gap-4">
+                  {['tola', 'aana', 'lal'].map((unit) => (
+                    <div key={unit}>
+                      <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-widest">{t(unit)}</label>
+                      <input
+                        type="number"
+                        className="w-full bg-black/60 border-2 border-zinc-800 p-4 rounded-2xl text-center font-black text-white outline-none focus:border-[#D4AF37]"
+                        value={newAsset[unit]}
+                        onChange={(e) => setNewAsset({...newAsset, [unit]: e.target.value})}
+                      />
+                    </div>
+                  ))}
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3">{t('purchasePrice')} (रू)</label>
@@ -819,10 +836,11 @@ export default function App() {
                 <button onClick={() => setShowPortfolioAdd(false)} className="flex-1 py-4 bg-white/5 text-white font-black rounded-2xl active:scale-95 transition-all border border-white/5">{t('cancel')}</button>
                 <button
                   onClick={() => {
-                    if (!newAsset.weight || !newAsset.pricePaid) return;
+                    const weight = parseFloat(newAsset.tola || 0) + parseFloat(newAsset.aana || 0)/16 + parseFloat(newAsset.lal || 0)/192;
+                    if (!weight || !newAsset.pricePaid) return;
                     const asset = {
                       type: newAsset.type,
-                      weight: parseFloat(newAsset.weight),
+                      weight: weight,
                       pricePaid: parseFloat(newAsset.pricePaid),
                       date: new Date().toISOString()
                     };
@@ -830,7 +848,7 @@ export default function App() {
                     setPortfolio(newPortfolio);
                     localStorage.setItem('gv_portfolio', JSON.stringify(newPortfolio));
                     setShowPortfolioAdd(false);
-                    setNewAsset({ type: 'gold', weight: '', pricePaid: '' });
+                    setNewAsset({ type: 'gold', tola: '', aana: '', lal: '', pricePaid: '' });
                   }}
                   className="flex-1 py-4 bg-[#D4AF37] text-black font-black rounded-2xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">{t('save')}</button>
               </div>
@@ -844,7 +862,7 @@ export default function App() {
   const calculatorView = useMemo(() => (
     <div style={{ display: view === 'calculator' ? 'block' : 'none' }}>
       <main className="px-6 mt-14 relative z-10 animate-in zoom-in-95 duration-500 pb-20">
-        <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-3xl shadow-xl">
+        <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-xl shadow-xl">
           <div className="flex p-1 bg-black/40 rounded-3xl mb-10 border border-white/5">
               <button onClick={() => setCalcMode('jewelry')} style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'text-black' : 'text-zinc-500'}`}>{t('jewelry')}</button>
               <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black' : 'text-zinc-500'}`}>{t('currency')}</button>
@@ -990,19 +1008,19 @@ export default function App() {
             <button
               onClick={() => setShowShareModal(true)}
               aria-label={t('share')}
-              className="p-3 sm:p-4 bg-white/5 backdrop-blur-3xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all">
+              className="p-3 sm:p-4 bg-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all">
               <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
             </button>
             <button
               onClick={handleNotificationRequest}
               aria-label="Enable notifications"
-              className={`p-3 sm:p-4 bg-white/5 backdrop-blur-3xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`}>
+              className={`p-3 sm:p-4 bg-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`}>
               <Bell className={`w-4 h-4 sm:w-5 sm:h-5 ${notifStatus === 'granted' ? 'text-[#D4AF37]' : 'text-zinc-400'}`} />
             </button>
             <button
               onClick={() => setShowMenu(!showMenu)}
               aria-label="Menu"
-              className="p-3 sm:p-4 bg-white/5 backdrop-blur-3xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all">
+              className="p-3 sm:p-4 bg-white/5 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all">
               <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
             </button>
           </div>
@@ -1029,6 +1047,16 @@ export default function App() {
                     <span className={`text-sm font-bold ${view === 'portfolio' ? 'text-[#D4AF37]' : 'text-white'}`}>{t('myGold')}</span>
                   </div>
                 </button>
+                {!isStandalone && (
+                  <div className="p-5 bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-2xl space-y-3">
+                    <p className="text-[10px] font-bold text-zinc-300 leading-tight">Add the app to home screen for better experience</p>
+                    <button
+                      onClick={() => { setShowGuide(true); setShowMenu(false); }}
+                      className="w-full py-2.5 bg-[#D4AF37] text-black text-[10px] font-black uppercase rounded-xl active:scale-95 transition-all">
+                      How?
+                    </button>
+                  </div>
+                )}
                 <div className="p-4 bg-white/5 rounded-2xl space-y-3">
                   <div className="flex items-center gap-3 mb-1">
                     <Languages className="w-5 h-5 text-zinc-400" />
@@ -1064,7 +1092,6 @@ export default function App() {
                       <img src="/logo512.png" alt="" className="w-16 h-16 rounded-[1.5rem] shadow-2xl" />
                       <div>
                         <h2 className="text-4xl font-black tracking-tighter text-white">GoldView</h2>
-                        <p className="text-xs font-black text-[#D4AF37] uppercase tracking-[0.4em]">{t('shareTitle')}</p>
                       </div>
                     </div>
 
@@ -1075,7 +1102,10 @@ export default function App() {
                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
                                <p className="text-xs font-bold text-zinc-600">{t('perTola')}</p>
                             </div>
-                            <p className="text-3xl font-black text-white">{formatRS(priceData[priceData.length-1]?.[m])}</p>
+                            <div className="text-right">
+                               <p className="text-3xl font-black text-white">{formatRS(priceData[priceData.length-1]?.[m])}</p>
+                               <p className={`text-[10px] font-black ${allDiffs[m].isUp ? 'text-green-500' : 'text-red-500'}`}>{allDiffs[m].val}</p>
+                            </div>
                          </div>
                        ))}
                     </div>
@@ -1084,7 +1114,7 @@ export default function App() {
                   <div className="relative z-10 flex justify-between items-end">
                      <div>
                        <p className="text-[10px] font-black text-zinc-500 uppercase mb-1">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                       <p className="text-[8px] font-bold text-[#D4AF37] tracking-widest">VIEWGOLD.VERCEL.APP</p>
+                       <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.2em] uppercase">VIEWGOLD.VERCEL.APP</p>
                      </div>
                      <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
                         <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
@@ -1106,31 +1136,50 @@ export default function App() {
           </div>
         )}
 
-        {showIOSGuide && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="bg-[#121212] border border-white/10 rounded-[3rem] p-8 max-w-sm w-full shadow-2xl space-y-6 text-center">
-              <div className="w-20 h-20 bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto border border-white/10">
-                <Bell className="w-10 h-10 text-[#D4AF37]" />
+        {(showIOSGuide || showGuide) && (
+          <div className="fixed inset-0 z-[130] flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => { setShowIOSGuide(false); setShowGuide(false); }} />
+            <div className="bg-[#121212] border border-white/10 rounded-[3rem] p-8 max-w-sm w-full shadow-2xl space-y-6 text-center relative z-10">
+              <div className="w-20 h-20 bg-[#D4AF37]/10 rounded-[2rem] flex items-center justify-center mx-auto border border-[#D4AF37]/20">
+                {showIOSGuide ? <Bell className="w-10 h-10 text-[#D4AF37]" /> : (isIOS ? <Share2 className="w-10 h-10 text-[#D4AF37]" /> : <Download className="w-10 h-10 text-[#D4AF37]" />)}
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-black text-white tracking-tight">Enable Alerts on iOS</h3>
-                <p className="text-zinc-400 text-sm leading-relaxed">To receive price change notifications on your iPhone, you must add GoldView to your Home Screen:</p>
+                <h3 className="text-2xl font-black text-white tracking-tight">{showIOSGuide ? 'Enable Alerts on iOS' : 'Install GoldView'}</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                  {showIOSGuide ? 'To receive price change notifications on your iPhone, you must add GoldView to your Home Screen:' :
+                   (isIOS ? 'Follow these steps to add GoldView to your iPhone:' : 'Follow these steps to add GoldView to your Android device:')}
+                </p>
               </div>
               <div className="space-y-4 text-left bg-white/5 p-6 rounded-3xl border border-white/5">
-                <div className="flex items-center gap-4">
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">1</div>
-                  <p className="text-xs text-zinc-300 font-bold">Tap the <span className="text-blue-400">Share</span> icon in Safari</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">2</div>
-                  <p className="text-xs text-zinc-300 font-bold">Select <span className="text-white">"Add to Home Screen"</span></p>
-                </div>
+                {isIOS ? (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">1</div>
+                      <p className="text-xs text-zinc-300 font-bold">Tap the <span className="text-blue-400">Share</span> icon in Safari</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">2</div>
+                      <p className="text-xs text-zinc-300 font-bold">Select <span className="text-white">"Add to Home Screen"</span></p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">1</div>
+                      <p className="text-xs text-zinc-300 font-bold">Tap the <span className="text-white">three dots</span> (menu) in Chrome</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">2</div>
+                      <p className="text-xs text-zinc-300 font-bold">Select <span className="text-white">"Install app"</span> or <span className="text-white">"Add to Home Screen"</span></p>
+                    </div>
+                  </>
+                )}
                 <div className="flex items-center gap-4">
                   <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">3</div>
                   <p className="text-xs text-zinc-300 font-bold">Open the app from your home screen</p>
                 </div>
               </div>
-              <button onClick={() => setShowIOSGuide(false)} className="w-full py-5 bg-[#D4AF37] text-black font-black rounded-3xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">Got it</button>
+              <button onClick={() => { setShowIOSGuide(false); setShowGuide(false); }} className="w-full py-5 bg-[#D4AF37] text-black font-black rounded-3xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">Got it</button>
             </div>
           </div>
         )}

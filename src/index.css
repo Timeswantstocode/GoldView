@@ -25,6 +25,14 @@
   }
 }
 
+/* Fix for Nepali disconnected letters */
+html[lang="ne"] .tracking-widest,
+html[lang="ne"] .tracking-\[0\.4em\],
+html[lang="ne"] .tracking-\[0\.3em\],
+html[lang="ne"] .tracking-\[0\.2em\] {
+  letter-spacing: normal !important;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
