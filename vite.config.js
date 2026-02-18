@@ -20,16 +20,28 @@ export default defineConfig({
       compress: {
         drop_console: true,
         drop_debugger: true,
-        passes: 2
+        passes: 2,
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn']
+      },
+      mangle: {
+        safari10: true
+      },
+      format: {
+        comments: false
       }
     },
     cssMinify: true,
     target: 'es2020',
     modulePreload: {
       polyfill: false
-    }
+    },
+    cssCodeSplit: false,
+    assetsInlineLimit: 4096
   },
   server: {
     port: 3000
+  },
+  css: {
+    devSourcemap: false
   }
 })

@@ -200,7 +200,7 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
           {isForex ? (
             <div className="flex items-center gap-2">
               <select
-                className="bg-transparent font-black text-white outline-none appearance-none cursor-pointer hover:underline"
+                className="bg-transparent font-black text-white outline-none appearance-none cursor-pointer hover:underline py-2 min-h-[44px]"
                 value={type.toUpperCase()}
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => onCurrencyChange(e.target.value.toLowerCase())}
@@ -216,7 +216,7 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
           <p className="text-[8px] opacity-50">{meta.sub}</p>
         </div>
         {isForex && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /> :
-        <div className={`px-2.5 py-1 rounded-xl border ${diff.isUp ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-300 border-red-500/20'}`}>{diff.val}</div>}
+        <div className={`px-2.5 py-1 rounded-xl border font-bold ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
       </div>
       <div className="flex justify-between items-end text-4xl font-extrabold tracking-tighter">
         <h2>{formatValue(val, type)}</h2>
@@ -799,7 +799,7 @@ export default function App() {
                     <div className="text-right flex items-center gap-6">
                        <div>
                          <p className="text-lg font-black text-white">{formatRS(currentValue)}</p>
-                         <p className={`text-[10px] font-black ${pl >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                         <p className={`text-[10px] font-black ${pl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                            {pl >= 0 ? '+' : ''}{formatRS(pl)}
                          </p>
                        </div>
@@ -1124,7 +1124,7 @@ export default function App() {
                             </div>
                             <div className="text-right">
                                <p className="text-3xl font-black text-white">{formatRS(priceData[priceData.length-1]?.[m])}</p>
-                               <p className={`text-[10px] font-black ${allDiffs[m].isUp ? 'text-green-300' : 'text-red-300'}`}>{allDiffs[m].val}</p>
+                               <p className={`text-[10px] font-black ${allDiffs[m].isUp ? 'text-green-400' : 'text-red-400'}`}>{allDiffs[m].val}</p>
                             </div>
                          </div>
                        ))}
