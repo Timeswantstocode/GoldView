@@ -104,7 +104,31 @@ const TRANSLATIONS = {
     totalValue: "Total Portfolio Value",
     unrealizedPL: "Unrealized P/L",
     downloadImage: "Download Image",
-    generating: "Generating..."
+    generating: "Generating...",
+    addToHomeScreen: "Add the app to home screen for better experience",
+    howTo: "How?",
+    enableAlertsIOS: "Enable Alerts on iOS",
+    installGoldView: "Install GoldView",
+    iosNotifDescription: "To receive price change notifications on your iPhone, you must add GoldView to your Home Screen:",
+    iosInstallDescription: "Follow these steps to add GoldView to your iPhone:",
+    androidInstallDescription: "Follow these steps to add GoldView to your Android device:",
+    iosStep1: "Tap the Share icon",
+    iosStep1Detail: "Tap the",
+    shareIcon: "Share",
+    iconInSafari: "icon in Safari",
+    iosStep2: "Select",
+    addToHomeScreenOption: "Add to Home Screen",
+    androidStep1: "Tap the",
+    threeDotsMenu: "three dots",
+    menuInChrome: "(menu) in Chrome",
+    androidStep2: "Select",
+    installAppOption: "Install app",
+    orOption: "or",
+    step3: "Open the app from your home screen",
+    gotIt: "Got it",
+    notificationGranted: "Price alerts enabled! You'll be notified when rates change.",
+    notificationWelcome: "Local alerts enabled!",
+    currentRates: "Current Rates"
   },
   ne: {
     marketUpdate: "नेपाली दर",
@@ -155,7 +179,31 @@ const TRANSLATIONS = {
     totalValue: "कुल पोर्टफोलियो मूल्य",
     unrealizedPL: "अवास्तविक नाफा/घाटा",
     downloadImage: "तस्वीर डाउनलोड गर्नुहोस्",
-    generating: "बनाउँदै..."
+    generating: "बनाउँदै...",
+    addToHomeScreen: "राम्रो अनुभवका लागि एपलाई होम स्क्रिनमा थप्नुहोस्",
+    howTo: "कसरी?",
+    enableAlertsIOS: "iOS मा सूचना सक्षम गर्नुहोस्",
+    installGoldView: "GoldView स्थापना गर्नुहोस्",
+    iosNotifDescription: "आफ्नो iPhone मा मूल्य परिवर्तन सूचनाहरू प्राप्त गर्न, तपाईंले GoldView लाई आफ्नो होम स्क्रिनमा थप्नु पर्छ:",
+    iosInstallDescription: "आफ्नो iPhone मा GoldView थप्न यी चरणहरू पालना गर्नुहोस्:",
+    androidInstallDescription: "आफ्नो Android उपकरणमा GoldView थप्न यी चरणहरू पालना गर्नुहोस्:",
+    iosStep1: "शेयर आइकनमा ट्याप गर्नुहोस्",
+    iosStep1Detail: "Safari मा",
+    shareIcon: "शेयर",
+    iconInSafari: "आइकनमा ट्याप गर्नुहोस्",
+    iosStep2: "चयन गर्नुहोस्",
+    addToHomeScreenOption: "होम स्क्रिनमा थप्नुहोस्",
+    androidStep1: "Chrome मा",
+    threeDotsMenu: "तीन थोप्ला",
+    menuInChrome: "(मेनु) मा ट्याप गर्नुहोस्",
+    androidStep2: "चयन गर्नुहोस्",
+    installAppOption: "एप स्थापना गर्नुहोस्",
+    orOption: "वा",
+    step3: "आफ्नो होम स्क्रिनबाट एप खोल्नुहोस्",
+    gotIt: "बुझे",
+    notificationGranted: "मूल्य सूचना सक्षम गरियो! दर परिवर्तन हुँदा तपाईंलाई सूचित गरिनेछ।",
+    notificationWelcome: "स्थानीय सूचना सक्षम गरियो!",
+    currentRates: "हालको दरहरू"
   }
 };
 
@@ -407,8 +455,8 @@ export default function App() {
         const VAPID_PUBLIC_KEY = "BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ"; 
         
         if (VAPID_PUBLIC_KEY === "YOUR_VAPID_PUBLIC_KEY") {
-          registration.showNotification("Current Rates", {
-            body: "Local alerts enabled!",
+          registration.showNotification(t('currentRates'), {
+            body: t('notificationWelcome'),
             icon: "/logo512.webp",
             badge: "/logo512.webp",
             tag: 'welcome-notification'
@@ -427,8 +475,8 @@ export default function App() {
           body: JSON.stringify(subscription)
         });
         
-        registration.showNotification("Current Rates", {
-          body: "Price alerts enabled! You'll be notified when rates change.",
+        registration.showNotification(t('currentRates'), {
+          body: t('notificationGranted'),
           icon: "/logo512.webp",
           badge: "/logo512.webp",
           tag: 'welcome-notification'
@@ -1079,11 +1127,11 @@ export default function App() {
                 </button>
                 {!isStandalone && (
                   <div className="p-5 bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-2xl space-y-3">
-                    <p className="text-[12px] font-bold text-zinc-300 leading-tight">Add the app to home screen for better experience</p>
+                    <p className="text-[12px] font-bold text-zinc-300 leading-tight">{t('addToHomeScreen')}</p>
                     <button
                       onClick={() => { setShowGuide(true); setShowMenu(false); }}
                       className="w-full py-2.5 bg-[#D4AF37] text-black text-[12px] font-black uppercase rounded-xl active:scale-95 transition-all">
-                      How?
+                      {t('howTo')}
                     </button>
                   </div>
                 )}
@@ -1171,10 +1219,10 @@ export default function App() {
                 {showIOSGuide ? <Bell className="w-10 h-10 text-[#D4AF37]" /> : (isIOS ? <Share2 className="w-10 h-10 text-[#D4AF37]" /> : <Download className="w-10 h-10 text-[#D4AF37]" />)}
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-black text-white tracking-tight">{showIOSGuide ? 'Enable Alerts on iOS' : 'Install GoldView'}</h3>
+                <h3 className="text-2xl font-black text-white tracking-tight">{showIOSGuide ? t('enableAlertsIOS') : t('installGoldView')}</h3>
                 <p className="text-zinc-400 text-sm leading-relaxed">
-                  {showIOSGuide ? 'To receive price change notifications on your iPhone, you must add GoldView to your Home Screen:' :
-                   (isIOS ? 'Follow these steps to add GoldView to your iPhone:' : 'Follow these steps to add GoldView to your Android device:')}
+                  {showIOSGuide ? t('iosNotifDescription') :
+                   (isIOS ? t('iosInstallDescription') : t('androidInstallDescription'))}
                 </p>
               </div>
               <div className="space-y-4 text-left bg-white/5 p-6 rounded-3xl border border-white/5">
@@ -1182,31 +1230,31 @@ export default function App() {
                   <>
                     <div className="flex items-center gap-4">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">1</div>
-                      <p className="text-xs text-zinc-300 font-bold">Tap the <span className="text-blue-400">Share</span> icon in Safari</p>
+                      <p className="text-xs text-zinc-300 font-bold">{t('iosStep1Detail')} <span className="text-blue-400">{t('shareIcon')}</span> {t('iconInSafari')}</p>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">2</div>
-                      <p className="text-xs text-zinc-300 font-bold">Select <span className="text-white">"Add to Home Screen"</span></p>
+                      <p className="text-xs text-zinc-300 font-bold">{t('iosStep2')} <span className="text-white">"{t('addToHomeScreenOption')}"</span></p>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="flex items-center gap-4">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">1</div>
-                      <p className="text-xs text-zinc-300 font-bold">Tap the <span className="text-white">three dots</span> (menu) in Chrome</p>
+                      <p className="text-xs text-zinc-300 font-bold">{t('androidStep1')} <span className="text-white">{t('threeDotsMenu')}</span> {t('menuInChrome')}</p>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">2</div>
-                      <p className="text-xs text-zinc-300 font-bold">Select <span className="text-white">"Install app"</span> or <span className="text-white">"Add to Home Screen"</span></p>
+                      <p className="text-xs text-zinc-300 font-bold">{t('androidStep2')} <span className="text-white">"{t('installAppOption')}"</span> {t('orOption')} <span className="text-white">"{t('addToHomeScreenOption')}"</span></p>
                     </div>
                   </>
                 )}
                 <div className="flex items-center gap-4">
                   <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">3</div>
-                  <p className="text-xs text-zinc-300 font-bold">Open the app from your home screen</p>
+                  <p className="text-xs text-zinc-300 font-bold">{t('step3')}</p>
                 </div>
               </div>
-              <button onClick={() => { setShowIOSGuide(false); setShowGuide(false); }} className="w-full py-5 bg-[#D4AF37] text-black font-black rounded-3xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">Got it</button>
+              <button onClick={() => { setShowIOSGuide(false); setShowGuide(false); }} className="w-full py-5 bg-[#D4AF37] text-black font-black rounded-3xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">{t('gotIt')}</button>
             </div>
           </div>
         )}
