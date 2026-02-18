@@ -253,7 +253,7 @@ export default function App() {
         const VAPID_PUBLIC_KEY = "BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ"; 
         
         if (VAPID_PUBLIC_KEY === "YOUR_VAPID_PUBLIC_KEY") {
-          registration.showNotification("GoldView", {
+          registration.showNotification("Current Rates", {
             body: "Local alerts enabled!",
             icon: "/logo512.png",
             badge: "/logo512.png",
@@ -273,7 +273,7 @@ export default function App() {
           body: JSON.stringify(subscription)
         });
         
-        registration.showNotification("GoldView", {
+        registration.showNotification("Current Rates", {
           body: "Price alerts enabled! You'll be notified when rates change.",
           icon: "/logo512.png",
           badge: "/logo512.png",
