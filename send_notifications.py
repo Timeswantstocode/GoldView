@@ -43,7 +43,7 @@ def send_web_push(subscription, data):
                 if status_code in [410, 404]:
                     is_dead = True
                     print(f"Marking subscription as dead (HTTP {status_code})")
-            except:
+            except Exception as e:
                 print(f"Response status: {ex.response.status_code if hasattr(ex.response, 'status_code') else 'unknown'}")
         return (False, is_dead)
     except Exception as e:
@@ -164,7 +164,7 @@ def main():
         print(f"Cleaning up {len(dead_endpoints)} dead subscriptions...")
         cleaned_subscriptions = [s for s in subscriptions if s.get('endpoint') not in dead_endpoints]
         try:
-            headers = {"Authorization": f"Bearer {blob_token}"}
+            headers = {"Authorization": f"Bearer {blob_token}", "Content-Type": "application/json"}
             put_url = "https://blob.vercel-storage.com/subscriptions/data.json"
             put_resp = requests.put(put_url, headers=headers, data=json.dumps(cleaned_subscriptions, indent=2), timeout=10)
             if put_resp.status_code in [200, 201]:

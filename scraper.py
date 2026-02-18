@@ -142,7 +142,7 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
                     if status_code in [410, 404]:
                         dead_endpoints.append(sub.get('endpoint'))
                         print(f"Marking subscription as dead (HTTP {status_code})")
-                except:
+                except Exception as e:
                     print(f"Response status: {ex.response.status_code if hasattr(ex.response, 'status_code') else 'unknown'}")
         except Exception as e:
             print(f"Unexpected push error: {type(e).__name__}: {e}")
@@ -154,8 +154,9 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         print(f"Cleaning up {len(dead_endpoints)} dead subscriptions...")
         cleaned_subscriptions = [s for s in subscriptions if s.get('endpoint') not in dead_endpoints]
         try:
+            headers_with_ct = {"Authorization": f"Bearer {blob_token}", "Content-Type": "application/json"}
             put_url = "https://blob.vercel-storage.com/subscriptions/data.json"
-            put_resp = requests.put(put_url, headers=headers, data=json.dumps(cleaned_subscriptions, indent=2), timeout=10)
+            put_resp = requests.put(put_url, headers=headers_with_ct, data=json.dumps(cleaned_subscriptions, indent=2), timeout=10)
             if put_resp.status_code in [200, 201]:
                 print(f"DEBUG: Successfully cleaned up dead subscriptions. Remaining: {len(cleaned_subscriptions)}")
             else:
