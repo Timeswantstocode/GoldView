@@ -14,7 +14,9 @@ print(f"DEBUG: VAPID_PUBLIC_KEY: {VAPID_PUBLIC_KEY[:20]}...")
 print(f"DEBUG: VAPID_EMAIL: {VAPID_EMAIL}")
 
 def send_web_push(subscription, data):
-    """Send web push notification with proper VAPID configuration"""
+    """Send web push notification with proper VAPID configuration
+    Returns: tuple (success: bool, is_dead: bool)
+    """
     try:
         print(f"DEBUG: Sending push to endpoint: {subscription.get('endpoint', 'unknown')[:50]}...")
         
@@ -28,16 +30,25 @@ def send_web_push(subscription, data):
             vapid_claims=vapid_claims
         )
         print(f"DEBUG: Push sent successfully")
-        return True
+        return (True, False)
     except WebPushException as ex:
         print(f"Push failed for one device: WebPushException: {ex}")
         # Extract more details from the exception
-        if hasattr(ex, 'response'):
-            print(f"Response body: {ex.response.text if hasattr(ex.response, 'text') else 'N/A'}, Response {ex.response.json() if hasattr(ex.response, 'json') else 'N/A'}")
-        return False
+        is_dead = False
+        if hasattr(ex, 'response') and ex.response:
+            try:
+                status_code = ex.response.status_code if hasattr(ex.response, 'status_code') else 0
+                print(f"Response body: {ex.response.text if hasattr(ex.response, 'text') else 'N/A'}, Response status: {status_code}")
+                # Mark as dead if subscription is gone (410) or not found (404)
+                if status_code in [410, 404]:
+                    is_dead = True
+                    print(f"Marking subscription as dead (HTTP {status_code})")
+            except:
+                print(f"Response status: {ex.response.status_code if hasattr(ex.response, 'status_code') else 'unknown'}")
+        return (False, is_dead)
     except Exception as e:
         print(f"Unexpected push error: {type(e).__name__}: {e}")
-        return False
+        return (False, False)
 
 def main():
     if not VAPID_PRIVATE_KEY:
@@ -127,6 +138,7 @@ def main():
     print(f"Sending push to {len(subscriptions)} devices...")
     success_count = 0
     failed_count = 0
+    dead_endpoints = []  # Track dead subscriptions to remove
     
     for sub in subscriptions:
         # Skip dummy/test endpoints
@@ -135,14 +147,32 @@ def main():
             print(f"DEBUG: Skipping dummy/invalid endpoint")
             continue
             
-        if send_web_push(sub, notification_data):
+        success, is_dead = send_web_push(sub, notification_data)
+        if success:
             success_count += 1
         else:
             failed_count += 1
+            if is_dead:
+                dead_endpoints.append(endpoint)
 
     print(f"PUSH STATUS: Sent to {success_count} active devices.")
     if failed_count > 0:
         print(f"PUSH STATUS: Failed for {failed_count} devices (may be expired subscriptions).")
+    
+    # Clean up dead subscriptions
+    if dead_endpoints:
+        print(f"Cleaning up {len(dead_endpoints)} dead subscriptions...")
+        cleaned_subscriptions = [s for s in subscriptions if s.get('endpoint') not in dead_endpoints]
+        try:
+            headers = {"Authorization": f"Bearer {blob_token}"}
+            put_url = "https://blob.vercel-storage.com/subscriptions/data.json"
+            put_resp = requests.put(put_url, headers=headers, data=json.dumps(cleaned_subscriptions, None, 2), timeout=10)
+            if put_resp.status_code in [200, 201]:
+                print(f"DEBUG: Successfully cleaned up dead subscriptions. Remaining: {len(cleaned_subscriptions)}")
+            else:
+                print(f"DEBUG: Failed to update subscriptions: {put_resp.status_code}")
+        except Exception as e:
+            print(f"ERROR: Failed to clean up dead subscriptions: {e}")
 
 if __name__ == "__main__":
     main()

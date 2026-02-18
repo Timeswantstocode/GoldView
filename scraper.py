@@ -114,6 +114,8 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
     print(f"Sending push to {len(subscriptions)} devices...")
     
     success_count = 0
+    dead_endpoints = []  # Track failed subscriptions to remove
+    
     for sub in subscriptions:
         # Skip dummy endpoints
         if "dummy-endpoint" in sub.get('endpoint', ''):
@@ -134,13 +136,32 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
             # Log response details if available
             if hasattr(ex, 'response') and ex.response:
                 try:
+                    status_code = ex.response.status_code if hasattr(ex.response, 'status_code') else 0
                     print(f"Response body: {ex.response.text}, Response {ex.response.json()}")
+                    # Mark subscription as dead if it's gone (410) or not found (404)
+                    if status_code in [410, 404]:
+                        dead_endpoints.append(sub.get('endpoint'))
+                        print(f"Marking subscription as dead (HTTP {status_code})")
                 except:
                     print(f"Response status: {ex.response.status_code if hasattr(ex.response, 'status_code') else 'unknown'}")
         except Exception as e:
             print(f"Unexpected push error: {type(e).__name__}: {e}")
 
     print(f"PUSH STATUS: Sent to {success_count} active devices.")
+    
+    # Clean up dead subscriptions
+    if dead_endpoints:
+        print(f"Cleaning up {len(dead_endpoints)} dead subscriptions...")
+        cleaned_subscriptions = [s for s in subscriptions if s.get('endpoint') not in dead_endpoints]
+        try:
+            put_url = "https://blob.vercel-storage.com/subscriptions/data.json"
+            put_resp = requests.put(put_url, headers=headers, data=json.dumps(cleaned_subscriptions, None, 2), timeout=10)
+            if put_resp.status_code in [200, 201]:
+                print(f"DEBUG: Successfully cleaned up dead subscriptions. Remaining: {len(cleaned_subscriptions)}")
+            else:
+                print(f"DEBUG: Failed to update subscriptions: {put_resp.status_code}")
+        except Exception as e:
+            print(f"ERROR: Failed to clean up dead subscriptions: {e}")
 
 def get_candidates(url, metal):
     headers = {'User-Agent': 'Mozilla/5.0'}
