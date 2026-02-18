@@ -51,10 +51,15 @@ export default async function handler(req, res) {
       subscriptions = [];
     }
 
-    // 2. Check if subscription already exists
+    // 2. Check if subscription already exists and enforce limit
     const exists = subscriptions.some(s => s.endpoint === subscription.endpoint);
     
     if (!exists) {
+      // Security: Limit total subscriptions to prevent storage exhaustion
+      if (subscriptions.length >= 10000) {
+        return res.status(400).json({ error: 'Subscription limit reached' });
+      }
+
       subscriptions.push(subscription);
       
       // 3. Save updated list back to Vercel Blob
@@ -76,7 +81,8 @@ export default async function handler(req, res) {
       count: subscriptions.length
     });
   } catch (error) {
+    // Sentinel: Removed details: error.message to prevent internal info leakage
     console.error('Subscription error:', error);
-    return res.status(500).json({ error: 'Internal server error', details: error.message });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

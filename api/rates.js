@@ -137,10 +137,10 @@ export default async function handler(req, res) {
     }
 
   } catch (error) {
+    // Sentinel: Removed details: error.message to prevent internal info leakage
     console.error('Rates API error:', error);
     return res.status(500).json({ 
-      error: 'Failed to fetch exchange rates',
-      details: error.message 
+      error: 'Failed to fetch exchange rates'
     });
   }
 }
