@@ -62,7 +62,7 @@ const STRUCTURED_DATA = JSON.stringify([
 
 const TRANSLATIONS = {
   en: {
-    marketUpdate: "Market Update",
+    marketUpdate: "Nepali Rates",
     dashboard: "Market",
     calculator: "Calculator",
     myGold: "My Gold",
@@ -112,7 +112,7 @@ const TRANSLATIONS = {
     generating: "Generating..."
   },
   ne: {
-    marketUpdate: "बजार अपडेट",
+    marketUpdate: "नेपाली दर",
     dashboard: "बजार",
     calculator: "कैलकुलेटर",
     myGold: "मेरो सुन",
@@ -1022,8 +1022,8 @@ export default function App() {
               <p className="text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500 truncate" style={{ color: themeColor }}>{t('marketUpdate')}</p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <img src="/logo512.png" alt="GoldView Nepal Logo" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg border border-white/10 shrink-0" />
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-white">GoldView Nepal</h1>
+              <img src="/logo512.png" alt="GoldView Logo" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg border border-white/10 shrink-0" />
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-white">GoldView</h1>
             </div>
           </div>
           <div className="flex gap-2 sm:gap-3 ml-2 shrink-0">
