@@ -51,13 +51,15 @@ export default async function handler(req, res) {
       subscriptions = [];
     }
 
-    // 2. Remove duplicate subscriptions and dead ones (marked with 'dead' property)
-    // Keep only unique endpoints and non-dead subscriptions
+    // 2. Remove duplicate subscriptions and truly dead ones (failed 6+ times)
+    // Keep only unique endpoints and subscriptions that haven't exceeded failure threshold
+    const FAILURE_THRESHOLD = 6;  // Remove after 6 consecutive failures
     const uniqueEndpoints = new Set();
     const cleanedSubscriptions = subscriptions.filter(s => {
-      // Remove dead subscriptions
-      if (s.dead === true) {
-        console.log('Removing dead subscription:', s.endpoint?.substring(0, 50));
+      // Remove subscriptions that have failed too many times
+      const failureCount = s.failureCount || 0;
+      if (failureCount >= FAILURE_THRESHOLD) {
+        console.log('Removing dead subscription (failed', failureCount, 'times):', s.endpoint?.substring(0, 50));
         return false;
       }
       // Remove duplicates (keep first occurrence)
