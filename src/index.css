@@ -33,6 +33,11 @@ html[lang="ne"] .tracking-\[0\.2em\] {
   letter-spacing: normal !important;
 }
 
+/* Make Nepali text slightly larger for better readability */
+html[lang="ne"] {
+  font-size: 106%;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
