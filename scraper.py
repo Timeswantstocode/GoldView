@@ -47,7 +47,7 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         prev = curr - diff
         pct = (diff / prev * 100) if prev != 0 else 0
         sign = '+' if diff >= 0 else ''
-        return f"Rs {format_indian(curr)} ({sign}{pct:.2f}%)"
+        return f"रू {format_indian(curr)} ({sign}{pct:.2f}%)"
 
     gold_str = f"Gold(24K): {get_change_str(new_gold, change_g)}"
     tejabi_str = f"Tejabi(22K): {get_change_str(new_tejabi, change_t)}"
