@@ -81,7 +81,7 @@ def main():
         "title": "Current Rates",
         "body": f"{gold_str}\n{tejabi_str}\n{silver_str}",
         "data": {
-            "url": "https://viewgold.vercel.app/",
+            "url": "https://goldview.tech/",
             "tag": "price-update"
         },
         "tag": "price-update",
