@@ -7,8 +7,9 @@ function nonBlockingCssPlugin() {
     name: 'non-blocking-css',
     transformIndexHtml(html) {
       // Replace stylesheet links with preload + onload pattern and add noscript fallback
+      // Flexible pattern handles all possible attribute combinations
       return html.replace(
-        /<link rel="stylesheet" crossorigin href="([^"]+)">/g,
+        /<link rel="stylesheet"[^>]*href="([^"]+)"[^>]*>/g,
         '<link rel="preload" as="style" onload="this.onload=null;this.rel=\'stylesheet\'" href="$1">\n    <noscript><link rel="stylesheet" href="$1"></noscript>'
       )
     }
@@ -32,7 +33,7 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
+        drop_console: false,
         drop_debugger: true,
         passes: 2,
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn']
