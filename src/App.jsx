@@ -91,6 +91,7 @@ const TRANSLATIONS = {
     settings: "Settings",
     language: "Language",
     addAsset: "Add Asset",
+    assetName: "Asset Name (Optional)",
     weight: "Weight",
     purchasePrice: "Purchase Price",
     currentValue: "Current Value",
@@ -141,6 +142,7 @@ const TRANSLATIONS = {
     settings: "सेटिङहरू",
     language: "भाषा",
     addAsset: "नयाँ सम्पत्ति थप्नुहोस्",
+    assetName: "सम्पत्तिको नाम (वैकल्पिक)",
     weight: "तौल",
     purchasePrice: "खरिद मूल्य",
     currentValue: "हालको मूल्य",
@@ -336,7 +338,7 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [portfolio, setPortfolio] = useState(() => JSON.parse(localStorage.getItem('gv_portfolio') || '[]'));
   const [showPortfolioAdd, setShowPortfolioAdd] = useState(false);
-  const [newAsset, setNewAsset] = useState({ type: 'gold', tola: '', aana: '', lal: '', pricePaid: '' });
+  const [newAsset, setNewAsset] = useState({ type: 'gold', name: '', tola: '', aana: '', lal: '', pricePaid: '' });
   const [showGuide, setShowGuide] = useState(false);
 
   const chartRef = useRef(null);
@@ -792,7 +794,7 @@ export default function App() {
                          <Coins className="w-6 h-6" style={{ color: asset.type === 'silver' ? '#94a3b8' : '#D4AF37' }} />
                        </div>
                        <div>
-                         <p className="text-[10px] font-black uppercase text-white">{t(asset.type === 'gold' ? 'gold24K' : asset.type === 'tejabi' ? 'gold22K' : 'silver')}</p>
+                         <p className="text-[10px] font-black uppercase text-white">{asset.name || t(asset.type === 'gold' ? 'gold24K' : asset.type === 'tejabi' ? 'gold22K' : 'silver')}</p>
                          <p className="text-[10px] font-bold text-zinc-400">{asset.weight} {t('tola')}</p>
                        </div>
                     </div>
@@ -837,6 +839,10 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+                <div>
+                  <label className="text-[10px] font-black text-zinc-400 uppercase mb-2 block ml-3">{t('assetName')}</label>
+                  <input type="text" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-2xl font-black text-white outline-none focus:border-[#D4AF37]" value={newAsset.name} onChange={(e) => setNewAsset({...newAsset, name: e.target.value})} placeholder="" />
+                </div>
                 <div className="grid grid-cols-3 gap-4">
                   {['tola', 'aana', 'lal'].map((unit) => (
                     <div key={unit}>
@@ -863,6 +869,7 @@ export default function App() {
                     if (!weight || !newAsset.pricePaid) return;
                     const asset = {
                       type: newAsset.type,
+                      name: newAsset.name || '',
                       weight: weight,
                       pricePaid: parseFloat(newAsset.pricePaid),
                       date: new Date().toISOString()
@@ -871,7 +878,7 @@ export default function App() {
                     setPortfolio(newPortfolio);
                     localStorage.setItem('gv_portfolio', JSON.stringify(newPortfolio));
                     setShowPortfolioAdd(false);
-                    setNewAsset({ type: 'gold', tola: '', aana: '', lal: '', pricePaid: '' });
+                    setNewAsset({ type: 'gold', name: '', tola: '', aana: '', lal: '', pricePaid: '' });
                   }}
                   className="flex-1 py-4 bg-[#D4AF37] text-black font-black rounded-2xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">{t('save')}</button>
               </div>
@@ -1087,10 +1094,10 @@ export default function App() {
                   </div>
                   <div className="flex p-1 bg-black/40 rounded-xl border border-white/5">
                     <button
-                      onClick={() => { setLang('en'); localStorage.setItem('gv_lang', 'en'); setShowMenu(false); }}
+                      onClick={() => { setLang('en'); localStorage.setItem('gv_lang', 'en'); window.location.reload(); }}
                       className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${lang === 'en' ? 'bg-[#D4AF37] text-black' : 'text-zinc-400'}`}>EN</button>
                     <button
-                      onClick={() => { setLang('ne'); localStorage.setItem('gv_lang', 'ne'); setShowMenu(false); }}
+                      onClick={() => { setLang('ne'); localStorage.setItem('gv_lang', 'ne'); window.location.reload(); }}
                       className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${lang === 'ne' ? 'bg-[#D4AF37] text-black' : 'text-zinc-400'}`}>नेपाली</button>
                   </div>
                 </div>
