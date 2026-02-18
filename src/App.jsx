@@ -199,10 +199,10 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
           <p className="text-[8px] opacity-50">{meta.sub}</p>
         </div>
         {isForex && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /> :
-        <div className={`px-2.5 py-1 rounded-xl border ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
+        <div className={`px-2.5 py-1 rounded-xl border font-montserrat ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
       </div>
       <div className="flex justify-between items-end text-4xl font-black tracking-tighter">
-        <h2>{formatValue(val, type)}</h2>
+        <h2 className="font-montserrat">{formatValue(val, type)}</h2>
         {isActive && <TrendingUp className={`w-5 h-5 ${diff.isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
       </div>
     </div>
@@ -216,7 +216,7 @@ const JewelryResult = React.memo(({ themeColor, activeMetal, tradeMode, calc, la
   return (
     <div className="p-8 sm:p-12 rounded-[3.5rem] text-black text-center shadow-2xl transition-all" style={{ background: `linear-gradient(135deg, ${themeColor}, ${activeMetal === 'gold' ? '#b8860b' : activeMetal === 'tejabi' ? '#8B4513' : '#4b5563'})` }}>
        <p className="text-[11px] font-black uppercase tracking-[0.4em] mb-2 opacity-60">{tradeMode === 'buy' ? 'Estimated Total' : 'Buyback Value (Market - 5%)'}</p>
-       <h3 className={`${fontSize} font-black tracking-tighter break-all`}>{result}</h3>
+       <h3 className={`${fontSize} font-montserrat font-black tracking-tighter break-all`}>{result}</h3>
     </div>
   );
 });
@@ -229,7 +229,7 @@ const CurrencyResult = React.memo(({ forexHistory, currCalc, formatRS }) => {
   const amt = Number(currCalc.amount) || 0;
   const result = currCalc.isSwapped ? ((amt / rawRate) * unit).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : formatRS((amt / unit) * rawRate);
   const fontSize = result.length > 15 ? 'text-2xl' : result.length > 12 ? 'text-3xl' : result.length > 10 ? 'text-4xl' : 'text-5xl';
-  return <h3 className={`${fontSize} font-black tracking-tighter relative z-10 break-all`}>{result}</h3>;
+  return <h3 className={`${fontSize} font-montserrat font-black tracking-tighter relative z-10 break-all`}>{result}</h3>;
 });
 
 const getOrCreateTooltip = (chart) => {
@@ -283,6 +283,7 @@ const externalTooltipHandler = (context) => {
       const span = document.createElement('span');
       span.style.fontSize = '14px';
       span.style.fontWeight = '900';
+      span.style.fontFamily = 'Montserrat, sans-serif';
       span.style.letterSpacing = '-0.01em';
       span.style.whiteSpace = 'nowrap';
       span.innerText = body;
@@ -321,6 +322,7 @@ export default function App() {
   const [showPortfolioAdd, setShowPortfolioAdd] = useState(false);
   const [newAsset, setNewAsset] = useState({ type: 'gold', tola: '', aana: '', lal: '', pricePaid: '' });
   const [showGuide, setShowGuide] = useState(false);
+  const [logoBase64, setLogoBase64] = useState('');
 
   const chartRef = useRef(null);
   const shareCardRef = useRef(null);
@@ -355,6 +357,15 @@ export default function App() {
     if ('Notification' in window) {
       setNotifStatus(Notification.permission);
     }
+
+    // Convert logo to base64 for reliable capturing
+    fetch('/logo512.png')
+      .then(r => r.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => setLogoBase64(reader.result);
+        reader.readAsDataURL(blob);
+      });
   }, []);
 
   const isIOS = useMemo(() => {
@@ -593,7 +604,7 @@ export default function App() {
       x: {
         display: true,
         grid: { display: true, color: 'rgba(255, 255, 255, 0.04)', borderDash: [6, 6], drawTicks: false },
-        ticks: { color: 'rgba(255, 255, 255, 0.25)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 8 }
+        ticks: { color: 'rgba(255, 255, 255, 0.25)', font: { size: 9, weight: '700', family: 'Montserrat' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : 8 }
       },
       y: { display: true, position: 'right', grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5], drawBorder: false }, ticks: { display: false } }
     },
@@ -695,7 +706,7 @@ export default function App() {
                 <div className="flex items-center gap-8">
                   <div className="text-right">
                     <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">{t('marketRate')}</p>
-                    <p className="text-3xl font-black text-white">{formatValue(selectedPoint.price, activeMetal)}</p>
+                    <p className="text-3xl font-montserrat font-black text-white">{formatValue(selectedPoint.price, activeMetal)}</p>
                   </div>
                   <button
                     onClick={() => setSelectedPoint(null)}
@@ -727,11 +738,11 @@ export default function App() {
           <div className="bg-gradient-to-br from-[#D4AF37] to-[#8B4513] p-10 rounded-[3.5rem] text-black shadow-2xl relative overflow-hidden">
              <div className="relative z-10">
                <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">{t('totalValue')}</p>
-               <h2 className="text-4xl font-black tracking-tighter mb-6">{formatRS(totalCurrentValue)}</h2>
+               <h2 className="text-4xl font-montserrat font-black tracking-tighter mb-6">{formatRS(totalCurrentValue)}</h2>
                <div className="flex items-center gap-6">
                  <div>
                    <p className="text-[8px] font-black uppercase opacity-60 mb-1">{t('unrealizedPL')}</p>
-                   <p className={`text-xl font-black tracking-tight flex items-center gap-1 ${totalPL >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                   <p className={`text-xl font-montserrat font-black tracking-tight flex items-center gap-1 ${totalPL >= 0 ? 'text-green-900' : 'text-red-900'}`}>
                      {totalPL >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                      {formatRS(totalPL)}
                    </p>
@@ -775,8 +786,8 @@ export default function App() {
                     </div>
                     <div className="text-right flex items-center gap-6">
                        <div>
-                         <p className="text-lg font-black text-white">{formatRS(currentValue)}</p>
-                         <p className={`text-[10px] font-black ${pl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                         <p className="text-lg font-montserrat font-black text-white">{formatRS(currentValue)}</p>
+                         <p className={`text-[10px] font-montserrat font-black ${pl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                            {pl >= 0 ? '+' : ''}{formatRS(pl)}
                          </p>
                        </div>
@@ -820,7 +831,7 @@ export default function App() {
                       <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-widest">{t(unit)}</label>
                       <input
                         type="number"
-                        className="w-full bg-black/60 border-2 border-zinc-800 p-4 rounded-2xl text-center font-black text-white outline-none focus:border-[#D4AF37]"
+                        className="w-full bg-black/60 border-2 border-zinc-800 p-4 rounded-2xl text-center font-montserrat font-black text-white outline-none focus:border-[#D4AF37]"
                         value={newAsset[unit]}
                         onChange={(e) => setNewAsset({...newAsset, [unit]: e.target.value})}
                       />
@@ -829,19 +840,19 @@ export default function App() {
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3">{t('purchasePrice')} (रू)</label>
-                  <input type="number" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-2xl font-black text-white outline-none focus:border-[#D4AF37]" value={newAsset.pricePaid} onChange={(e) => setNewAsset({...newAsset, pricePaid: e.target.value})} />
+                  <input type="number" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-2xl font-montserrat font-black text-white outline-none focus:border-[#D4AF37]" value={newAsset.pricePaid} onChange={(e) => setNewAsset({...newAsset, pricePaid: e.target.value})} />
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowPortfolioAdd(false)} className="flex-1 py-4 bg-white/5 text-white font-black rounded-2xl active:scale-95 transition-all border border-white/5">{t('cancel')}</button>
                 <button
                   onClick={() => {
-                    const weight = parseFloat(newAsset.tola || 0) + parseFloat(newAsset.aana || 0)/16 + parseFloat(newAsset.lal || 0)/192;
-                    if (!weight || !newAsset.pricePaid) return;
+                    const weight = (Number(newAsset.tola) || 0) + (Number(newAsset.aana) || 0)/16 + (Number(newAsset.lal) || 0)/192;
+                    if (weight <= 0 || !newAsset.pricePaid) return;
                     const asset = {
                       type: newAsset.type,
                       weight: weight,
-                      pricePaid: parseFloat(newAsset.pricePaid),
+                      pricePaid: Number(newAsset.pricePaid) || 0,
                       date: new Date().toISOString()
                     };
                     const newPortfolio = [...portfolio, asset];
@@ -885,12 +896,12 @@ export default function App() {
 
               <div className="grid grid-cols-3 gap-4">
                 {['tola', 'aana', 'lal'].map((unit) => (<div key={unit}><label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{t(unit)}</label>
-                <input type="number" style={{ caretColor: themeColor }} className="w-full bg-black/60 border-2 border-zinc-800 px-2 py-5 rounded-3xl text-center font-black text-xl sm:text-2xl text-white outline-none focus:border-white/20" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} /></div>))}
+                <input type="number" style={{ caretColor: themeColor }} className="w-full bg-black/60 border-2 border-zinc-800 px-2 py-5 rounded-3xl text-center font-montserrat font-black text-xl sm:text-2xl text-white outline-none focus:border-white/20" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} /></div>))}
               </div>
 
               {tradeMode === 'buy' && (
                 <>
-                  <input type="number" placeholder={t('makingCharges')} className="w-full bg-black/60 border-2 border-zinc-800 p-5 sm:p-6 rounded-3xl font-black text-base sm:text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
+                  <input type="number" placeholder={t('makingCharges')} className="w-full bg-black/60 border-2 border-zinc-800 p-5 sm:p-6 rounded-3xl font-montserrat font-black text-base sm:text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
                   <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-white/5 rounded-3xl border border-white/5">
                     <span className="text-xs font-black text-zinc-400 uppercase tracking-widest">{t('includeVat')}</span>
                     <button
@@ -948,7 +959,7 @@ export default function App() {
                         </div>
                     </div>
                     <div className="relative">
-                        <input type="number" placeholder="Amount" className="w-full bg-black/60 border-2 border-zinc-800 p-6 sm:p-8 rounded-[2.5rem] font-black text-2xl sm:text-4xl outline-none focus:border-green-500 text-white text-center transition-all" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
+                        <input type="number" placeholder="Amount" className="w-full bg-black/60 border-2 border-zinc-800 p-6 sm:p-8 rounded-[2.5rem] font-montserrat font-black text-2xl sm:text-4xl outline-none focus:border-green-500 text-white text-center transition-all" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
                         <div className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 hidden sm:block"><Globe className="w-8 h-8 text-[#22c55e]" /></div>
                     </div>
                 </div>
@@ -990,7 +1001,7 @@ export default function App() {
             <meta name="description" content="Official GoldView: Live 24K Chhapawal gold, silver and USD rates in Nepal today." />
             <link rel="canonical" href="https://viewgold.vercel.app"/>
             <meta name="robots" content="index, follow" />
-            <script type="application/ld+json">{STRUCTURED_DATA}</script>
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: STRUCTURED_DATA }} />
         </Helmet>
 
         <header className="px-4 sm:px-8 pt-12 sm:pt-16 flex justify-between items-end relative z-10">
@@ -1083,41 +1094,43 @@ export default function App() {
         {showShareModal && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 animate-in fade-in duration-300">
             <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setShowShareModal(false)} />
-            <div className="max-w-sm w-full space-y-8 relative z-10">
-               {/* This is the card that will be captured */}
-               <div ref={shareCardRef} className="aspect-square bg-black border-[12px] border-[#D4AF37]/20 rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/10 to-transparent" />
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-4 mb-10">
-                      <img src="/logo512.png" alt="" className="w-16 h-16 rounded-[1.5rem] shadow-2xl" />
-                      <div>
-                        <h2 className="text-4xl font-black tracking-tighter text-white">GoldView</h2>
-                      </div>
+            <div className="max-w-xs w-full space-y-4 relative z-10">
+               {/* This is the card that will be captured - 9:16 aspect ratio */}
+               <div ref={shareCardRef} className="aspect-[9/16] bg-[#020202] border-[10px] border-[#D4AF37]/20 rounded-[2.5rem] p-8 flex flex-col justify-between relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#D4AF37]/5 to-transparent" />
+                  <div className="relative z-10 flex-1 flex flex-col">
+                    <div className="flex flex-col items-center gap-4 mb-12 mt-4">
+                      {logoBase64 ? (
+                        <img src={logoBase64} alt="" className="w-20 h-20 rounded-[1.8rem] shadow-2xl border border-white/10" />
+                      ) : (
+                        <div className="w-20 h-20 bg-zinc-800 rounded-[1.8rem] animate-pulse" />
+                      )}
+                      <h2 className="text-4xl font-black tracking-tighter text-white">GoldView</h2>
                     </div>
 
-                    <div className="space-y-8">
+                    <div className="space-y-8 flex-1 flex flex-col justify-center">
                        {['gold', 'tejabi', 'silver'].map(m => (
-                         <div key={m} className="flex justify-between items-end border-b border-white/10 pb-4">
-                            <div>
-                               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
-                               <p className="text-xs font-bold text-zinc-600">{t('perTola')}</p>
+                         <div key={m} className="flex justify-between items-end border-b border-white/5 pb-5">
+                            <div className="space-y-1">
+                               <p className="text-[11px] font-black text-[#D4AF37] uppercase tracking-widest">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
+                               <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">{t('perTola')}</p>
                             </div>
                             <div className="text-right">
-                               <p className="text-3xl font-black text-white">{formatRS(priceData[priceData.length-1]?.[m])}</p>
-                               <p className={`text-[10px] font-black ${allDiffs[m].isUp ? 'text-green-500' : 'text-red-500'}`}>{allDiffs[m].val}</p>
+                               <p className="text-3xl font-montserrat font-black text-white">{formatRS(priceData[priceData.length-1]?.[m])}</p>
+                               <p className={`text-[11px] font-montserrat font-black ${allDiffs[m].isUp ? 'text-green-500' : 'text-red-500'}`}>{allDiffs[m].val}</p>
                             </div>
                          </div>
                        ))}
                     </div>
                   </div>
 
-                  <div className="relative z-10 flex justify-between items-end">
-                     <div>
-                       <p className="text-[10px] font-black text-zinc-500 uppercase mb-1">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                       <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.2em] uppercase">VIEWGOLD.VERCEL.APP</p>
+                  <div className="relative z-10 flex flex-col items-center gap-6 mt-8 mb-4">
+                     <div className="text-center space-y-1">
+                       <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                       <p className="text-xs font-montserrat font-black text-white tracking-[0.3em] uppercase opacity-80">VIEWGOLD.VERCEL.APP</p>
                      </div>
-                     <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
-                        <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
+                     <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                        <TrendingUp className="w-6 h-6 text-[#D4AF37]" />
                      </div>
                   </div>
                </div>
