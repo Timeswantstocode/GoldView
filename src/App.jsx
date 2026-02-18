@@ -27,15 +27,44 @@ const CURRENCY_LIST = [
   { code: 'AED', flag: '🇦🇪' }, { code: 'EUR', flag: '🇪🇺' }
 ];
 
-const STRUCTURED_DATA = JSON.stringify({
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "GoldView Nepal",
-  "url": PRIMARY_DOMAIN,
-  "description": "Official live 24K Gold and Silver rates in Nepal.",
-  "applicationCategory": "FinanceApplication",
-  "operatingSystem": "All"
-});
+const STRUCTURED_DATA = JSON.stringify([
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "GoldView Nepal",
+    "url": PRIMARY_DOMAIN,
+    "description": "Live 24K Gold, Silver and Forex rates in Nepal with jewelry calculator.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "All",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "NPR"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FinancialService",
+    "name": "GoldView",
+    "url": PRIMARY_DOMAIN,
+    "image": `${PRIMARY_DOMAIN}/logo512.png`,
+    "description": "Check today's gold and silver rates in Nepal. Accurate prices for 24K and 22K gold.",
+    "priceRange": "$$"
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "url": PRIMARY_DOMAIN,
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": `${PRIMARY_DOMAIN}/?q={search_term_string}`
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+]);
 
 const TRANSLATIONS = {
   en: {
@@ -175,7 +204,7 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
       role="button"
       tabIndex={0}
       aria-label={`Select ${meta.label}`}
-      className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${
+      className={`PriceCard p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${
         isActive ? `${meta.grad} border-white/20 scale-[1.02]` : 'border-white/5 bg-white/5 opacity-40'
       }`}>
       <div className="flex justify-between items-start mb-2 text-[10px] font-black uppercase tracking-widest">
@@ -312,13 +341,14 @@ export default function App() {
   const [currCalc, setCurrCalc] = useState({ amount: '1', source: 'USD', isSwapped: false });
   const [notifStatus, setNotifStatus] = useState('default');
   const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [showAndroidGuide, setShowAndroidGuide] = useState(false);
   const [lang, setLang] = useState(() => localStorage.getItem('gv_lang') || 'en');
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [portfolio, setPortfolio] = useState(() => JSON.parse(localStorage.getItem('gv_portfolio') || '[]'));
   const [showPortfolioAdd, setShowPortfolioAdd] = useState(false);
-  const [newAsset, setNewAsset] = useState({ type: 'gold', weight: '', pricePaid: '' });
+  const [newAsset, setNewAsset] = useState({ type: 'gold', tola: '', aana: '', lal: '', pricePaid: '' });
 
   const chartRef = useRef(null);
   const shareCardRef = useRef(null);
@@ -357,8 +387,17 @@ export default function App() {
            !window.MSStream;
   }, []);
 
+  const isAndroid = useMemo(() => {
+    return /Android/i.test(navigator.userAgent);
+  }, []);
+
   const isStandalone = useMemo(() => {
-    return window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+    return (
+      window.navigator.standalone ||
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: minimal-ui)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches
+    );
   }, []);
 
   const handleNotificationRequest = async () => {
@@ -604,19 +643,24 @@ export default function App() {
     if (!priceData.length) return null;
     const last = priceData[priceData.length - 1];
     const date = new Date(last.date.replace(' ', 'T'));
-    const diff = Math.floor((new Date() - date) / 60000);
-    const text = diff < 1 ? t('justNow') : `${diff} ${t('minutesAgo')}`;
+    const text = date.toLocaleString(lang === 'ne' ? 'ne-NP' : 'en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
     return (
       <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10 shrink-0">
         <Clock className="w-3 h-3 text-zinc-500" />
         <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">{t('lastUpdated')}: {text}</span>
       </div>
     );
-  }, [priceData, t]);
+  }, [priceData, t, lang]);
 
   const dashboardView = useMemo(() => (
     <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
-      <main className="px-6 mt-14 space-y-6 relative z-10 animate-in fade-in duration-500 pb-20">
+      <main className="px-4 sm:px-6 mt-14 space-y-6 relative z-10 animate-in fade-in duration-500 pb-20">
         <div className="flex justify-between items-center px-1">
            <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500">{t('dashboard')}</h2>
            {lastUpdatedBadge}
@@ -650,7 +694,7 @@ export default function App() {
           })}
         </div>
 
-        <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-3xl shadow-xl">
+        <section className="gv-card bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-3xl shadow-xl">
           <div className="flex justify-between items-start mb-8 px-1 w-full">
             <div className="flex flex-col gap-1">
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> {t('priceTrend')}</h3>
@@ -718,8 +762,8 @@ export default function App() {
 
     return (
       <div style={{ display: view === 'portfolio' ? 'block' : 'none' }}>
-        <main className="px-6 mt-14 space-y-6 relative z-10 animate-in fade-in duration-500 pb-20">
-          <div className="bg-gradient-to-br from-[#D4AF37] to-[#8B4513] p-10 rounded-[3.5rem] text-black shadow-2xl relative overflow-hidden">
+        <main className="px-4 sm:px-6 mt-14 space-y-6 relative z-10 animate-in fade-in duration-500 pb-20">
+          <div className="bg-gradient-to-br from-[#D4AF37] to-[#8B4513] p-8 sm:p-10 rounded-[2.5rem] sm:rounded-[3.5rem] text-black shadow-2xl relative overflow-hidden">
              <div className="relative z-10">
                <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">{t('totalValue')}</p>
                <h2 className="text-4xl font-black tracking-tighter mb-6">{formatRS(totalCurrentValue)}</h2>
@@ -749,7 +793,7 @@ export default function App() {
             </div>
 
             {portfolio.length === 0 ? (
-              <div className="p-12 text-center bg-white/5 rounded-[3rem] border border-white/5 border-dashed">
+              <div className="p-10 sm:p-12 text-center bg-white/5 rounded-[2.5rem] sm:rounded-[3rem] border border-white/5 border-dashed">
                 <p className="text-zinc-500 font-bold italic">{t('noAssets')}</p>
               </div>
             ) : (
@@ -758,14 +802,16 @@ export default function App() {
                 const currentValue = asset.weight * currentPrice;
                 const pl = currentValue - asset.pricePaid;
                 return (
-                  <div key={index} className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 flex justify-between items-center">
-                    <div className="flex items-center gap-4">
+                  <div key={index} className="bg-white/5 border border-white/10 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-6 flex justify-between items-center">
+                    <div className="flex items-center gap-3 sm:gap-4">
                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-white/5 border border-white/10`}>
                          <Coins className="w-6 h-6" style={{ color: asset.type === 'silver' ? '#94a3b8' : '#D4AF37' }} />
                        </div>
                        <div>
                          <p className="text-[10px] font-black uppercase text-white">{t(asset.type === 'gold' ? 'gold24K' : asset.type === 'tejabi' ? 'gold22K' : 'silver')}</p>
-                         <p className="text-[10px] font-bold text-zinc-500">{asset.weight} {t('tola')}</p>
+                         <p className="text-[10px] font-bold text-zinc-500">
+                           {asset.details ? `${asset.details.tola || 0}T ${asset.details.aana || 0}A ${asset.details.lal || 0}L` : `${asset.weight.toFixed(3)} ${t('tola')}`}
+                         </p>
                        </div>
                     </div>
                     <div className="text-right flex items-center gap-6">
@@ -797,32 +843,55 @@ export default function App() {
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowPortfolioAdd(false)} />
             <div className="bg-[#121212] border border-white/10 rounded-[3rem] p-8 max-w-sm w-full shadow-2xl space-y-6 relative z-10">
               <h3 className="text-xl font-black text-white tracking-tight">{t('addAsset')}</h3>
-              <div className="space-y-4">
+
+              <div className="space-y-6">
                 <div className="flex p-1 bg-black/40 rounded-2xl border border-white/5">
                   {['gold', 'tejabi', 'silver'].map(type => (
                     <button
                       key={type}
                       onClick={() => setNewAsset({...newAsset, type})}
-                      className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase transition-all ${newAsset.type === type ? 'bg-[#D4AF37] text-black' : 'text-zinc-500'}`}>{t(type === 'gold' ? 'gold24K' : type === 'tejabi' ? 'gold22K' : 'silver')}</button>
+                      className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase transition-all ${newAsset.type === type ? 'bg-[#D4AF37] text-black' : 'text-zinc-500'}`}>
+                      {t(type === 'gold' ? 'gold24K' : type === 'tejabi' ? 'gold22K' : 'silver')}
+                    </button>
                   ))}
                 </div>
-                <div>
-                  <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3">{t('weight')} ({t('tola')})</label>
-                  <input type="number" step="0.001" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-2xl font-black text-white outline-none focus:border-[#D4AF37]" value={newAsset.weight} onChange={(e) => setNewAsset({...newAsset, weight: e.target.value})} />
+
+                <div className="grid grid-cols-3 gap-3">
+                  {['tola', 'aana', 'lal'].map((unit) => (
+                    <div key={unit}>
+                      <label className="text-[9px] font-black text-zinc-500 uppercase mb-2 block ml-2 tracking-widest">{t(unit)}</label>
+                      <input
+                        type="number"
+                        className="w-full bg-black/60 border-2 border-zinc-800 p-4 rounded-xl text-center font-black text-white outline-none focus:border-[#D4AF37]"
+                        value={newAsset[unit]}
+                        onChange={(e) => setNewAsset({...newAsset, [unit]: e.target.value})}
+                      />
+                    </div>
+                  ))}
                 </div>
+
                 <div>
-                  <label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3">{t('purchasePrice')} (रू)</label>
-                  <input type="number" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-2xl font-black text-white outline-none focus:border-[#D4AF37]" value={newAsset.pricePaid} onChange={(e) => setNewAsset({...newAsset, pricePaid: e.target.value})} />
+                  <label className="text-[9px] font-black text-zinc-500 uppercase mb-2 block ml-2 tracking-widest">{t('purchasePrice')} (रू)</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-2xl font-black text-white outline-none focus:border-[#D4AF37]"
+                    value={newAsset.pricePaid}
+                    onChange={(e) => setNewAsset({...newAsset, pricePaid: e.target.value})}
+                  />
                 </div>
               </div>
+
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowPortfolioAdd(false)} className="flex-1 py-4 bg-white/5 text-white font-black rounded-2xl active:scale-95 transition-all border border-white/5">{t('cancel')}</button>
                 <button
                   onClick={() => {
-                    if (!newAsset.weight || !newAsset.pricePaid) return;
+                    const weight = (Number(newAsset.tola)||0) + (Number(newAsset.aana)||0)/16 + (Number(newAsset.lal)||0)/192;
+                    if (weight <= 0 || !newAsset.pricePaid) return;
                     const asset = {
                       type: newAsset.type,
-                      weight: parseFloat(newAsset.weight),
+                      weight: weight,
+                      details: { tola: newAsset.tola, aana: newAsset.aana, lal: newAsset.lal },
                       pricePaid: parseFloat(newAsset.pricePaid),
                       date: new Date().toISOString()
                     };
@@ -830,7 +899,7 @@ export default function App() {
                     setPortfolio(newPortfolio);
                     localStorage.setItem('gv_portfolio', JSON.stringify(newPortfolio));
                     setShowPortfolioAdd(false);
-                    setNewAsset({ type: 'gold', weight: '', pricePaid: '' });
+                    setNewAsset({ type: 'gold', tola: '', aana: '', lal: '', pricePaid: '' });
                   }}
                   className="flex-1 py-4 bg-[#D4AF37] text-black font-black rounded-2xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">{t('save')}</button>
               </div>
@@ -843,8 +912,8 @@ export default function App() {
 
   const calculatorView = useMemo(() => (
     <div style={{ display: view === 'calculator' ? 'block' : 'none' }}>
-      <main className="px-6 mt-14 relative z-10 animate-in zoom-in-95 duration-500 pb-20">
-        <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-3xl shadow-xl">
+      <main className="px-4 sm:px-6 mt-14 relative z-10 animate-in zoom-in-95 duration-500 pb-20">
+        <div className="gv-card bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-3xl shadow-xl">
           <div className="flex p-1 bg-black/40 rounded-3xl mb-10 border border-white/5">
               <button onClick={() => setCalcMode('jewelry')} style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'text-black' : 'text-zinc-500'}`}>{t('jewelry')}</button>
               <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black' : 'text-zinc-500'}`}>{t('currency')}</button>
@@ -968,9 +1037,25 @@ export default function App() {
     <HelmetProvider>
       <div className="min-h-screen bg-[#020202] text-zinc-100 font-sans pb-40 overflow-x-hidden relative">
         <Helmet>
-            <title>Gold Price Nepal Today | 24K Gold Rate Live - GoldView</title>
-            <meta name="description" content="Official GoldView: Live 24K Chhapawal gold, silver and USD rates in Nepal today." />
-            <link rel="canonical" href="https://viewgold.vercel.app"/>
+            <title>Gold Price Nepal Today | Live 24K & 22K Gold Rates - GoldView</title>
+            <meta name="description" content="Check today's live Gold and Silver prices in Nepal. Official 24K Chhapawal and 22K Tejabi gold rates, currency converter, and jewelry calculator." />
+            <meta name="keywords" content="gold price nepal, silver price nepal, today gold rate nepal, 24k gold rate nepal, usd to npr, gold calculator nepal" />
+
+            {/* Open Graph / Facebook */}
+            <meta property="og:type" content="website" />
+            <meta property="og:url" content={PRIMARY_DOMAIN} />
+            <meta property="og:title" content="Gold Price Nepal Today | Live 24K & 22K Gold Rates" />
+            <meta property="og:description" content="Live Gold, Silver and Forex rates in Nepal. Accurate 24K/22K prices and jewelry cost calculator." />
+            <meta property="og:image" content={`${PRIMARY_DOMAIN}/logo512.png`} />
+
+            {/* Twitter */}
+            <meta property="twitter:card" content="summary_large_image" />
+            <meta property="twitter:url" content={PRIMARY_DOMAIN} />
+            <meta property="twitter:title" content="Gold Price Nepal Today | Live 24K & 22K Gold Rates" />
+            <meta property="twitter:description" content="Live Gold, Silver and Forex rates in Nepal. Accurate 24K/22K prices and jewelry cost calculator." />
+            <meta property="twitter:image" content={`${PRIMARY_DOMAIN}/logo512.png`} />
+
+            <link rel="canonical" href={PRIMARY_DOMAIN}/>
             <meta name="robots" content="index, follow" />
             <script type="application/ld+json">{STRUCTURED_DATA}</script>
         </Helmet>
@@ -1043,6 +1128,21 @@ export default function App() {
                       className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${lang === 'ne' ? 'bg-[#D4AF37] text-black' : 'text-zinc-500'}`}>नेपाली</button>
                   </div>
                 </div>
+
+                {!isStandalone && (
+                  <div className="p-4 bg-[#D4AF37]/10 rounded-2xl border border-[#D4AF37]/20">
+                    <p className="text-[10px] font-bold text-zinc-300 leading-tight mb-3">Add the app to home screen for better experience</p>
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        if (isIOS) setShowIOSGuide(true);
+                        else setShowAndroidGuide(true);
+                      }}
+                      className="w-full py-2 bg-[#D4AF37] text-black text-[10px] font-black uppercase rounded-xl active:scale-95 transition-all">
+                      How?
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1064,27 +1164,34 @@ export default function App() {
                       <img src="/logo512.png" alt="" className="w-16 h-16 rounded-[1.5rem] shadow-2xl" />
                       <div>
                         <h2 className="text-4xl font-black tracking-tighter text-white">GoldView</h2>
-                        <p className="text-xs font-black text-[#D4AF37] uppercase tracking-[0.4em]">{t('shareTitle')}</p>
                       </div>
                     </div>
 
                     <div className="space-y-8">
-                       {['gold', 'tejabi', 'silver'].map(m => (
-                         <div key={m} className="flex justify-between items-end border-b border-white/10 pb-4">
-                            <div>
-                               <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
-                               <p className="text-xs font-bold text-zinc-600">{t('perTola')}</p>
-                            </div>
-                            <p className="text-3xl font-black text-white">{formatRS(priceData[priceData.length-1]?.[m])}</p>
-                         </div>
-                       ))}
+                       {['gold', 'tejabi', 'silver'].map(m => {
+                         const diff = allDiffs[m];
+                         return (
+                           <div key={m} className="flex justify-between items-end border-b border-white/10 pb-4">
+                              <div>
+                                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
+                                 <div className="flex items-center gap-2">
+                                   <p className="text-xs font-bold text-zinc-600">{t('perTola')}</p>
+                                   <div className={`px-1.5 py-0.5 rounded text-[8px] font-black ${diff.isUp ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                      {diff.val}
+                                   </div>
+                                 </div>
+                              </div>
+                              <p className="text-3xl font-black text-white">{formatRS(priceData[priceData.length-1]?.[m])}</p>
+                           </div>
+                         );
+                       })}
                     </div>
                   </div>
 
                   <div className="relative z-10 flex justify-between items-end">
                      <div>
                        <p className="text-[10px] font-black text-zinc-500 uppercase mb-1">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                       <p className="text-[8px] font-bold text-[#D4AF37] tracking-widest">VIEWGOLD.VERCEL.APP</p>
+                       <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.2em]">VIEWGOLD.VERCEL.APP</p>
                      </div>
                      <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
                         <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
@@ -1102,6 +1209,35 @@ export default function App() {
                  </button>
                  <button onClick={() => setShowShareModal(false)} className="w-full py-6 bg-white/5 text-white font-black rounded-[2rem] border border-white/10">{t('cancel')}</button>
                </div>
+            </div>
+          </div>
+        )}
+
+        {showAndroidGuide && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="bg-[#121212] border border-white/10 rounded-[3rem] p-8 max-w-sm w-full shadow-2xl space-y-6 text-center">
+              <div className="w-20 h-20 bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto border border-white/10">
+                <Zap className="w-10 h-10 text-[#D4AF37]" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-black text-white tracking-tight">Install on Android</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">For the best experience, install GoldView on your device:</p>
+              </div>
+              <div className="space-y-4 text-left bg-white/5 p-6 rounded-3xl border border-white/5">
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">1</div>
+                  <p className="text-xs text-zinc-300 font-bold">Tap the <span className="text-white">three dots</span> (⋮) in Chrome</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">2</div>
+                  <p className="text-xs text-zinc-300 font-bold">Select <span className="text-white">"Install app"</span> or <span className="text-white">"Add to Home screen"</span></p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-black">3</div>
+                  <p className="text-xs text-zinc-300 font-bold">Follow the on-screen prompts</p>
+                </div>
+              </div>
+              <button onClick={() => setShowAndroidGuide(false)} className="w-full py-5 bg-[#D4AF37] text-black font-black rounded-3xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">Got it</button>
             </div>
           </div>
         )}

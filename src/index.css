@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  font-family: "Plus Jakarta Sans", "Noto Sans Devanagari", sans-serif;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+
 /* Custom animations and utilities */
 @layer utilities {
   .animate-in {
