@@ -55,6 +55,16 @@
         -webkit-tap-highlight-color: transparent;
       }
       
+      /* Critical CSS for faster FCP */
+      body {
+        margin: 0;
+        background-color: #000;
+      }
+      
+      #root {
+        min-height: 100vh;
+      }
+      
       /* GPU acceleration for animations */
       .animate-spin, .animate-pulse, [class*="transition"], [class*="animate"] {
         will-change: transform, opacity;
@@ -79,6 +89,18 @@
       body {
         -webkit-overflow-scrolling: touch;
         overscroll-behavior-y: none;
+      }
+      
+      /* Loading state */
+      .loading-skeleton {
+        background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s ease-in-out infinite;
+      }
+      
+      @keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
       }
     </style>
   </head>
