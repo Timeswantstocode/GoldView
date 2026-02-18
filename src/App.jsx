@@ -724,7 +724,7 @@ export default function App() {
         </div>
 
         <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-xl shadow-xl">
-          <div className="flex justify-between items-start mb-12 px-1 w-full">
+          <div className="flex justify-between items-start mb-8 px-1 w-full">
             <div className="flex flex-col gap-1">
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> {t('priceTrend')}</h3>
               {!['gold', 'tejabi', 'silver'].includes(activeMetal) && (
@@ -741,7 +741,7 @@ export default function App() {
                 </div>
               )}
             </div>
-            <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
+            <div className="flex gap-2 bg-white/5 rounded-full p-1 border border-white/10">
               {[7, 30, 90].map((tf) => (<button key={tf} onClick={() => handleTimeframeChange(tf)} className={`px-4 py-2.5 rounded-full text-[11px] font-black transition-all ${timeframe === tf ? `text-black shadow-lg shadow-white/5` : 'text-zinc-400'}`} style={timeframe === tf ? { backgroundColor: themeColor } : {}}>{tf === 7 ? '7D' : tf === 30 ? '1M' : '3M'}</button>))}
             </div>
           </div>
