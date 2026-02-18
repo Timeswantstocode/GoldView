@@ -41,15 +41,17 @@ const METAL_META = {
   silver: { label: 'Pure Silver', sub: 'per tola', grad: 'from-zinc-400/40 to-zinc-600/15' },
 };
 
-const getMeta = (type) => {
-  if (METAL_META[type]) return METAL_META[type];
-  const code = type.toUpperCase();
-  return {
+const FOREX_META = CURRENCY_LIST.reduce((acc, curr) => {
+  const code = curr.code;
+  acc[code.toLowerCase()] = {
     label: `${code} to NPR`,
     sub: code === 'INR' ? 'Official Pegged Rate' : 'Live Market Rate',
     grad: 'from-[#22c55e]/45 to-[#22c55e]/15'
   };
-};
+  return acc;
+}, {});
+
+const getMeta = (type) => METAL_META[type] || FOREX_META[type] || { label: type.toUpperCase(), sub: '', grad: '' };
 
 const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, formatValue, forexLoading, onCurrencyChange }) => {
   const isForex = !['gold', 'tejabi', 'silver'].includes(type);
@@ -318,36 +320,39 @@ export default function App() {
   }, [activeMetal, forexHistory, priceData]);
   const filteredData = useMemo(() => activeDataList.slice(-timeframe), [activeDataList, timeframe]);
 
-  const structuredData = useMemo(() => {
-    return JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "GoldView Nepal",
-      "url": PRIMARY_DOMAIN,
-      "description": "Official live 24K Gold and Silver rates in Nepal.",
-      "applicationCategory": "FinanceApplication",
-      "operatingSystem": "All"
-    });
-  }, []);
-  
   const allDiffs = useMemo(() => {
+    const latestMetal = priceData[priceData.length - 1] || {};
+    const prevMetal = priceData[priceData.length - 2] || {};
+    const latestForex = forexHistory[forexHistory.length - 1] || {};
+    const prevForex = forexHistory[forexHistory.length - 2] || {};
+
+    const latestRatesMap = (latestForex.rates || []).reduce((acc, r) => {
+      acc[r.code.toLowerCase()] = r.buy / (r.unit || 1);
+      return acc;
+    }, {});
+    const prevRatesMap = (prevForex.rates || []).reduce((acc, r) => {
+      acc[r.code.toLowerCase()] = r.buy / (r.unit || 1);
+      return acc;
+    }, {});
+
     const calculate = (id) => {
       const isForex = !['gold', 'tejabi', 'silver'].includes(id);
-      const source = isForex ? forexHistory : priceData;
+      let currVal = 0, prevVal = 0;
 
-      if (source.length < 2) return { val: 'रू 0', isUp: true };
+      if (isForex) {
+        if (id === 'usd') {
+          currVal = latestForex.usdRate || 0;
+          prevVal = prevForex.usdRate || 0;
+        } else {
+          currVal = latestRatesMap[id] || 0;
+          prevVal = prevRatesMap[id] || 0;
+        }
+      } else {
+        currVal = latestMetal[id] || 0;
+        prevVal = prevMetal[id] || 0;
+      }
 
-      const getVal = (entry) => {
-        if (!isForex) return entry[id];
-        if (id === 'usd') return entry.usdRate;
-        const rate = entry.rates?.find(r => r.code.toLowerCase() === id.toLowerCase());
-        return rate ? (rate.buy / (rate.unit || 1)) : 0;
-      };
-
-      const currVal = getVal(source[source.length - 1]);
-      const prevVal = getVal(source[source.length - 2]);
       const diff = currVal - prevVal;
-
       return {
         val: `रू ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {
           minimumFractionDigits: isForex ? 2 : 0,
@@ -363,7 +368,8 @@ export default function App() {
       silver: calculate('silver'),
     };
     CURRENCY_LIST.forEach(c => {
-      diffs[c.code.toLowerCase()] = calculate(c.code.toLowerCase());
+      const code = c.code.toLowerCase();
+      diffs[code] = calculate(code);
     });
     return diffs;
   }, [priceData, forexHistory]);
@@ -373,6 +379,16 @@ export default function App() {
     if (!['gold', 'tejabi', 'silver'].includes(type)) {
       setDashboardForex(type);
     }
+    setSelectedPoint(null);
+  }, []);
+
+  const handleCurrencyChange = useCallback((newCurr) => {
+    setDashboardForex(newCurr);
+    setActiveMetal(newCurr);
+  }, []);
+
+  const handleTimeframeChange = useCallback((t) => {
+    setTimeframe(t);
     setSelectedPoint(null);
   }, []);
 
@@ -440,6 +456,212 @@ export default function App() {
     }
   }), [filteredData, activeMetal, timeframe]);
 
+  const dashboardView = useMemo(() => (
+    <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
+      <main className="px-6 mt-14 space-y-6 relative z-10 animate-in fade-in duration-500">
+        <div className="space-y-4">
+          {['gold', 'tejabi', 'silver', dashboardForex].map((type) => {
+             let val = 0;
+             if (type === 'usd') {
+               val = forexHistory[forexHistory.length-1]?.usdRate || 0;
+             } else if (!['gold', 'tejabi', 'silver'].includes(type)) {
+               const rate = forexHistory[forexHistory.length-1]?.rates?.find(r => r.code.toLowerCase() === type.toLowerCase());
+               val = rate ? (rate.buy / (rate.unit || 1)) : 0;
+             } else {
+               val = priceData[priceData.length-1]?.[type] || 0;
+             }
+
+             return (
+              <PriceCard
+                key={type}
+                type={type}
+                isActive={activeMetal === type}
+                diff={allDiffs[type]}
+                val={val}
+                meta={getMeta(type)}
+                onClick={handleMetalClick}
+                formatValue={formatValue}
+                forexLoading={forexLoading}
+                onCurrencyChange={handleCurrencyChange}
+              />
+             );
+          })}
+        </div>
+
+        <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-3xl shadow-xl">
+          <div className="flex justify-between items-start mb-8 px-1 w-full">
+            <div className="flex flex-col gap-1">
+              <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> Price Trend</h3>
+              {!['gold', 'tejabi', 'silver'].includes(activeMetal) && (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                  <select
+                    className="bg-transparent text-[11px] font-black text-zinc-400 outline-none uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
+                    value={activeMetal.toUpperCase()}
+                    onChange={(e) => handleCurrencyChange(e.target.value.toLowerCase())}
+                  >
+                    {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.flag} {c.code} / NPR</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+            <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
+              {[7, 30, 90].map((t) => (<button key={t} onClick={() => handleTimeframeChange(t)} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === t ? `text-black shadow-lg shadow-white/5` : 'text-zinc-500'}`} style={timeframe === t ? { backgroundColor: themeColor } : {}}>{t === 7 ? '7D' : t === 30 ? '1M' : '3M'}</button>))}
+            </div>
+          </div>
+          <div className="h-64 relative w-full"><Line ref={chartRef} data={chartData} options={chartOptions} redraw={false} /></div>
+
+          <div className={`mt-8 transition-all duration-500 overflow-hidden ${selectedPoint ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
+            {selectedPoint && (
+              <div className="bg-white/10 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center w-full backdrop-blur-[40px] relative border-white/5" style={{ borderColor: `${themeColor}40` }}>
+                <div className="flex items-center gap-5 flex-1 min-w-[220px]">
+                  <div className="w-14 h-14 rounded-3xl flex items-center justify-center border shrink-0 bg-white/[0.03]" style={{ borderColor: `${themeColor}30` }}>
+                    <Calendar className="w-7 h-7" style={{ color: themeColor }} />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1" style={{ color: themeColor }}>Historical Point</p>
+                    <p className="text-lg font-black text-white leading-tight">
+                        {new Date(selectedPoint.date.replace(' ', 'T')).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-8">
+                  <div className="text-right">
+                    <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Market Rate</p>
+                    <p className="text-3xl font-black text-white">{formatValue(selectedPoint.price, activeMetal)}</p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedPoint(null)}
+                    aria-label="Close details"
+                    className="p-3 bg-white/5 rounded-full hover:bg-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all border border-white/5">
+                    <X className="w-5 h-5 text-zinc-400" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
+  ), [view, activeMetal, dashboardForex, allDiffs, priceData, forexHistory, forexLoading, themeColor, timeframe, chartData, chartOptions, selectedPoint, handleMetalClick, formatValue, handleCurrencyChange, handleTimeframeChange]);
+
+  const calculatorView = useMemo(() => (
+    <div style={{ display: view === 'calculator' ? 'block' : 'none' }}>
+      <main className="px-6 mt-14 relative z-10 animate-in zoom-in-95 duration-500">
+        <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-3xl shadow-xl">
+          <div className="flex p-1 bg-black/40 rounded-3xl mb-10 border border-white/5">
+              <button onClick={() => setCalcMode('jewelry')} style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'text-black' : 'text-zinc-500'}`}>Jewelry</button>
+              <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black' : 'text-zinc-500'}`}>Currency</button>
+          </div>
+
+          {calcMode === 'jewelry' ? (
+            <div className="space-y-6">
+              <div className="flex p-1 bg-black/40 rounded-[2rem] border border-white/5 mb-2">
+                 <button onClick={() => setTradeMode('buy')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 ${tradeMode === 'buy' ? 'text-black' : 'text-zinc-500'}`} style={tradeMode === 'buy' ? { backgroundColor: '#22c55e' } : {}}>Purchase</button>
+                 <button onClick={() => setTradeMode('sell')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 ${tradeMode === 'sell' ? 'text-black' : 'text-zinc-500'}`} style={tradeMode === 'sell' ? { backgroundColor: '#ef4444' } : {}}>Sell Back</button>
+              </div>
+
+              <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto gap-1">
+                  {['gold', 'tejabi', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (metal === 'gold' ? '#D4AF37' : metal === 'tejabi' ? '#CD7F32' : '#94a3b8') : 'transparent' }} className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black' : 'text-zinc-500'}`}>{metal}</button>))}
+              </div>
+              <div className="mb-8 p-6 rounded-[2.2rem] border-2 flex items-center justify-between" style={{ borderColor: `${themeColor}80`, backgroundColor: `${themeColor}10` }}>
+                <div className="flex items-center gap-4"><Coins className="w-8 h-8" style={{ color: themeColor }} /><p className="text-xl font-black uppercase text-white">{activeMetal === 'gold' ? '24K Gold' : activeMetal === 'tejabi' ? '22K Gold' : 'Pure Silver'}</p></div>
+                <div className="text-right text-[10px] font-black text-zinc-500">{formatRS(priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal])}</div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                {['tola', 'aana', 'lal'].map((unit) => (<div key={unit}><label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{unit}</label>
+                <input type="number" style={{ caretColor: themeColor }} className="w-full bg-black/60 border-2 border-zinc-800 px-2 py-5 rounded-3xl text-center font-black text-xl sm:text-2xl text-white outline-none focus:border-white/20" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} /></div>))}
+              </div>
+
+              {tradeMode === 'buy' && (
+                <>
+                  <input type="number" placeholder="Making Charges (रू)" className="w-full bg-black/60 border-2 border-zinc-800 p-5 sm:p-6 rounded-3xl font-black text-base sm:text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
+                  <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-white/5 rounded-3xl border border-white/5">
+                    <span className="text-xs font-black text-zinc-400 uppercase tracking-widest">Include 13% VAT</span>
+                    <button
+                      onClick={() => setCalc({...calc, vat: !calc.vat})}
+                      role="switch"
+                      aria-checked={calc.vat}
+                      aria-label="Include 13% VAT"
+                      className={`w-14 h-8 rounded-full transition-all relative focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${calc.vat ? 'bg-green-500' : 'bg-zinc-700'}`}>
+                      <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${calc.vat ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <JewelryResult
+                themeColor={themeColor}
+                activeMetal={activeMetal}
+                tradeMode={tradeMode}
+                calc={calc}
+                latestPrice={priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal] || 0}
+                formatRS={formatRS}
+              />
+            </div>
+          ) : (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-black/40 rounded-[3rem] p-7 border border-white/10 space-y-10">
+                    <div className="flex items-start justify-between px-1">
+                        <div className="flex-1 flex flex-col items-start gap-4">
+                            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">YOU SEND</p>
+                            <div className="flex flex-col items-center gap-1.5 w-fit">
+                                <span className="text-4xl leading-none">{currCalc.isSwapped ? '🇳🇵' : CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag}</span>
+                                {currCalc.isSwapped ? <span className="text-[11px] font-black text-white mt-1">NPR</span> :
+                                <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
+                                    {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
+                                </select>}
+                            </div>
+                        </div>
+                        <div className="px-4 pt-8">
+                            <button
+                              onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})}
+                              aria-label="Swap currencies"
+                              className="p-4 bg-green-500/20 rounded-2xl active:rotate-180 focus-visible:ring-2 focus-visible:ring-green-500/50 outline-none transition-all border border-green-500/20 shadow-lg shadow-green-500/10">
+                              <ArrowRightLeft className="w-5 h-5 text-green-500" />
+                            </button>
+                        </div>
+                        <div className="flex-1 flex flex-col items-end gap-4 text-right">
+                            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">RECEIVER GETS</p>
+                            <div className="flex flex-col items-center gap-1.5 w-fit ml-auto">
+                                <span className="text-4xl leading-none">{!currCalc.isSwapped ? '🇳🇵' : CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag}</span>
+                                {!currCalc.isSwapped ? <span className="text-[11px] font-black text-white mt-1">NPR</span> :
+                                <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
+                                    {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
+                                </select>}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="relative">
+                        <input type="number" placeholder="Amount" className="w-full bg-black/60 border-2 border-zinc-800 p-6 sm:p-8 rounded-[2.5rem] font-black text-2xl sm:text-4xl outline-none focus:border-green-500 text-white text-center transition-all" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
+                        <div className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 hidden sm:block"><Globe className="w-8 h-8 text-[#22c55e]" /></div>
+                    </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-green-500 to-green-700 p-8 sm:p-12 rounded-[3.5rem] text-black text-center shadow-xl relative overflow-hidden group">
+                   <div className="absolute top-4 right-6 text-7xl opacity-10 font-bold pointer-events-none">{currCalc.isSwapped ? CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag : '🇳🇵'}</div>
+                   <div className="flex flex-col items-center gap-2 mb-2 relative z-10">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-black/10 rounded-full border border-black/5">
+                          <span className="text-[10px] font-black">{currCalc.isSwapped ? '🇳🇵 NPR' : `${CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag} ${currCalc.source}`}</span>
+                          <ArrowDown className="w-3 h-3 opacity-40" />
+                          <span className="text-[10px] font-black bg-white/30 px-2 rounded-md">{currCalc.isSwapped ? `${CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag} ${currCalc.source}` : '🇳🇵 NPR'}</span>
+                      </div>
+                      <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-60">Payout Estimate</p>
+                   </div>
+                   <CurrencyResult
+                    forexHistory={forexHistory}
+                    currCalc={currCalc}
+                    formatRS={formatRS}
+                   />
+                </div>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  ), [view, calcMode, tradeMode, activeMetal, calc, currCalc, priceData, forexHistory, themeColor, formatRS]);
+
   if (loading) return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#D4AF37]">
       <RefreshCcw className="w-10 h-10 animate-spin" />
@@ -484,214 +706,8 @@ export default function App() {
           </div>
         </header>
 
-        <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
-          <main className="px-6 mt-14 space-y-6 relative z-10 animate-in fade-in duration-500">
-            <div className="space-y-4">
-              {['gold', 'tejabi', 'silver', dashboardForex].map((type) => {
-                 let val = 0;
-                 if (type === 'usd') {
-                   val = forexHistory[forexHistory.length-1]?.usdRate || 0;
-                 } else if (!['gold', 'tejabi', 'silver'].includes(type)) {
-                   const rate = forexHistory[forexHistory.length-1]?.rates?.find(r => r.code.toLowerCase() === type.toLowerCase());
-                   val = rate ? (rate.buy / (rate.unit || 1)) : 0;
-                 } else {
-                   val = priceData[priceData.length-1]?.[type] || 0;
-                 }
-
-                 return (
-                  <PriceCard
-                    key={type}
-                    type={type}
-                    isActive={activeMetal === type}
-                    diff={allDiffs[type]}
-                    val={val}
-                    meta={getMeta(type)}
-                    onClick={handleMetalClick}
-                    formatValue={formatValue}
-                    forexLoading={forexLoading}
-                    onCurrencyChange={(newCurr) => {
-                      setDashboardForex(newCurr);
-                      setActiveMetal(newCurr);
-                    }}
-                  />
-                 );
-              })}
-            </div>
-
-            <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-3xl shadow-xl">
-              <div className="flex justify-between items-start mb-8 px-1 w-full">
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> Price Trend</h3>
-                  {!['gold', 'tejabi', 'silver'].includes(activeMetal) && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                      <select
-                        className="bg-transparent text-[11px] font-black text-zinc-400 outline-none uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
-                        value={activeMetal.toUpperCase()}
-                        onChange={(e) => {
-                          const val = e.target.value.toLowerCase();
-                          setActiveMetal(val);
-                          setDashboardForex(val);
-                        }}
-                      >
-                        {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.flag} {c.code} / NPR</option>)}
-                      </select>
-                    </div>
-                  )}
-                </div>
-                <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
-                  {[7, 30, 90].map((t) => (<button key={t} onClick={() => { setTimeframe(t); setSelectedPoint(null); }} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === t ? `text-black shadow-lg shadow-white/5` : 'text-zinc-500'}`} style={timeframe === t ? { backgroundColor: themeColor } : {}}>{t === 7 ? '7D' : t === 30 ? '1M' : '3M'}</button>))}
-                </div>
-              </div>
-              <div className="h-64 relative w-full"><Line ref={chartRef} data={chartData} options={chartOptions} redraw={false} /></div>
-              
-              <div className={`mt-8 transition-all duration-500 overflow-hidden ${selectedPoint ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
-                {selectedPoint && (
-                  <div className="bg-white/10 border-2 rounded-[2.8rem] p-7 flex flex-wrap gap-5 justify-between items-center w-full backdrop-blur-[40px] relative border-white/5" style={{ borderColor: `${themeColor}40` }}>
-                    <div className="flex items-center gap-5 flex-1 min-w-[220px]">
-                      <div className="w-14 h-14 rounded-3xl flex items-center justify-center border shrink-0 bg-white/[0.03]" style={{ borderColor: `${themeColor}30` }}>
-                        <Calendar className="w-7 h-7" style={{ color: themeColor }} />
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-1" style={{ color: themeColor }}>Historical Point</p>
-                        <p className="text-lg font-black text-white leading-tight">
-                            {new Date(selectedPoint.date.replace(' ', 'T')).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-8">
-                      <div className="text-right">
-                        <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Market Rate</p>
-                        <p className="text-3xl font-black text-white">{formatValue(selectedPoint.price, activeMetal)}</p>
-                      </div>
-                      <button
-                        onClick={() => setSelectedPoint(null)}
-                        aria-label="Close details"
-                        className="p-3 bg-white/5 rounded-full hover:bg-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all border border-white/5">
-                        <X className="w-5 h-5 text-zinc-400" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-          </main>
-        </div>
-
-        <div style={{ display: view === 'calculator' ? 'block' : 'none' }}>
-          <main className="px-6 mt-14 relative z-10 animate-in zoom-in-95 duration-500">
-            <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-3xl shadow-xl">
-              <div className="flex p-1 bg-black/40 rounded-3xl mb-10 border border-white/5">
-                  <button onClick={() => setCalcMode('jewelry')} style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'text-black' : 'text-zinc-500'}`}>Jewelry</button>
-                  <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black' : 'text-zinc-500'}`}>Currency</button>
-              </div>
-
-              {calcMode === 'jewelry' ? (
-                <div className="space-y-6">
-                  <div className="flex p-1 bg-black/40 rounded-[2rem] border border-white/5 mb-2">
-                     <button onClick={() => setTradeMode('buy')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 ${tradeMode === 'buy' ? 'text-black' : 'text-zinc-500'}`} style={tradeMode === 'buy' ? { backgroundColor: '#22c55e' } : {}}>Purchase</button>
-                     <button onClick={() => setTradeMode('sell')} className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase transition-all duration-300 ${tradeMode === 'sell' ? 'text-black' : 'text-zinc-500'}`} style={tradeMode === 'sell' ? { backgroundColor: '#ef4444' } : {}}>Sell Back</button>
-                  </div>
-
-                  <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto gap-1">
-                      {['gold', 'tejabi', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (metal === 'gold' ? '#D4AF37' : metal === 'tejabi' ? '#CD7F32' : '#94a3b8') : 'transparent' }} className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black' : 'text-zinc-500'}`}>{metal}</button>))}
-                  </div>
-                  <div className="mb-8 p-6 rounded-[2.2rem] border-2 flex items-center justify-between" style={{ borderColor: `${themeColor}80`, backgroundColor: `${themeColor}10` }}>
-                    <div className="flex items-center gap-4"><Coins className="w-8 h-8" style={{ color: themeColor }} /><p className="text-xl font-black uppercase text-white">{activeMetal === 'gold' ? '24K Gold' : activeMetal === 'tejabi' ? '22K Gold' : 'Pure Silver'}</p></div>
-                    <div className="text-right text-[10px] font-black text-zinc-500">{formatRS(priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal])}</div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    {['tola', 'aana', 'lal'].map((unit) => (<div key={unit}><label className="text-[10px] font-black text-zinc-500 uppercase mb-2 block ml-3 tracking-[0.2em]">{unit}</label>
-                    <input type="number" style={{ caretColor: themeColor }} className="w-full bg-black/60 border-2 border-zinc-800 px-2 py-5 rounded-3xl text-center font-black text-xl sm:text-2xl text-white outline-none focus:border-white/20" value={calc[unit]} onChange={(e) => setCalc({...calc, [unit]: e.target.value})} /></div>))}
-                  </div>
-                  
-                  {tradeMode === 'buy' && (
-                    <>
-                      <input type="number" placeholder="Making Charges (रू)" className="w-full bg-black/60 border-2 border-zinc-800 p-5 sm:p-6 rounded-3xl font-black text-base sm:text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
-                      <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-white/5 rounded-3xl border border-white/5">
-                        <span className="text-xs font-black text-zinc-400 uppercase tracking-widest">Include 13% VAT</span>
-                        <button
-                          onClick={() => setCalc({...calc, vat: !calc.vat})}
-                          role="switch"
-                          aria-checked={calc.vat}
-                          aria-label="Include 13% VAT"
-                          className={`w-14 h-8 rounded-full transition-all relative focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${calc.vat ? 'bg-green-500' : 'bg-zinc-700'}`}>
-                          <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${calc.vat ? 'left-7' : 'left-1'}`} />
-                        </button>
-                      </div>
-                    </>
-                  )}
-
-                  <JewelryResult
-                    themeColor={themeColor}
-                    activeMetal={activeMetal}
-                    tradeMode={tradeMode}
-                    calc={calc}
-                    latestPrice={priceData[priceData.length-1]?.[activeMetal === 'usd' ? 'gold' : activeMetal] || 0}
-                    formatRS={formatRS}
-                  />
-                </div>
-              ) : (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="bg-black/40 rounded-[3rem] p-7 border border-white/10 space-y-10">
-                        <div className="flex items-start justify-between px-1">
-                            <div className="flex-1 flex flex-col items-start gap-4">
-                                <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">YOU SEND</p>
-                                <div className="flex flex-col items-center gap-1.5 w-fit">
-                                    <span className="text-4xl leading-none">{currCalc.isSwapped ? '🇳🇵' : CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag}</span>
-                                    {currCalc.isSwapped ? <span className="text-[11px] font-black text-white mt-1">NPR</span> : 
-                                    <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
-                                        {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
-                                    </select>}
-                                </div>
-                            </div>
-                            <div className="px-4 pt-8">
-                                <button
-                                  onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})}
-                                  aria-label="Swap currencies"
-                                  className="p-4 bg-green-500/20 rounded-2xl active:rotate-180 focus-visible:ring-2 focus-visible:ring-green-500/50 outline-none transition-all border border-green-500/20 shadow-lg shadow-green-500/10">
-                                  <ArrowRightLeft className="w-5 h-5 text-green-500" />
-                                </button>
-                            </div>
-                            <div className="flex-1 flex flex-col items-end gap-4 text-right">
-                                <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">RECEIVER GETS</p>
-                                <div className="flex flex-col items-center gap-1.5 w-fit ml-auto">
-                                    <span className="text-4xl leading-none">{!currCalc.isSwapped ? '🇳🇵' : CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag}</span>
-                                    {!currCalc.isSwapped ? <span className="text-[11px] font-black text-white mt-1">NPR</span> : 
-                                    <select className="bg-transparent font-black text-[11px] text-white outline-none mt-1 text-center" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})}>
-                                        {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
-                                    </select>}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="relative">
-                            <input type="number" placeholder="Amount" className="w-full bg-black/60 border-2 border-zinc-800 p-6 sm:p-8 rounded-[2.5rem] font-black text-2xl sm:text-4xl outline-none focus:border-green-500 text-white text-center transition-all" value={currCalc.amount} onChange={(e) => setCurrCalc({...currCalc, amount: e.target.value})} />
-                            <div className="absolute left-6 top-1/2 -translate-y-1/2 opacity-20 hidden sm:block"><Globe className="w-8 h-8 text-[#22c55e]" /></div>
-                        </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-green-500 to-green-700 p-8 sm:p-12 rounded-[3.5rem] text-black text-center shadow-xl relative overflow-hidden group">
-                       <div className="absolute top-4 right-6 text-7xl opacity-10 font-bold pointer-events-none">{currCalc.isSwapped ? CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag : '🇳🇵'}</div>
-                       <div className="flex flex-col items-center gap-2 mb-2 relative z-10">
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/10 rounded-full border border-black/5">
-                              <span className="text-[10px] font-black">{currCalc.isSwapped ? '🇳🇵 NPR' : `${CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag} ${currCalc.source}`}</span>
-                              <ArrowDown className="w-3 h-3 opacity-40" />
-                              <span className="text-[10px] font-black bg-white/30 px-2 rounded-md">{currCalc.isSwapped ? `${CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag} ${currCalc.source}` : '🇳🇵 NPR'}</span>
-                          </div>
-                          <p className="text-[11px] font-black uppercase tracking-[0.4em] opacity-60">Payout Estimate</p>
-                       </div>
-                       <CurrencyResult
-                        forexHistory={forexHistory}
-                        currCalc={currCalc}
-                        formatRS={formatRS}
-                       />
-                    </div>
-                </div>
-              )}
-            </div>
-          </main>
-        </div>
+        {dashboardView}
+        {calculatorView}
 
         {showIOSGuide && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
