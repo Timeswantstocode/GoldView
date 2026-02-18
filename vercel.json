@@ -13,10 +13,10 @@
       "has": [
         {
           "type": "host",
-          "value": "www.goldview.tech"
+          "value": "goldview.tech"
         }
       ],
-      "destination": "https://goldview.tech/$1",
+      "destination": "https://www.goldview.tech/$1",
       "permanent": true
     },
     {
@@ -27,7 +27,7 @@
           "value": "viewgold.vercel.app"
         }
       ],
-      "destination": "https://goldview.tech/$1",
+      "destination": "https://www.goldview.tech/$1",
       "permanent": true
     },
     {
@@ -38,7 +38,7 @@
           "value": "www.viewgold.vercel.app"
         }
       ],
-      "destination": "https://goldview.tech/$1",
+      "destination": "https://www.goldview.tech/$1",
       "permanent": true
     }
   ],

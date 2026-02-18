@@ -11,8 +11,8 @@ jobs:
       - name: Ping Bing IndexNow
         run: |
           # We use -v to see the response, but remove -I so it sends a GET request
-          curl "https://www.bing.com/indexnow?url=https://goldview.tech/&key=5eb354c570e44005a618cbf7b0d2dad3"
+          curl "https://www.bing.com/indexnow?url=https://www.goldview.tech/&key=5eb354c570e44005a618cbf7b0d2dad3"
       
       - name: Ping Yandex IndexNow
         run: |
-          curl "https://yandex.com/indexnow?url=https://goldview.tech/&key=5eb354c570e44005a618cbf7b0d2dad3"
+          curl "https://yandex.com/indexnow?url=https://www.goldview.tech/&key=5eb354c570e44005a618cbf7b0d2dad3"
