@@ -9,7 +9,6 @@ import {
   X, Calendar, Zap, Activity, Coins, ArrowRightLeft, Globe, ArrowDown, Bell,
   Menu, Share2, Languages, Plus, Trash2, TrendingDown, Clock, Download
 } from 'lucide-react';
-import { toPng } from 'html-to-image';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
@@ -354,7 +353,7 @@ export default function App() {
   }, [lang]);
 
   useEffect(() => {
-    fetch(`${DATA_URL}?t=${Date.now()}`).then(res => res.json()).then(json => {
+    fetch(DATA_URL).then(res => res.json()).then(json => {
         setPriceData(json);
         localStorage.setItem('gv_v18_metal', JSON.stringify(json));
         setLoading(false);
@@ -540,6 +539,7 @@ export default function App() {
     if (!shareCardRef.current) return;
     setIsGenerating(true);
     try {
+      const { toPng } = await import('html-to-image');
       const dataUrl = await toPng(shareCardRef.current, { cacheBust: true, pixelRatio: 2 });
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], 'goldview-rates.png', { type: 'image/png' });
