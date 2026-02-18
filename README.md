@@ -1,7 +1,7 @@
 # 📈 GoldView Nepal
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge&logo=vercel)](https://viewgold.vercel.app/)
-[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-black?style=for-the-badge&logo=vercel)](https://viewgold.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge&logo=vercel)](https://www.goldview.tech/)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-black?style=for-the-badge&logo=vercel)](https://www.goldview.tech/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 **GoldView** is a high-performance, minimalist web application providing real-time gold and silver price tracking in Nepal. Designed for investors, jewelers, and enthusiasts, it offers accurate market data, interactive trends, and powerful calculation tools in a sleek, mobile-first interface.
@@ -97,7 +97,7 @@ The project uses GitHub Actions to scrape the latest prices from official source
 ## 📱 PWA & Mobile Setup
 
 For the best experience on **iOS**:
-1. Open [viewgold.vercel.app](https://viewgold.vercel.app/) in Safari.
+1. Open [www.goldview.tech](https://www.goldview.tech/) in Safari.
 2. Tap the **Share** button.
 3. Select **"Add to Home Screen"**.
 4. Open GoldView from your home screen to enable Push Notifications.
