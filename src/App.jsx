@@ -676,7 +676,7 @@ export default function App() {
         </div>
 
         <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-xl shadow-xl">
-          <div className="flex justify-between items-start mb-8 px-1 w-full">
+          <div className="flex justify-between items-start mb-12 px-1 w-full">
             <div className="flex flex-col gap-1">
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> {t('priceTrend')}</h3>
               {!['gold', 'tejabi', 'silver'].includes(activeMetal) && (
