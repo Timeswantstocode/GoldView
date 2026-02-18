@@ -142,8 +142,9 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
                     if status_code in [410, 404]:
                         dead_endpoints.append(sub.get('endpoint'))
                         print(f"Marking subscription as dead (HTTP {status_code})")
-                except Exception as e:
-                    print(f"Response status: {ex.response.status_code if hasattr(ex.response, 'status_code') else 'unknown'}")
+                except Exception:
+                    # If we can't parse the response, just log that we couldn't get details
+                    print(f"Could not parse response details")
         except Exception as e:
             print(f"Unexpected push error: {type(e).__name__}: {e}")
 

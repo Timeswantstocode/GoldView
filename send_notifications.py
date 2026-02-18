@@ -43,8 +43,9 @@ def send_web_push(subscription, data):
                 if status_code in [410, 404]:
                     is_dead = True
                     print(f"Marking subscription as dead (HTTP {status_code})")
-            except Exception as e:
-                print(f"Response status: {ex.response.status_code if hasattr(ex.response, 'status_code') else 'unknown'}")
+            except Exception:
+                # If we can't parse the response, just log that we couldn't get details
+                print(f"Could not parse response details")
         return (False, is_dead)
     except Exception as e:
         print(f"Unexpected push error: {type(e).__name__}: {e}")
