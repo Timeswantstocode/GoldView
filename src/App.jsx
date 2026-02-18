@@ -39,32 +39,55 @@ const METAL_META = {
   gold: { label: '24K Chhapawal Gold', sub: 'per tola', grad: 'from-[#D4AF37]/50 to-[#D4AF37]/15' },
   tejabi: { label: '22K Tejabi Gold', sub: 'per tola', grad: 'from-[#CD7F32]/50 to-[#CD7F32]/15' },
   silver: { label: 'Pure Silver', sub: 'per tola', grad: 'from-zinc-400/40 to-zinc-600/15' },
-  usd: { label: 'USD to NPR', sub: 'Live Market Rate', grad: 'from-[#22c55e]/45 to-[#22c55e]/15' },
-  inr: { label: 'INR to NPR', sub: 'Official Pegged Rate', grad: 'from-[#ff9933]/45 to-[#138808]/15' }
 };
 
-const getMeta = (type) => METAL_META[type] || {
-  label: `${type.toUpperCase()} to NPR`,
-  sub: 'Market Exchange Rate',
-  grad: 'from-green-500/40 to-green-900/15'
+const getMeta = (type) => {
+  if (METAL_META[type]) return METAL_META[type];
+  const code = type.toUpperCase();
+  return {
+    label: `${code} to NPR`,
+    sub: code === 'INR' ? 'Official Pegged Rate' : 'Live Market Rate',
+    grad: 'from-[#22c55e]/45 to-[#22c55e]/15'
+  };
 };
 
-const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, formatValue, forexLoading }) => (
-  <div onClick={() => onClick(type)}
-    className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden ${
-      isActive ? `${meta.grad} border-white/20 scale-[1.02]` : 'border-white/5 bg-white/5 opacity-40'
-    }`}>
-    <div className="flex justify-between items-start mb-2 text-[10px] font-black uppercase tracking-widest">
-      <div>{meta.label}<p className="text-[8px] opacity-50 mt-0.5">{meta.sub}</p></div>
-      {(!['gold', 'tejabi', 'silver'].includes(type)) && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /> :
-      <div className={`px-2.5 py-1 rounded-xl border ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
+const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, formatValue, forexLoading, onCurrencyChange }) => {
+  const isForex = !['gold', 'tejabi', 'silver'].includes(type);
+
+  return (
+    <div onClick={() => onClick(type)}
+      className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden ${
+        isActive ? `${meta.grad} border-white/20 scale-[1.02]` : 'border-white/5 bg-white/5 opacity-40'
+      }`}>
+      <div className="flex justify-between items-start mb-2 text-[10px] font-black uppercase tracking-widest">
+        <div className="flex flex-col gap-0.5">
+          {isForex ? (
+            <div className="flex items-center gap-2">
+              <select
+                className="bg-transparent font-black text-white outline-none appearance-none cursor-pointer hover:underline"
+                value={type.toUpperCase()}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => onCurrencyChange(e.target.value.toLowerCase())}
+              >
+                {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code} to NPR</option>)}
+              </select>
+              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+            </div>
+          ) : (
+            <span>{meta.label}</span>
+          )}
+          <p className="text-[8px] opacity-50">{meta.sub}</p>
+        </div>
+        {isForex && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /> :
+        <div className={`px-2.5 py-1 rounded-xl border ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
+      </div>
+      <div className="flex justify-between items-end text-4xl font-black tracking-tighter">
+        <h2>{formatValue(val, type)}</h2>
+        {isActive && <TrendingUp className={`w-5 h-5 ${diff.isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
+      </div>
     </div>
-    <div className="flex justify-between items-end text-4xl font-black tracking-tighter">
-      <h2>{formatValue(val, type)}</h2>
-      {isActive && <TrendingUp className={`w-5 h-5 ${diff.isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
-    </div>
-  </div>
-));
+  );
+});
 
 const JewelryResult = React.memo(({ themeColor, activeMetal, tradeMode, calc, latestPrice, formatRS }) => {
   const weight = (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192;
@@ -163,6 +186,7 @@ export default function App() {
   const [calcMode, setCalcMode] = useState('jewelry'); 
   const [tradeMode, setTradeMode] = useState('buy'); 
   const [activeMetal, setActiveMetal] = useState('gold'); 
+  const [dashboardForex, setDashboardForex] = useState('usd');
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [timeframe, setTimeframe] = useState(7);
   const [calc, setCalc] = useState({ tola: '', aana: '', lal: '', making: '', vat: true });
@@ -276,7 +300,10 @@ export default function App() {
     return '#22c55e'; 
   }, [activeMetal, view, calcMode]);
 
-  const activeDataList = useMemo(() => activeMetal === 'usd' ? forexHistory : priceData, [activeMetal, forexHistory, priceData]);
+  const activeDataList = useMemo(() => {
+    if (['gold', 'tejabi', 'silver'].includes(activeMetal)) return priceData;
+    return forexHistory;
+  }, [activeMetal, forexHistory, priceData]);
   const filteredData = useMemo(() => activeDataList.slice(-timeframe), [activeDataList, timeframe]);
 
   const structuredData = useMemo(() => {
@@ -331,6 +358,9 @@ export default function App() {
 
   const handleMetalClick = useCallback((type) => {
     setActiveMetal(type);
+    if (!['gold', 'tejabi', 'silver'].includes(type)) {
+      setDashboardForex(type);
+    }
     setSelectedPoint(null);
   }, []);
 
@@ -439,11 +469,12 @@ export default function App() {
         <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
           <main className="px-6 mt-14 space-y-6 relative z-10 animate-in fade-in duration-500">
             <div className="space-y-4">
-              {['gold', 'tejabi', 'silver', 'usd', 'inr'].map((type) => {
+              {['gold', 'tejabi', 'silver', dashboardForex].map((type) => {
                  let val = 0;
-                 if (type === 'usd') val = forexHistory[forexHistory.length-1]?.usdRate || 0;
-                 else if (type === 'inr') {
-                   const rate = forexHistory[forexHistory.length-1]?.rates?.find(r => r.code === 'INR');
+                 if (type === 'usd') {
+                   val = forexHistory[forexHistory.length-1]?.usdRate || 0;
+                 } else if (!['gold', 'tejabi', 'silver'].includes(type)) {
+                   const rate = forexHistory[forexHistory.length-1]?.rates?.find(r => r.code.toLowerCase() === type.toLowerCase());
                    val = rate ? (rate.buy / (rate.unit || 1)) : 0;
                  } else {
                    val = priceData[priceData.length-1]?.[type] || 0;
@@ -460,6 +491,10 @@ export default function App() {
                     onClick={handleMetalClick}
                     formatValue={formatValue}
                     forexLoading={forexLoading}
+                    onCurrencyChange={(newCurr) => {
+                      setDashboardForex(newCurr);
+                      setActiveMetal(newCurr);
+                    }}
                   />
                  );
               })}
@@ -475,7 +510,11 @@ export default function App() {
                       <select
                         className="bg-transparent text-[11px] font-black text-zinc-400 outline-none uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
                         value={activeMetal.toUpperCase()}
-                        onChange={(e) => setActiveMetal(e.target.value.toLowerCase())}
+                        onChange={(e) => {
+                          const val = e.target.value.toLowerCase();
+                          setActiveMetal(val);
+                          setDashboardForex(val);
+                        }}
                       >
                         {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.flag} {c.code} / NPR</option>)}
                       </select>
