@@ -54,9 +54,21 @@ const getMeta = (type) => {
 const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, formatValue, forexLoading, onCurrencyChange }) => {
   const isForex = !['gold', 'tejabi', 'silver'].includes(type);
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick(type);
+    }
+  };
+
   return (
-    <div onClick={() => onClick(type)}
-      className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden ${
+    <div
+      onClick={() => onClick(type)}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`Select ${meta.label}`}
+      className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${
         isActive ? `${meta.grad} border-white/20 scale-[1.02]` : 'border-white/5 bg-white/5 opacity-40'
       }`}>
       <div className="flex justify-between items-start mb-2 text-[10px] font-black uppercase tracking-widest">
@@ -457,10 +469,16 @@ export default function App() {
             </div>
           </div>
           <div className="flex gap-2 sm:gap-3 ml-2 shrink-0">
-            <button onClick={handleNotificationRequest} className={`p-3 sm:p-4 bg-white/5 backdrop-blur-3xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`}>
+            <button
+              onClick={handleNotificationRequest}
+              aria-label="Enable notifications"
+              className={`p-3 sm:p-4 bg-white/5 backdrop-blur-3xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all ${notifStatus === 'granted' ? 'border-[#D4AF37]/30' : ''}`}>
               <Bell className={`w-4 h-4 sm:w-5 sm:h-5 ${notifStatus === 'granted' ? 'text-[#D4AF37]' : 'text-zinc-400'}`} />
             </button>
-            <button onClick={() => window.location.reload()} className="p-3 sm:p-4 bg-white/5 backdrop-blur-3xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 transition-all">
+            <button
+              onClick={() => window.location.reload()}
+              aria-label="Refresh rates"
+              className="p-3 sm:p-4 bg-white/5 backdrop-blur-3xl rounded-2xl sm:rounded-3xl border border-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all">
               <RefreshCcw className={`w-4 h-4 sm:w-5 sm:h-5 text-zinc-400`} />
             </button>
           </div>
@@ -546,7 +564,12 @@ export default function App() {
                         <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Market Rate</p>
                         <p className="text-3xl font-black text-white">{formatValue(selectedPoint.price, activeMetal)}</p>
                       </div>
-                      <button onClick={() => setSelectedPoint(null)} className="p-3 bg-white/5 rounded-full hover:bg-white/10 active:scale-90 transition-all border border-white/5"><X className="w-5 h-5 text-zinc-400" /></button>
+                      <button
+                        onClick={() => setSelectedPoint(null)}
+                        aria-label="Close details"
+                        className="p-3 bg-white/5 rounded-full hover:bg-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all border border-white/5">
+                        <X className="w-5 h-5 text-zinc-400" />
+                      </button>
                     </div>
                   </div>
                 )}
@@ -588,7 +611,12 @@ export default function App() {
                       <input type="number" placeholder="Making Charges (रू)" className="w-full bg-black/60 border-2 border-zinc-800 p-5 sm:p-6 rounded-3xl font-black text-base sm:text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
                       <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-white/5 rounded-3xl border border-white/5">
                         <span className="text-xs font-black text-zinc-400 uppercase tracking-widest">Include 13% VAT</span>
-                        <button onClick={() => setCalc({...calc, vat: !calc.vat})} className={`w-14 h-8 rounded-full transition-all relative ${calc.vat ? 'bg-green-500' : 'bg-zinc-700'}`}>
+                        <button
+                          onClick={() => setCalc({...calc, vat: !calc.vat})}
+                          role="switch"
+                          aria-checked={calc.vat}
+                          aria-label="Include 13% VAT"
+                          className={`w-14 h-8 rounded-full transition-all relative focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${calc.vat ? 'bg-green-500' : 'bg-zinc-700'}`}>
                           <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${calc.vat ? 'left-7' : 'left-1'}`} />
                         </button>
                       </div>
@@ -619,7 +647,12 @@ export default function App() {
                                 </div>
                             </div>
                             <div className="px-4 pt-8">
-                                <button onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})} className="p-4 bg-green-500/20 rounded-2xl active:rotate-180 transition-all border border-green-500/20 shadow-lg shadow-green-500/10"><ArrowRightLeft className="w-5 h-5 text-green-500" /></button>
+                                <button
+                                  onClick={() => setCurrCalc({...currCalc, isSwapped: !currCalc.isSwapped})}
+                                  aria-label="Swap currencies"
+                                  className="p-4 bg-green-500/20 rounded-2xl active:rotate-180 focus-visible:ring-2 focus-visible:ring-green-500/50 outline-none transition-all border border-green-500/20 shadow-lg shadow-green-500/10">
+                                  <ArrowRightLeft className="w-5 h-5 text-green-500" />
+                                </button>
                             </div>
                             <div className="flex-1 flex flex-col items-end gap-4 text-right">
                                 <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em]">RECEIVER GETS</p>
