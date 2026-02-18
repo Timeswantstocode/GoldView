@@ -113,11 +113,19 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
 
     print(f"Sending push to {len(subscriptions)} devices...")
     
+    FAILURE_THRESHOLD = 6  # Remove subscription after 6 consecutive failures
     success_count = 0
+    updated_subscriptions = []  # Track subscriptions with updated failure counts
+    has_changes = False  # Track if any failure counts changed
+    
     for sub in subscriptions:
-        # Skip dummy endpoints
+        # Skip dummy endpoints but ensure failureCount is initialized
         if "dummy-endpoint" in sub.get('endpoint', ''):
+            if 'failureCount' not in sub:
+                sub['failureCount'] = 0
+            updated_subscriptions.append(sub)
             continue
+        
         try:
             # Ensure proper VAPID claims format
             vapid_claims = {"sub": VAPID_EMAIL}
@@ -129,18 +137,63 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
                 vapid_claims=vapid_claims
             )
             success_count += 1
+            # Reset failure count on success
+            if sub.get('failureCount', 0) != 0:
+                has_changes = True
+                sub['failureCount'] = 0
+            updated_subscriptions.append(sub)
         except WebPushException as ex:
             print(f"Push failed for one device: WebPushException: {ex}")
+            # Increment failure count for any push failure
+            failure_count = sub.get('failureCount', 0) + 1
+            sub['failureCount'] = failure_count
+            has_changes = True
+            
             # Log response details if available
             if hasattr(ex, 'response') and ex.response:
                 try:
+                    status_code = ex.response.status_code if hasattr(ex.response, 'status_code') else 0
                     print(f"Response body: {ex.response.text}, Response {ex.response.json()}")
-                except:
-                    print(f"Response status: {ex.response.status_code if hasattr(ex.response, 'status_code') else 'unknown'}")
+                    print(f"Subscription failed (HTTP {status_code}, count: {failure_count}/{FAILURE_THRESHOLD})")
+                except Exception:
+                    print(f"Could not parse response details (failure count: {failure_count})")
+            else:
+                print(f"No response available (failure count: {failure_count})")
+            
+            # Keep subscription only if below threshold
+            if failure_count < FAILURE_THRESHOLD:
+                updated_subscriptions.append(sub)
+            else:
+                print(f"Removing subscription after {failure_count} consecutive failures")
         except Exception as e:
             print(f"Unexpected push error: {type(e).__name__}: {e}")
+            # For unexpected errors, increment failure count
+            failure_count = sub.get('failureCount', 0) + 1
+            sub['failureCount'] = failure_count
+            has_changes = True
+            print(f"Failure count: {failure_count}/{FAILURE_THRESHOLD}")
+            if failure_count < FAILURE_THRESHOLD:
+                updated_subscriptions.append(sub)
 
     print(f"PUSH STATUS: Sent to {success_count} active devices.")
+    
+    # Save updated subscriptions with failure counts
+    removed_count = len(subscriptions) - len(updated_subscriptions)
+    if removed_count > 0:
+        print(f"Removed {removed_count} subscription(s) after {FAILURE_THRESHOLD}+ consecutive failures")
+    
+    # Save if there are changes (removals or failure count updates)
+    if removed_count > 0 or has_changes:
+        try:
+            headers_with_ct = {"Authorization": f"Bearer {blob_token}", "Content-Type": "application/json"}
+            put_url = "https://blob.vercel-storage.com/subscriptions/data.json"
+            put_resp = requests.put(put_url, headers=headers_with_ct, data=json.dumps(updated_subscriptions, indent=2), timeout=10)
+            if put_resp.status_code in [200, 201]:
+                print(f"DEBUG: Successfully updated subscriptions. Total: {len(updated_subscriptions)}")
+            else:
+                print(f"DEBUG: Failed to update subscriptions: {put_resp.status_code}")
+        except Exception as e:
+            print(f"ERROR: Failed to update subscriptions: {e}")
 
 def get_candidates(url, metal):
     headers = {'User-Agent': 'Mozilla/5.0'}

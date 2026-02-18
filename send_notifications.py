@@ -14,7 +14,9 @@ print(f"DEBUG: VAPID_PUBLIC_KEY: {VAPID_PUBLIC_KEY[:20]}...")
 print(f"DEBUG: VAPID_EMAIL: {VAPID_EMAIL}")
 
 def send_web_push(subscription, data):
-    """Send web push notification with proper VAPID configuration"""
+    """Send web push notification with proper VAPID configuration
+    Returns: tuple (success: bool, failure_count: int)
+    """
     try:
         print(f"DEBUG: Sending push to endpoint: {subscription.get('endpoint', 'unknown')[:50]}...")
         
@@ -28,16 +30,32 @@ def send_web_push(subscription, data):
             vapid_claims=vapid_claims
         )
         print(f"DEBUG: Push sent successfully")
-        return True
+        return (True, 0)  # Success, reset failure count to 0
     except WebPushException as ex:
         print(f"Push failed for one device: WebPushException: {ex}")
         # Extract more details from the exception
-        if hasattr(ex, 'response'):
-            print(f"Response body: {ex.response.text if hasattr(ex.response, 'text') else 'N/A'}, Response {ex.response.json() if hasattr(ex.response, 'json') else 'N/A'}")
-        return False
+        if hasattr(ex, 'response') and ex.response:
+            try:
+                status_code = ex.response.status_code if hasattr(ex.response, 'status_code') else 0
+                print(f"Response body: {ex.response.text if hasattr(ex.response, 'text') else 'N/A'}, Response status: {status_code}")
+                # Increment failure count for any error
+                current_count = subscription.get('failureCount', 0)
+                new_count = current_count + 1
+                if status_code in [410, 404]:
+                    print(f"Subscription failed (HTTP {status_code}, count: {new_count})")
+                return (False, new_count)
+            except Exception:
+                # If we can't parse the response, increment failure count
+                print(f"Could not parse response details")
+                current_count = subscription.get('failureCount', 0)
+                return (False, current_count + 1)
+        # No response available, increment failure count
+        current_count = subscription.get('failureCount', 0)
+        return (False, current_count + 1)
     except Exception as e:
         print(f"Unexpected push error: {type(e).__name__}: {e}")
-        return False
+        current_count = subscription.get('failureCount', 0)
+        return (False, current_count + 1)
 
 def main():
     if not VAPID_PRIVATE_KEY:
@@ -46,7 +64,7 @@ def main():
 
     # Load data
     try:
-        with open("data.json", "r") as f:
+        with open("public/data.json", "r") as f:
             price_data = json.load(f)
     except Exception as e:
         print(f"Error loading price data: {e}")
@@ -125,24 +143,60 @@ def main():
         return
 
     print(f"Sending push to {len(subscriptions)} devices...")
+    FAILURE_THRESHOLD = 6  # Remove subscription after 6 consecutive failures
     success_count = 0
     failed_count = 0
+    updated_subscriptions = []  # Track subscriptions with updated failure counts
+    has_changes = False  # Track if any failure counts changed
     
     for sub in subscriptions:
-        # Skip dummy/test endpoints
+        # Skip dummy/test endpoints but ensure failureCount is initialized
         endpoint = sub.get('endpoint', '')
         if 'dummy' in endpoint.lower() or not endpoint:
             print(f"DEBUG: Skipping dummy/invalid endpoint")
+            if 'failureCount' not in sub:
+                sub['failureCount'] = 0
+            updated_subscriptions.append(sub)
             continue
             
-        if send_web_push(sub, notification_data):
+        success, new_failure_count = send_web_push(sub, notification_data)
+        if success:
             success_count += 1
+            if sub.get('failureCount', 0) != 0:
+                has_changes = True
+            sub['failureCount'] = 0  # Reset on success
+            updated_subscriptions.append(sub)
         else:
             failed_count += 1
+            sub['failureCount'] = new_failure_count
+            has_changes = True
+            if new_failure_count < FAILURE_THRESHOLD:
+                updated_subscriptions.append(sub)
+                print(f"DEBUG: Subscription kept (failures: {new_failure_count}/{FAILURE_THRESHOLD})")
+            else:
+                print(f"DEBUG: Removing subscription after {new_failure_count} consecutive failures")
 
     print(f"PUSH STATUS: Sent to {success_count} active devices.")
     if failed_count > 0:
         print(f"PUSH STATUS: Failed for {failed_count} devices (may be expired subscriptions).")
+    
+    # Save updated subscriptions with failure counts
+    removed_count = len(subscriptions) - len(updated_subscriptions)
+    if removed_count > 0:
+        print(f"Removed {removed_count} subscription(s) after {FAILURE_THRESHOLD}+ consecutive failures")
+    
+    # Save if there are changes (removals or failure count updates)
+    if removed_count > 0 or has_changes:
+        try:
+            headers = {"Authorization": f"Bearer {blob_token}", "Content-Type": "application/json"}
+            put_url = "https://blob.vercel-storage.com/subscriptions/data.json"
+            put_resp = requests.put(put_url, headers=headers, data=json.dumps(updated_subscriptions, indent=2), timeout=10)
+            if put_resp.status_code in [200, 201]:
+                print(f"DEBUG: Successfully updated subscriptions. Total: {len(updated_subscriptions)}")
+            else:
+                print(f"DEBUG: Failed to update subscriptions: {put_resp.status_code}")
+        except Exception as e:
+            print(f"ERROR: Failed to update subscriptions: {e}")
 
 if __name__ == "__main__":
     main()

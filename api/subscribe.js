@@ -51,34 +51,54 @@ export default async function handler(req, res) {
       subscriptions = [];
     }
 
-    // 2. Check if subscription already exists and enforce limit
-    const exists = subscriptions.some(s => s.endpoint === subscription.endpoint);
+    // 2. Remove duplicate subscriptions and truly dead ones (failed 6+ times)
+    // Keep only unique endpoints and subscriptions that haven't exceeded failure threshold
+    const FAILURE_THRESHOLD = 6;  // Remove after 6 consecutive failures
+    const uniqueEndpoints = new Set();
+    const cleanedSubscriptions = subscriptions.filter(s => {
+      // Remove subscriptions that have failed too many times
+      const failureCount = s.failureCount || 0;
+      if (failureCount >= FAILURE_THRESHOLD) {
+        console.log('Removing dead subscription (failed', failureCount, 'times):', s.endpoint?.substring(0, 50));
+        return false;
+      }
+      // Remove duplicates (keep first occurrence)
+      if (uniqueEndpoints.has(s.endpoint)) {
+        console.log('Removing duplicate subscription:', s.endpoint?.substring(0, 50));
+        return false;
+      }
+      uniqueEndpoints.add(s.endpoint);
+      return true;
+    });
+    
+    // 3. Check if this new subscription already exists
+    const exists = cleanedSubscriptions.some(s => s.endpoint === subscription.endpoint);
     
     if (!exists) {
       // Security: Limit total subscriptions to prevent storage exhaustion
-      if (subscriptions.length >= 10000) {
+      if (cleanedSubscriptions.length >= 10000) {
         return res.status(400).json({ error: 'Subscription limit reached' });
       }
 
-      subscriptions.push(subscription);
-      
-      // 3. Save updated list back to Vercel Blob
-      await put(BLOB_PATH, JSON.stringify(subscriptions, null, 2), {
-        access: 'public',
-        contentType: 'application/json',
-        addRandomSuffix: false, // Keep the filename consistent
-        allowOverwrite: true    // Allow overwriting the existing file to "append" data
-      });
-      
-      console.log('Subscription added. Total:', subscriptions.length);
+      cleanedSubscriptions.push(subscription);
+      console.log('Subscription added. Total:', cleanedSubscriptions.length);
     } else {
       console.log('Subscription already exists.');
     }
     
+    // 4. Save cleaned list back to Vercel Blob (always save to persist cleanup)
+    await put(BLOB_PATH, JSON.stringify(cleanedSubscriptions, null, 2), {
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false, // Keep the filename consistent
+      allowOverwrite: true    // Allow overwriting the existing file to "append" data
+    });
+    
     return res.status(200).json({ 
       success: true, 
       message: 'Subscription synchronized',
-      count: subscriptions.length
+      count: cleanedSubscriptions.length,
+      cleaned: subscriptions.length !== cleanedSubscriptions.length
     });
   } catch (error) {
     // Sentinel: Removed details: error.message to prevent internal info leakage
