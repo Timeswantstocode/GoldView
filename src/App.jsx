@@ -19,10 +19,10 @@ const FOREX_PROXY = "/api/forex";
 const PRIMARY_DOMAIN = "https://viewgold.vercel.app"; 
 
 const CURRENCY_LIST = [
-  { code: 'USD', flag: '🇺🇸' }, { code: 'GBP', flag: '🇬🇧' },
-  { code: 'AUD', flag: '🇦🇺' }, { code: 'JPY', flag: '🇯🇵' },
-  { code: 'KRW', flag: '🇰🇷' }, { code: 'AED', flag: '🇦🇪' },
-  { code: 'EUR', flag: '🇪🇺' }
+  { code: 'USD', flag: '🇺🇸' }, { code: 'INR', flag: '🇮🇳' },
+  { code: 'GBP', flag: '🇬🇧' }, { code: 'AUD', flag: '🇦🇺' },
+  { code: 'JPY', flag: '🇯🇵' }, { code: 'KRW', flag: '🇰🇷' },
+  { code: 'AED', flag: '🇦🇪' }, { code: 'EUR', flag: '🇪🇺' }
 ];
 
 const STRUCTURED_DATA = JSON.stringify({
@@ -39,21 +39,28 @@ const METAL_META = {
   gold: { label: '24K Chhapawal Gold', sub: 'per tola', grad: 'from-[#D4AF37]/50 to-[#D4AF37]/15' },
   tejabi: { label: '22K Tejabi Gold', sub: 'per tola', grad: 'from-[#CD7F32]/50 to-[#CD7F32]/15' },
   silver: { label: 'Pure Silver', sub: 'per tola', grad: 'from-zinc-400/40 to-zinc-600/15' },
-  usd: { label: 'USD to NPR', sub: 'Official Buying Rate', grad: 'from-[#22c55e]/45 to-[#22c55e]/15' }
+  usd: { label: 'USD to NPR', sub: 'Live Market Rate', grad: 'from-[#22c55e]/45 to-[#22c55e]/15' },
+  inr: { label: 'INR to NPR', sub: 'Official Pegged Rate', grad: 'from-[#ff9933]/45 to-[#138808]/15' }
 };
 
-const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, formatRS, forexLoading }) => (
+const getMeta = (type) => METAL_META[type] || {
+  label: `${type.toUpperCase()} to NPR`,
+  sub: 'Market Exchange Rate',
+  grad: 'from-green-500/40 to-green-900/15'
+};
+
+const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, formatValue, forexLoading }) => (
   <div onClick={() => onClick(type)}
     className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-3xl relative overflow-hidden ${
       isActive ? `${meta.grad} border-white/20 scale-[1.02]` : 'border-white/5 bg-white/5 opacity-40'
     }`}>
     <div className="flex justify-between items-start mb-2 text-[10px] font-black uppercase tracking-widest">
       <div>{meta.label}<p className="text-[8px] opacity-50 mt-0.5">{meta.sub}</p></div>
-      {type === 'usd' && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /> :
+      {(!['gold', 'tejabi', 'silver'].includes(type)) && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /> :
       <div className={`px-2.5 py-1 rounded-xl border ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
     </div>
     <div className="flex justify-between items-end text-4xl font-black tracking-tighter">
-      <h2>{type === 'usd' ? `रू ${val.toFixed(2)}` : formatRS(val)}</h2>
+      <h2>{formatValue(val, type)}</h2>
       {isActive && <TrendingUp className={`w-5 h-5 ${diff.isUp ? 'text-green-500' : 'text-red-500 rotate-180'}`} />}
     </div>
   </div>
@@ -255,6 +262,11 @@ export default function App() {
   };
 
   const formatRS = useCallback((num) => `रू ${Math.round(num || 0).toLocaleString()}`, []);
+  const formatValue = useCallback((val, metal) => {
+    const isForex = !['gold', 'tejabi', 'silver'].includes(metal);
+    if (isForex) return `रू ${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return formatRS(val);
+  }, [formatRS]);
 
   const themeColor = useMemo(() => {
     if (view === 'calculator' && calcMode === 'currency') return '#22c55e';
@@ -281,19 +293,40 @@ export default function App() {
   
   const allDiffs = useMemo(() => {
     const calculate = (id) => {
-      const source = id === 'usd' ? forexHistory : priceData;
+      const isForex = !['gold', 'tejabi', 'silver'].includes(id);
+      const source = isForex ? forexHistory : priceData;
+
       if (source.length < 2) return { val: 'रू 0', isUp: true };
-      const currVal = id === 'usd' ? source[source.length-1].usdRate : source[source.length-1][id];
-      const prevVal = id === 'usd' ? source[source.length-2].usdRate : source[source.length-2][id];
+
+      const getVal = (entry) => {
+        if (!isForex) return entry[id];
+        if (id === 'usd') return entry.usdRate;
+        const rate = entry.rates?.find(r => r.code.toLowerCase() === id.toLowerCase());
+        return rate ? (rate.buy / (rate.unit || 1)) : 0;
+      };
+
+      const currVal = getVal(source[source.length - 1]);
+      const prevVal = getVal(source[source.length - 2]);
       const diff = currVal - prevVal;
-      return { val: `रू ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {minimumFractionDigits: id === 'usd' ? 2 : 0})}`, isUp: diff >= 0 };
+
+      return {
+        val: `रू ${diff >= 0 ? '+' : ''}${diff.toLocaleString(undefined, {
+          minimumFractionDigits: isForex ? 2 : 0,
+          maximumFractionDigits: isForex ? 2 : 0
+        })}`,
+        isUp: diff >= 0
+      };
     };
-    return {
+
+    const diffs = {
       gold: calculate('gold'),
       tejabi: calculate('tejabi'),
       silver: calculate('silver'),
-      usd: calculate('usd')
     };
+    CURRENCY_LIST.forEach(c => {
+      diffs[c.code.toLowerCase()] = calculate(c.code.toLowerCase());
+    });
+    return diffs;
   }, [priceData, forexHistory]);
 
   const handleMetalClick = useCallback((type) => {
@@ -307,7 +340,14 @@ export default function App() {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }),
     datasets: [{
-      data: filteredData.map(d => activeMetal === 'usd' ? d.usdRate : Number(d[activeMetal]) || 0),
+      data: filteredData.map(d => {
+        if (!['gold', 'tejabi', 'silver'].includes(activeMetal)) {
+          if (activeMetal === 'usd') return d.usdRate;
+          const rate = d.rates?.find(r => r.code.toLowerCase() === activeMetal.toLowerCase());
+          return rate ? (rate.buy / (rate.unit || 1)) : 0;
+        }
+        return Number(d[activeMetal]) || 0;
+      }),
       borderColor: themeColor,
       borderWidth: 4,
       fill: true,
@@ -337,7 +377,7 @@ export default function App() {
             enabled: false,
             external: externalTooltipHandler,
             callbacks: {
-                label: (ctx) => activeMetal === 'usd' ? `रू ${ctx.raw.toFixed(2)}` : formatRS(ctx.raw)
+                label: (ctx) => formatValue(ctx.raw, activeMetal)
             }
         } 
     },
@@ -399,24 +439,49 @@ export default function App() {
         <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
           <main className="px-6 mt-14 space-y-6 relative z-10 animate-in fade-in duration-500">
             <div className="space-y-4">
-              {['gold', 'tejabi', 'silver', 'usd'].map((type) => (
-                <PriceCard
-                  key={type}
-                  type={type}
-                  isActive={activeMetal === type}
-                  diff={allDiffs[type]}
-                  val={type === 'usd' ? (forexHistory[forexHistory.length-1]?.usdRate || 0) : (priceData[priceData.length-1]?.[type] || 0)}
-                  meta={METAL_META[type]}
-                  onClick={handleMetalClick}
-                  formatRS={formatRS}
-                  forexLoading={forexLoading}
-                />
-              ))}
+              {['gold', 'tejabi', 'silver', 'usd', 'inr'].map((type) => {
+                 let val = 0;
+                 if (type === 'usd') val = forexHistory[forexHistory.length-1]?.usdRate || 0;
+                 else if (type === 'inr') {
+                   const rate = forexHistory[forexHistory.length-1]?.rates?.find(r => r.code === 'INR');
+                   val = rate ? (rate.buy / (rate.unit || 1)) : 0;
+                 } else {
+                   val = priceData[priceData.length-1]?.[type] || 0;
+                 }
+
+                 return (
+                  <PriceCard
+                    key={type}
+                    type={type}
+                    isActive={activeMetal === type}
+                    diff={allDiffs[type]}
+                    val={val}
+                    meta={getMeta(type)}
+                    onClick={handleMetalClick}
+                    formatValue={formatValue}
+                    forexLoading={forexLoading}
+                  />
+                 );
+              })}
             </div>
 
             <section className="bg-white/5 border border-white/10 rounded-[3.5rem] p-9 backdrop-blur-3xl shadow-xl">
-              <div className="flex justify-between items-center mb-8 px-1 w-full">
-                <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> Price Trend</h3>
+              <div className="flex justify-between items-start mb-8 px-1 w-full">
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> Price Trend</h3>
+                  {!['gold', 'tejabi', 'silver'].includes(activeMetal) && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                      <select
+                        className="bg-transparent text-[11px] font-black text-zinc-400 outline-none uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
+                        value={activeMetal.toUpperCase()}
+                        onChange={(e) => setActiveMetal(e.target.value.toLowerCase())}
+                      >
+                        {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.flag} {c.code} / NPR</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
                 <div className="flex bg-white/5 rounded-full p-1 border border-white/10">
                   {[7, 30, 90].map((t) => (<button key={t} onClick={() => { setTimeframe(t); setSelectedPoint(null); }} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === t ? `text-black shadow-lg shadow-white/5` : 'text-zinc-500'}`} style={timeframe === t ? { backgroundColor: themeColor } : {}}>{t === 7 ? '7D' : t === 30 ? '1M' : '3M'}</button>))}
                 </div>
@@ -440,7 +505,7 @@ export default function App() {
                     <div className="flex items-center gap-8">
                       <div className="text-right">
                         <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Market Rate</p>
-                        <p className="text-3xl font-black text-white">{activeMetal === 'usd' ? `रू ${selectedPoint.price.toFixed(2)}` : formatRS(selectedPoint.price)}</p>
+                        <p className="text-3xl font-black text-white">{formatValue(selectedPoint.price, activeMetal)}</p>
                       </div>
                       <button onClick={() => setSelectedPoint(null)} className="p-3 bg-white/5 rounded-full hover:bg-white/10 active:scale-90 transition-all border border-white/5"><X className="w-5 h-5 text-zinc-400" /></button>
                     </div>
