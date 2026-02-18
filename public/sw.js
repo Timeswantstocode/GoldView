@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goldview-cache-v2';
+const CACHE_NAME = 'goldview-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -6,7 +6,8 @@ const ASSETS_TO_CACHE = [
   '/logo512.webp',
   '/logo192.webp',
   '/apple-touch-icon.png',
-  '/logo_raw.webp'
+  '/logo_raw.webp',
+  '/data.json'
 ];
 
 self.addEventListener('install', (event) => {
