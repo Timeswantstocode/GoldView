@@ -14,6 +14,22 @@ VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
 VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY', 'BK4UiqZsmzcWoQR_JFmuAhQQ2R7JQEIxC83Tppc8VxBwd4a3mXztqyv31Q9XJ3Ab6Yq_aqbExGlNMX2NP2j5zAQ')
 VAPID_EMAIL = os.getenv('VAPID_EMAIL', 'mailto:timesbaral11@gmail.com')
 
+def format_indian(n):
+    """Formats an integer according to the Indian numbering system (e.g., 1,23,45,678)"""
+    is_neg = n < 0
+    s = str(abs(n))
+    if len(s) <= 3:
+        res = s
+    else:
+        last_three = s[-3:]
+        remaining = s[:-3]
+        parts = []
+        while remaining:
+            parts.append(remaining[-2:])
+            remaining = remaining[:-2]
+        res = ",".join(reversed(parts)) + "," + last_three
+    return "-" + res if is_neg else res
+
 def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t, change_s):
     """Broadcasts native device notifications via Web Push"""
     from pywebpush import webpush, WebPushException
@@ -31,7 +47,7 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         prev = curr - diff
         pct = (diff / prev * 100) if prev != 0 else 0
         sign = '+' if diff >= 0 else ''
-        return f"रू {curr:,} ({sign}{pct:.2f}%)"
+        return f"रू {format_indian(curr)} ({sign}{pct:.2f}%)"
 
     gold_str = f"Gold(24K): {get_change_str(new_gold, change_g)}"
     tejabi_str = f"Tejabi(22K): {get_change_str(new_tejabi, change_t)}"
