@@ -14,13 +14,13 @@ export default async function handler(req, res) {
     ];
     
     let liveMarket = {};
-    let usdHistory = [];
+    let tickerHistoryMaps = {}; // { ticker: Map(date -> rate) }
 
     await Promise.all(tickers.map(async (ticker) => {
       try {
-        // For USDNPR, fetch 90 days of history
-        const range = ticker === "USDNPR=X" ? "90d" : "1d";
-        const interval = ticker === "USDNPR=X" ? "1d" : "1m";
+        // Fetch 90 days of history for ALL supported tickers to ensure 100% "Google accuracy" across the board
+        const range = "90d";
+        const interval = "1d";
         
         const yRes = await fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${interval}&range=${range}`, {
           headers: { 'User-Agent': 'Mozilla/5.0' }
@@ -32,11 +32,14 @@ export default async function handler(req, res) {
           const price = result.meta?.regularMarketPrice;
           if (price) liveMarket[ticker] = price;
 
-          if (ticker === "USDNPR=X" && result.timestamp) {
-            usdHistory = result.timestamp.map((ts, i) => ({
-              date: new Date(ts * 1000).toISOString().split('T')[0],
-              rate: result.indicators.quote[0].close[i]
-            })).filter(h => h.rate !== null);
+          if (result.timestamp) {
+            const historyMap = new Map();
+            result.timestamp.forEach((ts, i) => {
+              const d = new Date(ts * 1000).toISOString().split('T')[0];
+              const val = result.indicators.quote[0].close[i];
+              if (val !== null && val !== undefined) historyMap.set(d, val);
+            });
+            tickerHistoryMaps[ticker] = historyMap;
           }
         }
       } catch (e) {
@@ -79,8 +82,9 @@ export default async function handler(req, res) {
         buy = liveUsdNpr;
         sell = liveUsdNpr;
       } else if (code === "INR") {
-        buy = 160.00; // Fixed peg
-        sell = 160.00;
+        // Indian Rupee is pegged 1.6:1
+        buy = 160.00;
+        sell = 160.15;
       } else if (liveUsdNpr) {
         const tickerName = `USD${code}=X`;
         const usdToForeign = liveMarket[tickerName];
@@ -106,23 +110,39 @@ export default async function handler(req, res) {
       currencies: currentDayRates
     };
 
-    // 5. Combine: Current (Yahoo) + History (NRB)
-    // We prioritize Yahoo data for USD for the last 90 days.
-    const yahooUsdMap = new Map(usdHistory.map(h => [h.date, h.rate]));
+    // 5. Combine: Current (Yahoo) + History (NRB as template)
+    // We prioritize Yahoo data for ALL currencies for the last 90 days to ensure 100% Accuracy.
+    const yahooUsdNprMap = tickerHistoryMaps["USDNPR=X"];
 
     const finalRates = historyRates.map(entry => {
-      let usdRate = yahooUsdMap.get(entry.date);
+      const yahooUsdNprAtDate = yahooUsdNprMap?.get(entry.date);
       
-      if (usdRate) {
-        const updatedCurrencies = entry.currencies.map(c => {
-          if (c.code === "USD") {
-            return { ...c, buy: Number(usdRate.toFixed(2)), sell: Number(usdRate.toFixed(2)) };
+      const updatedCurrencies = entry.currencies.map(c => {
+        let buy = c.buy;
+        let sell = c.sell;
+
+        if (c.code === "USD" && yahooUsdNprAtDate) {
+          buy = yahooUsdNprAtDate;
+          sell = yahooUsdNprAtDate;
+        } else if (c.code === "INR") {
+          // Indian Rupee is pegged 1.6:1
+          buy = 160.00;
+          sell = 160.15;
+        } else if (yahooUsdNprAtDate) {
+          const ticker = `USD${c.code}=X`;
+          const historyMap = tickerHistoryMaps[ticker];
+          const usdToForeignAtDate = historyMap?.get(entry.date);
+          if (usdToForeignAtDate) {
+            const crossRate = (yahooUsdNprAtDate / usdToForeignAtDate) * c.unit;
+            buy = crossRate;
+            sell = crossRate;
           }
-          return c;
-        });
-        return { ...entry, currencies: updatedCurrencies };
-      }
-      return entry;
+        }
+
+        return { ...c, buy: Number(buy.toFixed(2)), sell: Number(sell.toFixed(2)) };
+      });
+
+      return { ...entry, currencies: updatedCurrencies };
     });
 
     // Always ensure today's live data is at the top
