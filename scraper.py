@@ -155,7 +155,7 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         cleaned_subscriptions = [s for s in subscriptions if s.get('endpoint') not in dead_endpoints]
         try:
             put_url = "https://blob.vercel-storage.com/subscriptions/data.json"
-            put_resp = requests.put(put_url, headers=headers, data=json.dumps(cleaned_subscriptions, None, 2), timeout=10)
+            put_resp = requests.put(put_url, headers=headers, data=json.dumps(cleaned_subscriptions, indent=2), timeout=10)
             if put_resp.status_code in [200, 201]:
                 print(f"DEBUG: Successfully cleaned up dead subscriptions. Remaining: {len(cleaned_subscriptions)}")
             else:

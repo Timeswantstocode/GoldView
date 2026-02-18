@@ -153,7 +153,7 @@ def main():
         else:
             failed_count += 1
             if is_dead:
-                dead_endpoints.append(endpoint)
+                dead_endpoints.append(sub.get('endpoint'))
 
     print(f"PUSH STATUS: Sent to {success_count} active devices.")
     if failed_count > 0:
@@ -166,7 +166,7 @@ def main():
         try:
             headers = {"Authorization": f"Bearer {blob_token}"}
             put_url = "https://blob.vercel-storage.com/subscriptions/data.json"
-            put_resp = requests.put(put_url, headers=headers, data=json.dumps(cleaned_subscriptions, None, 2), timeout=10)
+            put_resp = requests.put(put_url, headers=headers, data=json.dumps(cleaned_subscriptions, indent=2), timeout=10)
             if put_resp.status_code in [200, 201]:
                 print(f"DEBUG: Successfully cleaned up dead subscriptions. Remaining: {len(cleaned_subscriptions)}")
             else:
