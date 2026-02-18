@@ -147,24 +147,29 @@ def main():
     success_count = 0
     failed_count = 0
     updated_subscriptions = []  # Track subscriptions with updated failure counts
+    has_changes = False  # Track if any failure counts changed
     
     for sub in subscriptions:
         # Skip dummy/test endpoints but ensure failureCount is initialized
         endpoint = sub.get('endpoint', '')
         if 'dummy' in endpoint.lower() or not endpoint:
             print(f"DEBUG: Skipping dummy/invalid endpoint")
-            sub['failureCount'] = sub.get('failureCount', 0)
+            if 'failureCount' not in sub:
+                sub['failureCount'] = 0
             updated_subscriptions.append(sub)
             continue
             
         success, new_failure_count = send_web_push(sub, notification_data)
         if success:
             success_count += 1
+            if sub.get('failureCount', 0) != 0:
+                has_changes = True
             sub['failureCount'] = 0  # Reset on success
             updated_subscriptions.append(sub)
         else:
             failed_count += 1
             sub['failureCount'] = new_failure_count
+            has_changes = True
             if new_failure_count < FAILURE_THRESHOLD:
                 updated_subscriptions.append(sub)
                 print(f"DEBUG: Subscription kept (failures: {new_failure_count}/{FAILURE_THRESHOLD})")
@@ -180,8 +185,8 @@ def main():
     if removed_count > 0:
         print(f"Removed {removed_count} subscription(s) after {FAILURE_THRESHOLD}+ consecutive failures")
     
-    # Always save to persist failure counts
-    if len(updated_subscriptions) != len(subscriptions) or any(s.get('failureCount', 0) > 0 for s in updated_subscriptions):
+    # Save if there are changes (removals or failure count updates)
+    if removed_count > 0 or has_changes:
         try:
             headers = {"Authorization": f"Bearer {blob_token}", "Content-Type": "application/json"}
             put_url = "https://blob.vercel-storage.com/subscriptions/data.json"

@@ -116,11 +116,13 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
     FAILURE_THRESHOLD = 6  # Remove subscription after 6 consecutive failures
     success_count = 0
     updated_subscriptions = []  # Track subscriptions with updated failure counts
+    has_changes = False  # Track if any failure counts changed
     
     for sub in subscriptions:
         # Skip dummy endpoints but ensure failureCount is initialized
         if "dummy-endpoint" in sub.get('endpoint', ''):
-            sub['failureCount'] = sub.get('failureCount', 0)
+            if 'failureCount' not in sub:
+                sub['failureCount'] = 0
             updated_subscriptions.append(sub)
             continue
         
@@ -136,13 +138,16 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
             )
             success_count += 1
             # Reset failure count on success
-            sub['failureCount'] = 0
+            if sub.get('failureCount', 0) != 0:
+                has_changes = True
+                sub['failureCount'] = 0
             updated_subscriptions.append(sub)
         except WebPushException as ex:
             print(f"Push failed for one device: WebPushException: {ex}")
             # Increment failure count for any push failure
             failure_count = sub.get('failureCount', 0) + 1
             sub['failureCount'] = failure_count
+            has_changes = True
             
             # Log response details if available
             if hasattr(ex, 'response') and ex.response:
@@ -165,6 +170,7 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
             # For unexpected errors, increment failure count
             failure_count = sub.get('failureCount', 0) + 1
             sub['failureCount'] = failure_count
+            has_changes = True
             print(f"Failure count: {failure_count}/{FAILURE_THRESHOLD}")
             if failure_count < FAILURE_THRESHOLD:
                 updated_subscriptions.append(sub)
@@ -176,8 +182,8 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
     if removed_count > 0:
         print(f"Removed {removed_count} subscription(s) after {FAILURE_THRESHOLD}+ consecutive failures")
     
-    # Always save to persist failure counts
-    if len(updated_subscriptions) != len(subscriptions) or any(s.get('failureCount', 0) > 0 for s in updated_subscriptions):
+    # Save if there are changes (removals or failure count updates)
+    if removed_count > 0 or has_changes:
         try:
             headers_with_ct = {"Authorization": f"Bearer {blob_token}", "Content-Type": "application/json"}
             put_url = "https://blob.vercel-storage.com/subscriptions/data.json"
