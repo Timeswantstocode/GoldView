@@ -7,7 +7,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': ['react', 'react-dom']
+          'vendor': ['react', 'react-dom'],
+          'chart': ['chart.js', 'react-chartjs-2'],
+          'icons': ['lucide-react']
         }
       }
     },
@@ -15,9 +17,15 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console logs in production
-        drop_debugger: true
+        drop_console: true,
+        drop_debugger: true,
+        passes: 2
       }
+    },
+    cssMinify: true,
+    target: 'es2020',
+    modulePreload: {
+      polyfill: false
     }
   },
   server: {
