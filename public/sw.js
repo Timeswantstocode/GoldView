@@ -56,15 +56,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For static assets, try cache then network
+  // For navigation requests (index.html), try Network-First
+  // This avoids the blank page issue when new asset hashes are deployed
+  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        })
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // For other static assets, try cache then network
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request).catch(() => {
-        // Fallback if both fail
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-      });
+      return response || fetch(event.request);
     })
   );
 });
