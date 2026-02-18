@@ -240,7 +240,7 @@ def fetch_usd_history(days=90):
         return {}
 
 def update():
-    file = 'data.json'
+    file = 'public/data.json'
     widget_url = "https://www.ashesh.com.np/gold/widget.php?api=521224q192"
     fenegosida_url = "https://fenegosida.org/"
     

@@ -1,9 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Line } from 'react-chartjs-2';
-import { 
-  Chart as ChartJS, registerables, Filler, Tooltip, 
-  Legend, CategoryScale, LinearScale, PointElement, LineElement 
-} from 'chart.js';
+import React, { useState, useMemo, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { 
   LayoutDashboard, Calculator, RefreshCcw, TrendingUp, 
   X, Calendar, Zap, Activity, Coins, ArrowRightLeft, Globe, ArrowDown, Bell,
@@ -13,9 +8,9 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 
-ChartJS.register(...registerables, Filler, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
+const PriceChart = lazy(() => import('./components/PriceChart'));
 
-const DATA_URL = "https://raw.githubusercontent.com/Timeswantstocode/GoldView/main/data.json";
+const DATA_URL = "/data.json";
 const FOREX_PROXY = "/api/forex";
 const PRIMARY_DOMAIN = "https://www.goldview.tech/";
 
@@ -698,7 +693,11 @@ export default function App() {
               {[7, 30, 90].map((tf) => (<button key={tf} onClick={() => handleTimeframeChange(tf)} className={`px-3 py-1.5 rounded-full text-[9px] font-black transition-all ${timeframe === tf ? `text-black shadow-lg shadow-white/5` : 'text-zinc-500'}`} style={timeframe === tf ? { backgroundColor: themeColor } : {}}>{tf === 7 ? '7D' : tf === 30 ? '1M' : '3M'}</button>))}
             </div>
           </div>
-          <div className="h-64 relative w-full"><Line ref={chartRef} data={chartData} options={chartOptions} redraw={false} /></div>
+          <div className="h-64 relative w-full">
+            <Suspense fallback={<div className="w-full h-full bg-white/5 animate-pulse rounded-[2rem] flex items-center justify-center text-[10px] font-black text-zinc-600 uppercase tracking-widest">Loading Trend...</div>}>
+              <PriceChart ref={chartRef} data={chartData} options={chartOptions} redraw={false} />
+            </Suspense>
+          </div>
 
           <div className={`mt-8 transition-all duration-500 overflow-hidden ${selectedPoint ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
             {selectedPoint && (
