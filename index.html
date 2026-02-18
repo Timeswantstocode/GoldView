@@ -102,6 +102,23 @@
         -webkit-tap-highlight-color: transparent;
       }
       
+      /* Base styles */
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #000;
+        color: #f4f4f5;
+        font-family: 'Noto Sans Devanagari', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: none;
+      }
+      
+      #root {
+        min-height: 100vh;
+      }
+      
       /* GPU acceleration for animations */
       .animate-spin, .animate-pulse, [class*="transition"], [class*="animate"] {
         will-change: transform, opacity;
@@ -119,12 +136,6 @@
       /* Reduce paint areas */
       button, a {
         contain: layout style paint;
-      }
-      
-      /* Optimize scrolling */
-      body {
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior-y: none;
       }
     </style>
   </head>
