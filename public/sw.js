@@ -3,10 +3,10 @@ const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/logo512.png',
-  '/logo192.png',
+  '/logo512.webp',
+  '/logo192.webp',
   '/apple-touch-icon.png',
-  '/logo_raw.png'
+  '/logo_raw.webp'
 ];
 
 self.addEventListener('install', (event) => {
@@ -84,8 +84,8 @@ self.addEventListener('fetch', (event) => {
 const showBeautifulNotification = (title, body, data, icon, badge) => {
   const options = {
     body: body,
-    icon: icon || '/logo512.png',
-    badge: badge || '/logo512.png',
+    icon: icon || '/logo512.webp',
+    badge: badge || '/logo512.webp',
     vibrate: [100, 50, 100],
     data: data,
     actions: [

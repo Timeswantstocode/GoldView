@@ -45,8 +45,8 @@ const STRUCTURED_DATA = JSON.stringify([
     "@type": "FinancialService",
     "name": "GoldView Nepal",
     "url": PRIMARY_DOMAIN,
-    "logo": `${PRIMARY_DOMAIN}logo512.png`,
-    "image": `${PRIMARY_DOMAIN}logo512.png`,
+    "logo": `${PRIMARY_DOMAIN}logo512.webp`,
+    "image": `${PRIMARY_DOMAIN}logo512.webp`,
     "description": "Official GoldView Nepal: Real-time 24K Gold, Silver and Forex rates in Nepal. Track gold prices today and calculate jewelry costs.",
     "address": {
       "@type": "PostalAddress",
@@ -412,8 +412,8 @@ export default function App() {
         if (VAPID_PUBLIC_KEY === "YOUR_VAPID_PUBLIC_KEY") {
           registration.showNotification("Current Rates", {
             body: "Local alerts enabled!",
-            icon: "/logo512.png",
-            badge: "/logo512.png",
+            icon: "/logo512.webp",
+            badge: "/logo512.webp",
             tag: 'welcome-notification'
           });
           return;
@@ -432,8 +432,8 @@ export default function App() {
         
         registration.showNotification("Current Rates", {
           body: "Price alerts enabled! You'll be notified when rates change.",
-          icon: "/logo512.png",
-          badge: "/logo512.png",
+          icon: "/logo512.webp",
+          badge: "/logo512.webp",
           tag: 'welcome-notification'
         });
       }
@@ -1022,7 +1022,7 @@ export default function App() {
               <p className="text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500 truncate" style={{ color: themeColor }}>{t('marketUpdate')}</p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <img src="/logo512.png" alt="GoldView Logo" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg border border-white/10 shrink-0" />
+              <img src="/logo512.webp" alt="GoldView Logo" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg border border-white/10 shrink-0" />
               <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-white">GoldView</h1>
             </div>
           </div>
