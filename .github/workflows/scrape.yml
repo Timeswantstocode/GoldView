@@ -2,16 +2,25 @@ name: Scrape Gold Data
 
 on:
   schedule:
-    # Timing calibrated for Nepal Market Updates (NPT is UTC +5:45)
-    - cron: '20 4 * * *'  # 10:05 AM NPT
-    - cron: '30 4 * * *'  # 10:15 AM NPT
-    - cron: '45 4 * * *'  # 10:30 AM NPT
-    - cron: '0 5 * * *'   # 10:45 AM NPT
-    - cron: '20 5 * * *'  # 11:05 AM NPT
-    - cron: '30 5 * * *'  # 11:15 AM NPT
-    - cron: '45 5 * * *'  # 11:30 AM NPT
-    - cron: '15 6 * * *'  # 12:00 PM NPT
-    - cron: '15 7 * * *'  # 01:00 PM NPT
+    # Nepal Market usually updates around 10:30 AM - 11:00 AM
+    
+    # 10:15 AM NPT (UTC 4:30) -> Set to 4:32 to avoid traffic
+    - cron: '32 4 * * *'
+    
+    # 10:45 AM NPT (UTC 5:00) -> Set to 5:03 to avoid traffic
+    - cron: '03 5 * * *'
+    
+    # 11:15 AM NPT (UTC 5:30) -> Set to 5:34 to avoid traffic
+    - cron: '34 5 * * *'
+    
+    # 11:45 AM NPT (UTC 6:00) -> Set to 6:02 to avoid traffic
+    - cron: '02 6 * * *'
+    
+    # 12:30 PM NPT (UTC 6:45) -> Set to 6:47 to avoid traffic
+    - cron: '47 6 * * *'
+
+    # 01:30 PM NPT (UTC 7:45) -> Set to 7:48 to avoid traffic
+    - cron: '48 7 * * *'
     
   workflow_dispatch: # Allows you to manually trigger a scrape from the Actions tab
 
