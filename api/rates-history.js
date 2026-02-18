@@ -124,10 +124,10 @@ export default async function handler(req, res) {
         updated_pairs: pairsToUpdate.map(p => p.pair)
       });
     } catch (error) {
+      // Sentinel: Removed details: error.message to prevent internal info leakage
       console.error('History update error:', error);
       return res.status(500).json({ 
-        error: 'Failed to update history',
-        details: error.message 
+        error: 'Failed to update history'
       });
     }
   } 

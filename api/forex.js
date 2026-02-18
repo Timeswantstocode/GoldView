@@ -161,7 +161,8 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
+    // Sentinel: Removed message: error.message to prevent internal info leakage
     console.error("Forex Handler Error:", error);
-    return res.status(500).json({ status: 'error', message: error.message });
+    return res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
 }
