@@ -130,7 +130,8 @@ const TRANSLATIONS = {
     gotIt: "Got it",
     notificationGranted: "Price alerts enabled! You'll be notified when rates change.",
     notificationWelcome: "Local alerts enabled!",
-    currentRates: "Current Rates"
+    currentRates: "Current Rates",
+    selectCurrency: "Select Currency"
   },
   ne: {
     marketUpdate: "नेपाली दर",
@@ -205,7 +206,8 @@ const TRANSLATIONS = {
     gotIt: "बुझे",
     notificationGranted: "मूल्य सूचना सक्षम गरियो! दर परिवर्तन हुँदा तपाईंलाई सूचित गरिनेछ।",
     notificationWelcome: "स्थानीय सूचना सक्षम गरियो!",
-    currentRates: "हालको दरहरू"
+    currentRates: "हालको दरहरू",
+    selectCurrency: "मुद्रा चयन गर्नुहोस्"
   }
 };
 
@@ -227,7 +229,7 @@ const getForexMeta = (t) => CURRENCY_LIST.reduce((acc, curr) => {
 
 const getMeta = (type, t) => getMetalMeta(t)[type] || getForexMeta(t)[type] || { label: type.toUpperCase(), sub: '', grad: '' };
 
-const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, formatValue, forexLoading, onCurrencyChange }) => {
+const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, formatValue, forexLoading }) => {
   const isForex = !['gold', 'tejabi', 'silver'].includes(type);
 
   const handleKeyDown = (e) => {
@@ -251,15 +253,7 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
         <div className="flex flex-col gap-0.5">
           {isForex ? (
             <div className="flex items-center gap-2">
-              <select
-                className="bg-transparent font-black text-white outline-none appearance-none cursor-pointer hover:underline py-2 min-h-[44px]"
-                value={type.toUpperCase()}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => onCurrencyChange(e.target.value.toLowerCase())}
-                aria-label="Select Currency"
-              >
-                {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code} to NPR</option>)}
-              </select>
+              <span>{meta.label}</span>
               <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
             </div>
           ) : (
@@ -728,7 +722,6 @@ export default function App() {
                 onClick={handleMetalClick}
                 formatValue={formatValue}
                 forexLoading={forexLoading}
-                onCurrencyChange={handleCurrencyChange}
               />
              );
           })}
@@ -748,6 +741,37 @@ export default function App() {
               <PriceChart ref={chartRef} data={chartData} options={chartOptions} redraw={false} />
             </Suspense>
           </div>
+
+          {/* Currency Selector - Only visible when forex is active */}
+          {!['gold', 'tejabi', 'silver'].includes(activeMetal) && (
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <div className="flex flex-col gap-3">
+                <label className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400" style={{ color: themeColor }}>
+                  <Globe className="w-3.5 h-3.5 inline mr-2" />
+                  {t('selectCurrency')}
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {CURRENCY_LIST.map((currency) => (
+                    <button
+                      key={currency.code}
+                      onClick={() => handleCurrencyChange(currency.code.toLowerCase())}
+                      className={`p-3 rounded-2xl text-xs font-black transition-all border-[1.5px] ${
+                        activeMetal === currency.code.toLowerCase()
+                          ? 'bg-green-500/20 border-green-500/40 text-green-400'
+                          : 'bg-white/5 border-white/10 text-zinc-400 hover:bg-white/10 hover:border-white/20'
+                      }`}
+                      aria-label={`Select ${currency.code}`}
+                    >
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-lg">{currency.flag}</span>
+                        <span>{currency.code}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className={`mt-8 transition-all duration-500 overflow-hidden ${selectedPoint ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`}>
             {selectedPoint && (
@@ -1170,12 +1194,12 @@ export default function App() {
 
                     <div className="space-y-8">
                        {['gold', 'tejabi', 'silver'].map(m => (
-                         <div key={m} className="flex justify-between items-end border-b border-white/10 pb-4">
-                            <div className="shrink-0 mr-4">
-                               <p className="text-[11px] font-black text-zinc-400 uppercase tracking-widest mb-1">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
+                         <div key={m} className="flex justify-between items-center border-b border-white/10 pb-4 gap-4">
+                            <div className="flex flex-col gap-1 min-w-0 flex-1">
+                               <p className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
                                <p className="text-[10px] font-bold text-zinc-600">{t('perTola')}</p>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right flex-shrink-0">
                                <p className="text-2xl font-black text-white whitespace-nowrap">{formatRS(priceData[priceData.length-1]?.[m])}</p>
                                <p className={`text-[11px] font-black ${allDiffs[m].isUp ? 'text-green-400' : 'text-red-400'}`}>{allDiffs[m].val}</p>
                             </div>
