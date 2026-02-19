@@ -257,7 +257,7 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
       tabIndex={0}
       aria-label={`Select ${meta.label}`}
       className={`p-7 rounded-[2.8rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-xl relative overflow-hidden focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${
-        isActive ? `${meta.grad} border-white/20 scale-[1.02]` : 'border-white/5 bg-white/5 opacity-40'
+        isActive ? `${meta.grad} border-white/20 scale-[1.02]` : 'border-white/5 bg-white/5 opacity-60'
       }`}>
       <div className="flex justify-between items-start mb-2 text-[12px] font-black uppercase tracking-widest">
         <div className="flex flex-col gap-0.5">
@@ -269,7 +269,7 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
           ) : (
             <span>{meta.label}</span>
           )}
-          <p className="text-[10px] opacity-50">{meta.sub}</p>
+          <p className="text-[10px] opacity-70">{meta.sub}</p>
         </div>
         {isForex && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /> :
         <div className={`px-2.5 py-1 rounded-xl border font-bold ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
@@ -1313,7 +1313,7 @@ export default function App() {
           </button>
         </nav>
 
-        <footer className="mt-12 px-8 pb-12 text-zinc-600 text-[10px] leading-relaxed border-t border-white/5 pt-10">
+        <footer className="mt-12 px-8 pb-12 text-zinc-500 text-[10px] leading-relaxed border-t border-white/5 pt-10">
           <h2 className="text-zinc-400 font-black mb-2 uppercase tracking-widest">GoldView Nepal - Live Gold & Silver Prices</h2>
           <p>GoldView provides real-time updates for <strong>24K Chhapawal Gold</strong>, <strong>22K Tejabi Gold</strong> and <strong>Pure Silver</strong> rates in Nepal.</p>
           <div className="mt-12 text-center">

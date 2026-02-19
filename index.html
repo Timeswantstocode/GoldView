@@ -29,9 +29,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- Load fonts without render-blocking -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700;900&display=swap" rel="stylesheet"></noscript>
+    <!-- Load fonts without render-blocking - only 700;900 weights used -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700;900&display=swap" rel="stylesheet"></noscript>
 
     <title>Gold Price Today in Nepal | GoldView Nepal - Live Gold & Silver Rates</title>
 
@@ -145,7 +145,44 @@
     </style>
   </head>
   <body class="bg-black">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Inline skeleton for instant FCP/LCP before React hydrates -->
+      <div style="min-height:100vh;background:#020202;color:#f4f4f5;font-family:'Noto Sans Devanagari',sans-serif;padding-bottom:160px;overflow-x:hidden">
+        <header style="padding:48px 16px 0;display:flex;justify-content:space-between;align-items:flex-end">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <div style="width:8px;height:8px;border-radius:50%;background:#D4AF37;box-shadow:0 0 10px #D4AF37"></div>
+              <p style="font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.4em;color:#D4AF37;margin:0">Nepali Rates</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <img src="/logo60.webp" alt="GoldView Logo" width="32" height="32" style="border-radius:12px;border:1px solid rgba(255,255,255,0.1)" fetchpriority="high">
+              <h1 style="font-size:30px;font-weight:900;letter-spacing:-0.05em;color:white;margin:0">GoldView</h1>
+            </div>
+          </div>
+        </header>
+        <main style="padding:56px 24px 0">
+          <div style="display:flex;justify-content:space-between;padding:0 4px;margin-bottom:24px">
+            <h2 style="font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:#a1a1aa;margin:0">Market</h2>
+          </div>
+          <div style="padding:28px;border-radius:2.8rem;border:1.5px solid rgba(255,255,255,0.2);background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(184,134,11,0.08));margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">
+              <span>24K Gold</span>
+            </div>
+            <div style="font-size:36px;font-weight:800;letter-spacing:-0.05em;color:#f4f4f5">
+              <h2 style="margin:0;opacity:0.3">———</h2>
+            </div>
+          </div>
+          <div style="padding:28px;border-radius:2.8rem;border:1.5px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.03);opacity:0.6;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">
+              <span>22K Gold</span>
+            </div>
+            <div style="font-size:36px;font-weight:800;letter-spacing:-0.05em;color:#f4f4f5">
+              <h2 style="margin:0;opacity:0.3">———</h2>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
