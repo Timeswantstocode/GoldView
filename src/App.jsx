@@ -137,7 +137,9 @@ const TRANSLATIONS = {
     notificationGranted: "Price alerts enabled! You'll be notified when rates change.",
     notificationWelcome: "Local alerts enabled!",
     currentRates: "Current Rates",
-    selectCurrency: "Select Currency"
+    selectCurrency: "Select Currency",
+    delete: "Delete",
+    confirmDelete: "Are you sure you want to delete this asset?"
   },
   ne: {
     marketUpdate: "नेपाली दर",
@@ -213,7 +215,9 @@ const TRANSLATIONS = {
     notificationGranted: "मूल्य सूचना सक्षम गरियो! दर परिवर्तन हुँदा तपाईंलाई सूचित गरिनेछ।",
     notificationWelcome: "स्थानीय सूचना सक्षम गरियो!",
     currentRates: "हालको दरहरू",
-    selectCurrency: "मुद्रा चयन गर्नुहोस्"
+    selectCurrency: "मुद्रा चयन गर्नुहोस्",
+    delete: "हटाउनुहोस्",
+    confirmDelete: "के तपाईं यो सम्पत्ति हटाउन चाहनुहुन्छ?"
   }
 };
 
@@ -739,7 +743,7 @@ export default function App() {
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> {t('priceTrend')}</h3>
             </div>
             <div className="flex gap-2 bg-white/5 rounded-full p-1 border border-white/10">
-              {[7, 30, 90].map((tf) => (<button key={tf} onClick={() => handleTimeframeChange(tf)} className={`px-4 py-2.5 rounded-full text-[11px] font-black transition-all ${timeframe === tf ? `text-black shadow-lg shadow-white/5` : 'text-zinc-400'}`} style={timeframe === tf ? { backgroundColor: themeColor } : {}}>{tf === 7 ? '7D' : tf === 30 ? '1M' : '3M'}</button>))}
+              {[7, 30, 90].map((tf) => (<button key={tf} onClick={() => handleTimeframeChange(tf)} className={`px-4 py-2.5 rounded-full text-[11px] font-black transition-all focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${timeframe === tf ? `text-black shadow-lg shadow-white/5` : 'text-zinc-400'}`} style={timeframe === tf ? { backgroundColor: themeColor } : {}}>{tf === 7 ? '7D' : tf === 30 ? '1M' : '3M'}</button>))}
             </div>
           </div>
           <div className="h-64 relative w-full">
@@ -849,7 +853,7 @@ export default function App() {
                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">{t('myGold')}</h3>
                <button
                 onClick={() => setShowPortfolioAdd(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[12px] uppercase shadow-lg shadow-[#D4AF37]/20 active:scale-95 transition-all">
+                className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-black rounded-full font-black text-[12px] uppercase shadow-lg shadow-[#D4AF37]/20 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/50 outline-none transition-all">
                  <Plus className="w-3 h-3" /> {t('addAsset')}
                </button>
             </div>
@@ -883,11 +887,14 @@ export default function App() {
                        </div>
                        <button
                         onClick={() => {
-                          const newPortfolio = portfolio.filter((_, i) => i !== index);
-                          setPortfolio(newPortfolio);
-                          localStorage.setItem('gv_portfolio', JSON.stringify(newPortfolio));
+                          if (window.confirm(t('confirmDelete'))) {
+                            const newPortfolio = portfolio.filter((_, i) => i !== index);
+                            setPortfolio(newPortfolio);
+                            localStorage.setItem('gv_portfolio', JSON.stringify(newPortfolio));
+                          }
                         }}
-                        className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-all">
+                        aria-label={t('delete')}
+                        className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 focus-visible:ring-2 focus-visible:ring-red-500/50 outline-none transition-all">
                          <Trash2 className="w-4 h-4" />
                        </button>
                     </div>
@@ -970,19 +977,19 @@ export default function App() {
       <main className="px-6 mt-14 relative z-10 animate-in zoom-in-95 duration-500 pb-20">
         <div className="bg-white/5 border border-white/10 rounded-[4rem] p-8 backdrop-blur-xl shadow-xl">
           <div className="flex p-1 bg-black/40 rounded-3xl mb-10 border border-white/5">
-              <button onClick={() => setCalcMode('jewelry')} style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}} className={`flex-1 py-4 rounded-2xl text-[12px] font-black uppercase transition-all duration-500 ${calcMode === 'jewelry' ? 'text-black' : 'text-zinc-400'}`}>{t('jewelry')}</button>
-              <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[12px] font-black uppercase transition-all duration-500 ${calcMode === 'currency' ? 'bg-[#22c55e] text-black' : 'text-zinc-400'}`}>{t('currency')}</button>
+              <button onClick={() => setCalcMode('jewelry')} style={calcMode === 'jewelry' ? { backgroundColor: themeColor } : {}} className={`flex-1 py-4 rounded-2xl text-[12px] font-black uppercase transition-all duration-500 focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${calcMode === 'jewelry' ? 'text-black' : 'text-zinc-400'}`}>{t('jewelry')}</button>
+              <button onClick={() => setCalcMode('currency')} className={`flex-1 py-4 rounded-2xl text-[12px] font-black uppercase transition-all duration-500 focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${calcMode === 'currency' ? 'bg-[#22c55e] text-black' : 'text-zinc-400'}`}>{t('currency')}</button>
           </div>
 
           {calcMode === 'jewelry' ? (
             <div className="space-y-6">
               <div className="flex p-1 bg-black/40 rounded-[2rem] border border-white/5 mb-2">
-                 <button onClick={() => setTradeMode('buy')} className={`flex-1 py-3 rounded-2xl text-[12px] font-black uppercase transition-all duration-300 ${tradeMode === 'buy' ? 'text-black' : 'text-zinc-400'}`} style={tradeMode === 'buy' ? { backgroundColor: '#22c55e' } : {}}>{t('purchase')}</button>
-                 <button onClick={() => setTradeMode('sell')} className={`flex-1 py-3 rounded-2xl text-[12px] font-black uppercase transition-all duration-300 ${tradeMode === 'sell' ? 'text-black' : 'text-zinc-400'}`} style={tradeMode === 'sell' ? { backgroundColor: '#ef4444' } : {}}>{t('sellBack')}</button>
+                 <button onClick={() => setTradeMode('buy')} className={`flex-1 py-3 rounded-2xl text-[12px] font-black uppercase transition-all duration-300 focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${tradeMode === 'buy' ? 'text-black' : 'text-zinc-400'}`} style={tradeMode === 'buy' ? { backgroundColor: '#22c55e' } : {}}>{t('purchase')}</button>
+                 <button onClick={() => setTradeMode('sell')} className={`flex-1 py-3 rounded-2xl text-[12px] font-black uppercase transition-all duration-300 focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${tradeMode === 'sell' ? 'text-black' : 'text-zinc-400'}`} style={tradeMode === 'sell' ? { backgroundColor: '#ef4444' } : {}}>{t('sellBack')}</button>
               </div>
 
               <div className="flex p-1 bg-white/5 rounded-2xl mb-8 border border-white/5 w-fit mx-auto gap-1">
-                  {['gold', 'tejabi', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (metal === 'gold' ? '#D4AF37' : metal === 'tejabi' ? '#CD7F32' : '#94a3b8') : 'transparent' }} className={`px-4 py-2.5 rounded-xl text-[11px] font-black uppercase transition-all ${activeMetal === metal ? 'text-black' : 'text-zinc-400'}`}>{t(metal === 'gold' ? 'gold24K' : metal === 'tejabi' ? 'gold22K' : 'silver')}</button>))}
+                  {['gold', 'tejabi', 'silver'].map(metal => (<button key={metal} onClick={() => setActiveMetal(metal)} style={{ backgroundColor: activeMetal === metal ? (metal === 'gold' ? '#D4AF37' : metal === 'tejabi' ? '#CD7F32' : '#94a3b8') : 'transparent' }} className={`px-4 py-2.5 rounded-xl text-[11px] font-black uppercase transition-all focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${activeMetal === metal ? 'text-black' : 'text-zinc-400'}`}>{t(metal === 'gold' ? 'gold24K' : metal === 'tejabi' ? 'gold22K' : 'silver')}</button>))}
               </div>
               <div className="mb-8 p-6 rounded-[2.2rem] border-2 flex items-center justify-between" style={{ borderColor: `${themeColor}80`, backgroundColor: `${themeColor}10` }}>
                 <div className="flex items-center gap-4"><Coins className="w-8 h-8" style={{ color: themeColor }} /><p className="text-xl font-black uppercase text-white">{activeMetal === 'gold' ? t('gold24K') : activeMetal === 'tejabi' ? t('gold22K') : t('silver')}</p></div>
@@ -1288,11 +1295,11 @@ export default function App() {
         )}
 
         <nav className="fixed bottom-12 left-10 right-10 h-20 bg-zinc-900/60 backdrop-blur-[50px] rounded-[3rem] border border-white/10 flex justify-around items-center px-4 z-50 shadow-2xl">
-          <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'dashboard' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-400'}`} style={view === 'dashboard' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
+          <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${view === 'dashboard' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-400'}`} style={view === 'dashboard' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
             <LayoutDashboard className={`w-6 h-6 ${view === 'dashboard' ? 'fill-black' : ''}`} />
             <span className="text-[11px] font-black uppercase tracking-widest">{t('dashboard')}</span>
           </button>
-          <button onClick={() => { setView('calculator'); if(activeMetal === 'usd') setActiveMetal('gold'); }} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 ${view === 'calculator' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-400'}`} style={view === 'calculator' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
+          <button onClick={() => { setView('calculator'); if(activeMetal === 'usd') setActiveMetal('gold'); }} className={`flex flex-col items-center gap-1.5 px-12 py-3.5 rounded-[2.2rem] transition-all duration-300 focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${view === 'calculator' ? 'text-black shadow-lg shadow-white/5' : 'text-zinc-400'}`} style={view === 'calculator' ? { backgroundColor: themeColor, boxShadow: `0 0 40px ${themeColor}40` } : {}}>
             <Calculator className={`w-6 h-6 ${view === 'calculator' ? 'fill-black' : ''}`} />
             <span className="text-[11px] font-black uppercase tracking-widest">{t('calculator')}</span>
           </button>
