@@ -2,9 +2,12 @@
 
 [![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge&logo=vercel)](https://www.goldview.tech/)
 [![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-black?style=for-the-badge&logo=vercel)](https://www.goldview.tech/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 **GoldView** is a high-performance, minimalist web application providing real-time gold and silver price tracking in Nepal. Designed for investors, jewelers, and enthusiasts, it offers accurate market data, interactive trends, and powerful calculation tools in a sleek, mobile-first interface.
+
+**Copyright © 2024-2026 Timeswantstocode. All Rights Reserved.**
+
+This is proprietary software. Unauthorized copying, modification, or distribution is prohibited. See LICENSE file for details.
 
 ---
 
@@ -31,43 +34,11 @@
 
 ---
 
-## 🚀 Getting Started
+## 🔧 Environment Variables
 
-### Prerequisites
+**Note:** This section is for reference only. The source code is proprietary and not available for deployment by third parties.
 
--   **Node.js** (v18 or higher)
--   **Python 3.x**
--   **pnpm** (preferred) or npm/yarn
-
-### Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/Timeswantstocode/GoldView.git
-    cd GoldView
-    ```
-
-2.  **Install Frontend Dependencies:**
-    ```bash
-    pnpm install
-    ```
-
-3.  **Install Python Dependencies (for scraper):**
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *(Note: Create a requirements.txt with `requests`, `beautifulsoup4`, `pywebpush` if not present)*
-
-4.  **Run Locally:**
-    ```bash
-    pnpm dev
-    ```
-
----
-
-## 🔧 Configuration & Environment Variables
-
-To enable all features like Push Notifications and Data Scraping, set the following environment variables in your Vercel project or GitHub Secrets:
+For the deployed application at https://www.goldview.tech/, the following environment variables are configured:
 
 | Variable | Description |
 | :--- | :--- |
@@ -77,7 +48,10 @@ To enable all features like Push Notifications and Data Scraping, set the follow
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for storing subscriptions and data. |
 
 ### Generating VAPID Keys
-You can generate your own VAPID keys using the included script:
+
+**Note:** This information is provided for educational reference only.
+
+You can generate VAPID keys using the included script:
 ```bash
 python generate_vapid.py
 ```
@@ -104,21 +78,11 @@ For the best experience on **iOS**:
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Copyright © 2024-2026 Timeswantstocode. All Rights Reserved.
+
+This is proprietary software. See LICENSE file for full terms. Unauthorized copying, modification, or distribution is strictly prohibited.
 
 ---
 

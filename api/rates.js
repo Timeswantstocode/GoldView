@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024-2026 Timeswantstocode. All Rights Reserved.
+ * This software is proprietary and may not be copied, modified, or distributed.
+ * See LICENSE file for details.
+ */
+
 // Live exchange rates endpoint using Yahoo Finance
 // Supports USD to NPR and all other major currencies
 

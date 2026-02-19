@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024-2026 Timeswantstocode. All Rights Reserved.
+ * This software is proprietary and may not be copied, modified, or distributed.
+ * See LICENSE file for details.
+ */
+
 import { put, list } from '@vercel/blob'; // Fixed: Removed 'get'
 
 export default async function handler(req, res) {
