@@ -52,36 +52,30 @@ async function getHistoryFromBlob() {
 }
 
 export default async function handler(req, res) {
-  // 1. Handle GET requests (Retrieve history)
-  if (req.method === 'GET') {
-    try {
-      const { days = 30, pair = 'USD-NPR' } = req.query;
-      const data = await getHistoryFromBlob();
-      
-      // Filter by pair and limit by days
-      const filteredHistory = data.history
-        .filter(entry => entry.pair === pair)
-        .slice(-parseInt(days));
-      
-      return res.status(200).json({
-        pair,
-        days: filteredHistory.length,
-        history: filteredHistory
-      });
-    } catch (error) {
-      console.error('History retrieval error:', error);
-      return res.status(500).json({ error: 'Failed to retrieve history' });
-    }
-  } 
-
-  // 2. Handle POST or Cron requests (Update history)
-  // Vercel Crons send a GET request with a specific header, but we'll support POST too
   const isCron = req.headers['x-vercel-cron'] === '1';
+  const authHeader = req.headers['authorization'];
   
-  if (req.method === 'POST' || isCron) {
+  // 1. Handle Update Requests (Cron or authorized POST)
+  // Sentinel: Added verification for updates to prevent unauthorized data modification
+  if (isCron || req.method === 'POST') {
+    // Security: Verify secret if it's configured in the environment
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     try {
-      // For manual POST, we can specify a single pair. For Cron, we update all tracked pairs.
-      const pairsToUpdate = isCron ? trackedPairs : (req.body.symbol ? [{ symbol: req.body.symbol, pair: req.body.pair }] : trackedPairs);
+      // Sentinel: Whitelist pairs to prevent injection of arbitrary symbols/data
+      let pairsToUpdate = trackedPairs;
+
+      if (req.method === 'POST' && req.body && req.body.symbol) {
+        const { symbol, pair } = req.body;
+        const whitelisted = trackedPairs.find(p => p.symbol === symbol && p.pair === pair);
+        if (!whitelisted) {
+          return res.status(400).json({ error: 'Unsupported symbol or pair' });
+        }
+        pairsToUpdate = [whitelisted];
+      }
 
       const data = await getHistoryFromBlob();
       const today = new Date().toISOString().split('T')[0];
@@ -110,7 +104,6 @@ export default async function handler(req, res) {
       }
 
       // Keep history manageable (last 365 days per pair)
-      // This is a simple cleanup; in a real app, you might want more sophisticated logic
       if (data.history.length > 365 * trackedPairs.length) {
         data.history = data.history.slice(-(365 * trackedPairs.length));
       }
@@ -135,6 +128,29 @@ export default async function handler(req, res) {
       return res.status(500).json({ 
         error: 'Failed to update history'
       });
+    }
+  }
+
+  // 2. Handle GET requests (Retrieve history)
+  if (req.method === 'GET') {
+    try {
+      const { days = 30, pair = 'USD-NPR' } = req.query;
+      const data = await getHistoryFromBlob();
+
+      // Filter by pair and limit by days
+      const filteredHistory = data.history
+        .filter(entry => entry.pair === pair)
+        .slice(-parseInt(days));
+
+      return res.status(200).json({
+        pair,
+        days: filteredHistory.length,
+        history: filteredHistory
+      });
+    } catch (error) {
+      // Sentinel: Removed details: error.message to prevent internal info leakage
+      console.error('History retrieval error:', error);
+      return res.status(500).json({ error: 'Failed to retrieve history' });
     }
   } 
 
