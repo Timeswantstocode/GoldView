@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "author": "Timeswantstocode",
+  "copyright": "Copyright (c) 2024-2026 Timeswantstocode. All Rights Reserved.",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
     "@vercel/blob": "^2.2.0",

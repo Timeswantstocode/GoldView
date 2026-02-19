@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2024-2026 Timeswantstocode. All Rights Reserved.
+ * This software is proprietary and may not be copied, modified, or distributed.
+ * See LICENSE file for details.
+ */
+
 const CACHE_NAME = 'goldview-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
