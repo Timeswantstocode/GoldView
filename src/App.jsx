@@ -898,7 +898,7 @@ export default function App() {
                   >
                     <div className="flex items-center gap-4">
                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-white/5 border border-white/10`}>
-                         <Coins className="w-6 h-6" style={{ color: asset.type === 'silver' ? '#94a3b8' : '#D4AF37' }} />
+                         <Coins className="w-6 h-6" style={{ color: asset.type === 'silver' ? '#94a3b8' : asset.type === 'tejabi' ? '#CD7F32' : '#D4AF37' }} />
                        </div>
                        <div>
                          <p className="text-[12px] font-black uppercase text-white">{asset.name || t(asset.type === 'gold' ? 'gold24K' : asset.type === 'tejabi' ? 'gold22K' : 'silver')}</p>
