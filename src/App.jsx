@@ -586,7 +586,7 @@ export default function App() {
     setIsGenerating(true);
     try {
       const { toPng } = await import('html-to-image');
-      const dataUrl = await toPng(shareCardRef.current, { cacheBust: true, pixelRatio: 2 });
+      const dataUrl = await toPng(shareCardRef.current, { cacheBust: true, pixelRatio: 3, width: 360, height: 640 });
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], 'goldview-rates.png', { type: 'image/png' });
 
@@ -669,7 +669,16 @@ export default function App() {
       if (elements.length > 0) {
         const index = elements[0].index;
         const point = filteredData[index];
-        setSelectedPoint({ index, date: point.date, price: activeMetal === 'usd' ? point.usdRate : point[activeMetal] });
+        let price;
+        if (['gold', 'tejabi', 'silver'].includes(activeMetal)) {
+          price = Number(point[activeMetal]) || 0;
+        } else if (activeMetal === 'usd') {
+          price = point.usdRate;
+        } else {
+          const rate = point.rates?.find(r => r.code.toLowerCase() === activeMetal.toLowerCase());
+          price = rate ? (rate.buy / (rate.unit || 1)) : 0;
+        }
+        setSelectedPoint({ index, date: point.date, price });
       }
     }
   }), [filteredData, activeMetal, timeframe, formatValue]);
@@ -727,19 +736,6 @@ export default function App() {
           <div className="flex justify-between items-start mb-8 px-1 w-full">
             <div className="flex flex-col gap-1">
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> {t('priceTrend')}</h3>
-              {!['gold', 'tejabi', 'silver'].includes(activeMetal) && (
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                  <select
-                    className="bg-transparent text-[11px] font-black text-zinc-400 outline-none uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
-                    value={activeMetal.toUpperCase()}
-                    onChange={(e) => handleCurrencyChange(e.target.value.toLowerCase())}
-                    aria-label="Select Currency for Chart"
-                  >
-                    {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.flag} {c.code} / NPR</option>)}
-                  </select>
-                </div>
-              )}
             </div>
             <div className="flex gap-2 bg-white/5 rounded-full p-1 border border-white/10">
               {[7, 30, 90].map((tf) => (<button key={tf} onClick={() => handleTimeframeChange(tf)} className={`px-4 py-2.5 rounded-full text-[11px] font-black transition-all ${timeframe === tf ? `text-black shadow-lg shadow-white/5` : 'text-zinc-400'}`} style={timeframe === tf ? { backgroundColor: themeColor } : {}}>{tf === 7 ? '7D' : tf === 30 ? '1M' : '3M'}</button>))}
@@ -1163,33 +1159,33 @@ export default function App() {
             <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setShowShareModal(false)} />
             <div className="max-w-sm w-full space-y-8 relative z-10">
                {/* This is the card that will be captured */}
-               <div ref={shareCardRef} className="aspect-[9/16] bg-black border-[12px] border-[#D4AF37]/20 rounded-[3rem] p-12 flex flex-col justify-between relative overflow-hidden">
+               <div ref={shareCardRef} style={{ width: '360px', height: '640px' }} className="bg-black border-[12px] border-[#D4AF37]/20 rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/10 to-transparent" />
                   <div className="relative z-10">
-                    <div className="mb-16 text-center">
-                      <h2 className="text-5xl font-black tracking-tighter text-white">GoldView</h2>
+                    <div className="mb-12 text-center">
+                      <h2 className="text-4xl font-black tracking-tighter text-white">GoldView</h2>
                     </div>
 
-                    <div className="space-y-12">
+                    <div className="space-y-8">
                        {['gold', 'tejabi', 'silver'].map(m => (
-                         <div key={m} className="flex justify-between items-end border-b border-white/10 pb-6">
-                            <div>
-                               <p className="text-[12px] font-black text-zinc-400 uppercase tracking-widest mb-1">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
-                               <p className="text-xs font-bold text-zinc-600">{t('perTola')}</p>
+                         <div key={m} className="flex justify-between items-end border-b border-white/10 pb-4">
+                            <div className="shrink-0 mr-4">
+                               <p className="text-[11px] font-black text-zinc-400 uppercase tracking-widest mb-1">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
+                               <p className="text-[10px] font-bold text-zinc-600">{t('perTola')}</p>
                             </div>
                             <div className="text-right">
-                               <p className="text-3xl font-black text-white">{formatRS(priceData[priceData.length-1]?.[m])}</p>
-                               <p className={`text-[12px] font-black ${allDiffs[m].isUp ? 'text-green-400' : 'text-red-400'}`}>{allDiffs[m].val}</p>
+                               <p className="text-2xl font-black text-white whitespace-nowrap">{formatRS(priceData[priceData.length-1]?.[m])}</p>
+                               <p className={`text-[11px] font-black ${allDiffs[m].isUp ? 'text-green-400' : 'text-red-400'}`}>{allDiffs[m].val}</p>
                             </div>
                          </div>
                        ))}
                     </div>
                   </div>
 
-                  <div className="relative z-10 flex justify-between items-end border-t border-white/5 pt-8">
+                  <div className="relative z-10 flex justify-between items-end border-t border-white/5 pt-6">
                      <div>
-                       <p className="text-[12px] font-black text-zinc-400 uppercase mb-2">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                       <p className="text-xs font-black text-[#D4AF37] tracking-[0.3em] uppercase">WWW.GOLDVIEW.TECH</p>
+                       <p className="text-[11px] font-black text-zinc-400 uppercase mb-2">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                       <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.3em] uppercase">WWW.GOLDVIEW.TECH</p>
                      </div>
                      <div className="w-12 h-12 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
                         <TrendingUp className="w-6 h-6 text-[#D4AF37]" />
