@@ -130,7 +130,8 @@ const TRANSLATIONS = {
     gotIt: "Got it",
     notificationGranted: "Price alerts enabled! You'll be notified when rates change.",
     notificationWelcome: "Local alerts enabled!",
-    currentRates: "Current Rates"
+    currentRates: "Current Rates",
+    selectCurrency: "Select Currency"
   },
   ne: {
     marketUpdate: "नेपाली दर",
@@ -205,7 +206,8 @@ const TRANSLATIONS = {
     gotIt: "बुझे",
     notificationGranted: "मूल्य सूचना सक्षम गरियो! दर परिवर्तन हुँदा तपाईंलाई सूचित गरिनेछ।",
     notificationWelcome: "स्थानीय सूचना सक्षम गरियो!",
-    currentRates: "हालको दरहरू"
+    currentRates: "हालको दरहरू",
+    selectCurrency: "मुद्रा चयन गर्नुहोस्"
   }
 };
 
@@ -746,7 +748,7 @@ export default function App() {
               <div className="flex flex-col gap-3">
                 <label className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400" style={{ color: themeColor }}>
                   <Globe className="w-3.5 h-3.5 inline mr-2" />
-                  Select Currency
+                  {t('selectCurrency')}
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {CURRENCY_LIST.map((currency) => (
