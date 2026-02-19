@@ -394,6 +394,7 @@ export default function App() {
   const [showPortfolioAdd, setShowPortfolioAdd] = useState(false);
   const [newAsset, setNewAsset] = useState({ type: 'gold', name: '', tola: '', aana: '', lal: '', pricePaid: '' });
   const [showGuide, setShowGuide] = useState(false);
+  const [newlyAddedIndex, setNewlyAddedIndex] = useState(null);
 
   const chartRef = useRef(null);
   const shareCardRef = useRef(null);
@@ -875,8 +876,16 @@ export default function App() {
                 const currentPrice = latestPrices[asset.type] || 0;
                 const currentValue = asset.weight * currentPrice;
                 const pl = currentValue - asset.pricePaid;
+                const isNewlyAdded = index === newlyAddedIndex;
                 return (
-                  <div key={index} className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 flex justify-between items-center">
+                  <div 
+                    key={index} 
+                    className={`bg-white/5 border rounded-[2.5rem] p-6 flex justify-between items-center transition-all duration-500 ${
+                      isNewlyAdded 
+                        ? 'border-[#D4AF37] border-2 shadow-lg shadow-[#D4AF37]/30 animate-pulse' 
+                        : 'border-white/10'
+                    }`}
+                  >
                     <div className="flex items-center gap-4">
                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-white/5 border border-white/10`}>
                          <Coins className="w-6 h-6" style={{ color: asset.type === 'silver' ? '#94a3b8' : '#D4AF37' }} />
@@ -899,6 +908,7 @@ export default function App() {
                             const newPortfolio = portfolio.filter((_, i) => i !== index);
                             setPortfolio(newPortfolio);
                             localStorage.setItem('gv_portfolio', JSON.stringify(newPortfolio));
+                            setNewlyAddedIndex(null);
                           }
                         }}
                         aria-label={t('delete')}
@@ -968,8 +978,10 @@ export default function App() {
                     const newPortfolio = [...portfolio, asset];
                     setPortfolio(newPortfolio);
                     localStorage.setItem('gv_portfolio', JSON.stringify(newPortfolio));
+                    setNewlyAddedIndex(newPortfolio.length - 1);
                     setShowPortfolioAdd(false);
                     setNewAsset({ type: 'gold', name: '', tola: '', aana: '', lal: '', pricePaid: '' });
+                    setTimeout(() => setNewlyAddedIndex(null), 3000);
                   }}
                   className="flex-1 py-4 bg-[#D4AF37] text-black font-black rounded-2xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">{t('save')}</button>
               </div>
