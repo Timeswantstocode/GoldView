@@ -13,6 +13,8 @@ const PriceChart = lazy(() => import('./components/PriceChart'));
 const DATA_URL = "/data.json";
 const FOREX_PROXY = "/api/forex";
 const PRIMARY_DOMAIN = "https://www.goldview.tech/";
+const SHARE_CARD_WIDTH = 360;
+const SHARE_CARD_HEIGHT = 640;
 
 
 const CURRENCY_LIST = [
@@ -586,7 +588,7 @@ export default function App() {
     setIsGenerating(true);
     try {
       const { toPng } = await import('html-to-image');
-      const dataUrl = await toPng(shareCardRef.current, { cacheBust: true, pixelRatio: 3, width: 360, height: 640 });
+      const dataUrl = await toPng(shareCardRef.current, { cacheBust: true, pixelRatio: 3, width: SHARE_CARD_WIDTH, height: SHARE_CARD_HEIGHT });
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], 'goldview-rates.png', { type: 'image/png' });
 
@@ -1159,7 +1161,7 @@ export default function App() {
             <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setShowShareModal(false)} />
             <div className="max-w-sm w-full space-y-8 relative z-10">
                {/* This is the card that will be captured */}
-               <div ref={shareCardRef} style={{ width: '360px', height: '640px' }} className="bg-black border-[12px] border-[#D4AF37]/20 rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden">
+               <div ref={shareCardRef} style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px` }} className="bg-black border-[12px] border-[#D4AF37]/20 rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/10 to-transparent" />
                   <div className="relative z-10">
                     <div className="mb-12 text-center">
