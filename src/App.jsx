@@ -398,8 +398,18 @@ export default function App() {
 
   const chartRef = useRef(null);
   const shareCardRef = useRef(null);
+  const highlightTimeoutRef = useRef(null);
 
   const t = useCallback((key) => TRANSLATIONS[lang][key] || key, [lang]);
+
+  // Clean up highlight timeout when component unmounts
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Memoize metadata to provide stable object references for PriceCard components.
   // This prevents unnecessary re-renders of the entire dashboard grid when
@@ -908,6 +918,10 @@ export default function App() {
                             const newPortfolio = portfolio.filter((_, i) => i !== index);
                             setPortfolio(newPortfolio);
                             localStorage.setItem('gv_portfolio', JSON.stringify(newPortfolio));
+                            // Clear highlight and timeout when deleting
+                            if (highlightTimeoutRef.current) {
+                              clearTimeout(highlightTimeoutRef.current);
+                            }
                             setNewlyAddedIndex(null);
                           }
                         }}
@@ -981,7 +995,11 @@ export default function App() {
                     setNewlyAddedIndex(newPortfolio.length - 1);
                     setShowPortfolioAdd(false);
                     setNewAsset({ type: 'gold', name: '', tola: '', aana: '', lal: '', pricePaid: '' });
-                    setTimeout(() => setNewlyAddedIndex(null), 3000);
+                    // Clear any existing timeout before setting a new one
+                    if (highlightTimeoutRef.current) {
+                      clearTimeout(highlightTimeoutRef.current);
+                    }
+                    highlightTimeoutRef.current = setTimeout(() => setNewlyAddedIndex(null), 3000);
                   }}
                   className="flex-1 py-4 bg-[#D4AF37] text-black font-black rounded-2xl active:scale-95 transition-all shadow-lg shadow-[#D4AF37]/20">{t('save')}</button>
               </div>
