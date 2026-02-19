@@ -400,6 +400,14 @@ export default function App() {
 
   const t = useCallback((key) => TRANSLATIONS[lang][key] || key, [lang]);
 
+  // Memoize metadata to provide stable object references for PriceCard components.
+  // This prevents unnecessary re-renders of the entire dashboard grid when
+  // unrelated state (like chart timeframe or portfolio selections) changes.
+  const allMeta = useMemo(() => ({
+    ...getMetalMeta(t),
+    ...getForexMeta(t)
+  }), [t]);
+
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
@@ -700,7 +708,7 @@ export default function App() {
         <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">{text}</span>
       </div>
     );
-  }, [priceData, t]);
+  }, [priceData, lang]);
 
   const dashboardView = useMemo(() => (
     <div style={{ display: view === 'dashboard' ? 'block' : 'none' }}>
@@ -728,7 +736,7 @@ export default function App() {
                 isActive={activeMetal === type}
                 diff={allDiffs[type]}
                 val={val}
-                meta={getMeta(type, t)}
+                meta={allMeta[type] || { label: type.toUpperCase(), sub: '', grad: '' }}
                 onClick={handleMetalClick}
                 formatValue={formatValue}
                 forexLoading={forexLoading}

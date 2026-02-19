@@ -13,3 +13,7 @@
 ## 2026-02-18 - [Instant Load: Lazy Loading + Local Data]
 **Learning:** Fetching data from GitHub Raw is significantly slower than serving it from the local origin (Vercel edge). Also, heavy visualization libraries like Chart.js block the main thread during hydration.
 **Action:** Move large data files to `public/` and serve them via local paths. Combine with `React.lazy` for heavy UI components (like Charts) to keep the initial critical bundle under 100kB, ensuring "instant" feeling on mobile devices.
+
+## 2026-02-19 - [Metadata Reference Stability]
+**Learning:** Re-generating metadata objects (labels, colors, icons) inside a component's render loop or `.map()` function breaks `React.memo` on child components, as they receive new object references every time the parent renders.
+**Action:** Use `useMemo` to create a stable "meta-map" (e.g., `allMeta`) that depends only on the translation function or language. Pass these stable references to memoized children to effectively skip unnecessary re-renders. This is especially critical for dashboard grids where unrelated state changes (like chart selection) shouldn't trigger expensive re-renders of all price cards.
