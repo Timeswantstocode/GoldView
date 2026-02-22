@@ -1288,9 +1288,11 @@ export default function App() {
                          <div key={m} className="flex justify-between items-center border-b border-white/10 pb-4">
                             <div className="flex flex-col">
                                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
+                               <p className="text-[8px] font-bold text-zinc-600">{t('perTola')}</p>
                             </div>
                             <div className="text-right">
                                <p className="text-2xl font-black text-white">{formatRS(priceData[priceData.length-1]?.[m])}</p>
+                               <p className={`text-[10px] font-black mt-0.5 ${allDiffs[m].isUp ? 'text-green-400' : 'text-red-400'}`}>{allDiffs[m].val}</p>
                             </div>
                          </div>
                        ))}
@@ -1298,7 +1300,10 @@ export default function App() {
                   </div>
 
                   <div className="relative z-10 flex justify-between items-end border-t border-white/10 pt-6">
-                     <p className="text-[9px] font-black text-[#D4AF37] tracking-[0.3em] uppercase">WWW.GOLDVIEW.TECH</p>
+                     <div>
+                       <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                       <p className="text-[11px] font-black text-[#D4AF37] tracking-[0.4em] uppercase">WWW.GOLDVIEW.TECH</p>
+                     </div>
                      <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
                   </div>
                </div>
