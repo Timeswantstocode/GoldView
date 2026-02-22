@@ -611,7 +611,7 @@ export default function App() {
     setIsGenerating(true);
     try {
       const { toPng } = await import('html-to-image');
-      const options = { cacheBust: true, pixelRatio: 3, width: SHARE_CARD_WIDTH, height: SHARE_CARD_HEIGHT, backgroundColor: '#000000', style: { position: 'relative', left: '0', top: '0' } };
+      const options = { cacheBust: true, pixelRatio: 3, width: SHARE_CARD_WIDTH, height: SHARE_CARD_HEIGHT, canvasWidth: SHARE_CARD_WIDTH * 3, canvasHeight: SHARE_CARD_HEIGHT * 3, backgroundColor: '#000000' };
       // Warm-up render to cache fonts and resources (prevents black image)
       await toPng(shareCardRef.current, options).catch(() => {});
       const dataUrl = await toPng(shareCardRef.current, options);
@@ -1234,10 +1234,11 @@ export default function App() {
         {calculatorView}
         {portfolioView}
 
+        <div style={{ position: 'fixed', left: 0, top: 0, width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none' }}>
         <div
           ref={shareCardRef}
           id="share-card-capture"
-          style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px`, backgroundColor: '#000000', position: 'fixed', left: '-2000px', top: 0, border: '12px solid rgba(212, 175, 55, 0.2)', padding: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}
+          style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px`, backgroundColor: '#000000', border: '12px solid rgba(212, 175, 55, 0.2)', padding: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}
         >
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom right, rgba(212, 175, 55, 0.15), transparent)' }} />
           <div style={{ position: 'relative', zIndex: 10 }}>
@@ -1264,6 +1265,7 @@ export default function App() {
                ))}
             </div>
           </div>
+        </div>
         </div>
 
         {showShareModal && (
