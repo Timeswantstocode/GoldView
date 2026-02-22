@@ -611,7 +611,7 @@ export default function App() {
     setIsGenerating(true);
     try {
       const { toPng } = await import('html-to-image');
-      const dataUrl = await toPng(shareCardRef.current, { cacheBust: true, pixelRatio: 3, width: SHARE_CARD_WIDTH, height: SHARE_CARD_HEIGHT });
+      const dataUrl = await toPng(shareCardRef.current, { cacheBust: true, pixelRatio: 3, width: SHARE_CARD_WIDTH, height: SHARE_CARD_HEIGHT, backgroundColor: '#000000' });
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], 'goldview-rates.png', { type: 'image/png' });
 
@@ -1234,8 +1234,8 @@ export default function App() {
         <div
           ref={shareCardRef}
           id="share-card-capture"
-          style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px` }}
-          className="fixed -left-[2000px] top-0 bg-black border-[12px] border-[#D4AF37]/20 rounded-none p-10 flex flex-col justify-between overflow-hidden"
+          style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px`, backgroundColor: '#000000' }}
+          className="fixed -left-[2000px] top-0 border-[12px] border-[#D4AF37]/20 rounded-none p-10 flex flex-col justify-between overflow-hidden"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/15 to-transparent" />
           <div className="relative z-10">
@@ -1260,14 +1260,14 @@ export default function App() {
             </div>
           </div>
 
-          <div className="relative z-10 flex justify-between items-end border-t border-white/10 pt-6">
-             <div>
-               <p className="text-[12px] font-black text-zinc-400 uppercase mb-2">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-               <p className="text-[11px] font-black text-[#D4AF37] tracking-[0.4em] uppercase">WWW.GOLDVIEW.TECH</p>
+          <div className="relative z-10 flex flex-col items-center border-t border-white/10 pt-6">
+             <div className="flex justify-between items-center w-full mb-4">
+               <p className="text-[12px] font-black text-zinc-400 uppercase">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+               <div className="w-12 h-12 bg-[#D4AF37]/20 flex items-center justify-center border border-[#D4AF37]/30">
+                  <TrendingUp className="w-6 h-6 text-[#D4AF37]" />
+               </div>
              </div>
-             <div className="w-16 h-16 bg-[#D4AF37]/20 flex items-center justify-center border border-[#D4AF37]/30">
-                <TrendingUp className="w-8 h-8 text-[#D4AF37]" />
-             </div>
+             <p className="text-[14px] font-black text-[#D4AF37] tracking-[0.5em] uppercase">WWW.GOLDVIEW.TECH</p>
           </div>
         </div>
 
@@ -1299,12 +1299,12 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="relative z-10 flex justify-between items-end border-t border-white/10 pt-6">
-                     <div>
-                       <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                       <p className="text-[11px] font-black text-[#D4AF37] tracking-[0.4em] uppercase">WWW.GOLDVIEW.TECH</p>
+                  <div className="relative z-10 flex flex-col items-center border-t border-white/10 pt-4">
+                     <div className="flex justify-between items-center w-full mb-2">
+                       <p className="text-[9px] font-black text-zinc-400 uppercase">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                       <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
                      </div>
-                     <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
+                     <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase">WWW.GOLDVIEW.TECH</p>
                   </div>
                </div>
 
