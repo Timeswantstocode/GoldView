@@ -1300,7 +1300,10 @@ export default function App() {
                   </div>
 
                   <div className="relative z-10 flex justify-between items-end border-t border-white/10 pt-6">
-                     <p className="text-[9px] font-black text-[#D4AF37] tracking-[0.3em] uppercase">WWW.GOLDVIEW.TECH</p>
+                     <div>
+                       <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                       <p className="text-[11px] font-black text-[#D4AF37] tracking-[0.4em] uppercase">WWW.GOLDVIEW.TECH</p>
+                     </div>
                      <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
                   </div>
                </div>
