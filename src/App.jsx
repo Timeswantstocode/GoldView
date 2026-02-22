@@ -611,7 +611,7 @@ export default function App() {
     setIsGenerating(true);
     try {
       const { toPng } = await import('html-to-image');
-      const options = { cacheBust: true, pixelRatio: 3, width: SHARE_CARD_WIDTH, height: SHARE_CARD_HEIGHT, backgroundColor: '#000000' };
+      const options = { cacheBust: true, pixelRatio: 3, width: SHARE_CARD_WIDTH, height: SHARE_CARD_HEIGHT, backgroundColor: '#000000', style: { position: 'relative', left: '0', top: '0' } };
       // Warm-up render to cache fonts and resources (prevents black image)
       await toPng(shareCardRef.current, options).catch(() => {});
       const dataUrl = await toPng(shareCardRef.current, options);
