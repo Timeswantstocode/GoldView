@@ -19,8 +19,8 @@ const PriceChart = lazy(() => import('./components/PriceChart'));
 const DATA_URL = "/data.json";
 const FOREX_PROXY = "/api/forex";
 const PRIMARY_DOMAIN = "https://www.goldview.tech/";
-const SHARE_CARD_WIDTH = 360;
-const SHARE_CARD_HEIGHT = 640;
+const SHARE_CARD_WIDTH = 600;
+const SHARE_CARD_HEIGHT = 600;
 
 
 const CURRENCY_LIST = [
@@ -1231,46 +1231,79 @@ export default function App() {
         {calculatorView}
         {portfolioView}
 
+        <div
+          ref={shareCardRef}
+          id="share-card-capture"
+          style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px` }}
+          className="fixed -left-[2000px] top-0 bg-black border-[12px] border-[#D4AF37]/20 rounded-none p-10 flex flex-col justify-between overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/15 to-transparent" />
+          <div className="relative z-10">
+            <div className="mb-10 text-center">
+              <h2 className="text-6xl font-black tracking-tighter text-white">GoldView</h2>
+              <p className="text-[#D4AF37] text-sm font-black tracking-[0.5em] uppercase mt-2">NEPALI RATES</p>
+            </div>
+
+            <div className="space-y-6 px-4">
+               {['gold', 'tejabi', 'silver'].map(m => (
+                 <div key={m} className="flex justify-between items-center border-b border-white/10 pb-4 gap-4">
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                       <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
+                       <p className="text-[10px] font-bold text-zinc-600">{t('perTola')}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                       <p className="text-4xl font-black text-white whitespace-nowrap">{formatRS(priceData[priceData.length-1]?.[m])}</p>
+                       <p className={`text-[12px] font-black mt-0.5 ${allDiffs[m].isUp ? 'text-green-400' : 'text-red-400'}`}>{allDiffs[m].val}</p>
+                    </div>
+                 </div>
+               ))}
+            </div>
+          </div>
+
+          <div className="relative z-10 flex justify-between items-end border-t border-white/10 pt-6">
+             <div>
+               <p className="text-[12px] font-black text-zinc-400 uppercase mb-2">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+               <p className="text-[11px] font-black text-[#D4AF37] tracking-[0.4em] uppercase">WWW.GOLDVIEW.TECH</p>
+             </div>
+             <div className="w-16 h-16 bg-[#D4AF37]/20 flex items-center justify-center border border-[#D4AF37]/30">
+                <TrendingUp className="w-8 h-8 text-[#D4AF37]" />
+             </div>
+          </div>
+        </div>
+
         {showShareModal && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
             <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setShowShareModal(false)} />
-            <div className="max-w-sm w-full space-y-8 relative z-10">
-               {/* This is the card that will be captured */}
-               <div ref={shareCardRef} style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px` }} className="bg-black border-[12px] border-[#D4AF37]/20 rounded-[3rem] p-10 flex flex-col justify-between relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/10 to-transparent" />
+            <div className="max-w-[400px] w-full space-y-8 relative z-10">
+               <div className="aspect-square bg-black border-[8px] border-[#D4AF37]/20 rounded-none p-8 flex flex-col justify-between relative overflow-hidden shadow-2xl">
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/15 to-transparent" />
                   <div className="relative z-10">
-                    <div className="mb-12 text-center">
+                    <div className="mb-8 text-center">
                       <h2 className="text-4xl font-black tracking-tighter text-white">GoldView</h2>
+                      <p className="text-[#D4AF37] text-[10px] font-black tracking-[0.4em] uppercase mt-1">NEPALI RATES</p>
                     </div>
 
-                    <div className="space-y-8">
+                    <div className="space-y-6">
                        {['gold', 'tejabi', 'silver'].map(m => (
-                         <div key={m} className="flex justify-between items-center border-b border-white/10 pb-4 gap-4">
-                            <div className="flex flex-col gap-1 min-w-0 flex-1">
-                               <p className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
-                               <p className="text-[10px] font-bold text-zinc-600">{t('perTola')}</p>
+                         <div key={m} className="flex justify-between items-center border-b border-white/10 pb-4">
+                            <div className="flex flex-col">
+                               <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
                             </div>
-                            <div className="text-right flex-shrink-0">
-                               <p className="text-2xl font-black text-white whitespace-nowrap">{formatRS(priceData[priceData.length-1]?.[m])}</p>
-                               <p className={`text-[11px] font-black ${allDiffs[m].isUp ? 'text-green-400' : 'text-red-400'}`}>{allDiffs[m].val}</p>
+                            <div className="text-right">
+                               <p className="text-2xl font-black text-white">{formatRS(priceData[priceData.length-1]?.[m])}</p>
                             </div>
                          </div>
                        ))}
                     </div>
                   </div>
 
-                  <div className="relative z-10 flex justify-between items-end border-t border-white/5 pt-6">
-                     <div>
-                       <p className="text-[11px] font-black text-zinc-400 uppercase mb-2">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                       <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.3em] uppercase">WWW.GOLDVIEW.TECH</p>
-                     </div>
-                     <div className="w-12 h-12 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
-                        <TrendingUp className="w-6 h-6 text-[#D4AF37]" />
-                     </div>
+                  <div className="relative z-10 flex justify-between items-end border-t border-white/10 pt-6">
+                     <p className="text-[9px] font-black text-[#D4AF37] tracking-[0.3em] uppercase">WWW.GOLDVIEW.TECH</p>
+                     <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
                   </div>
                </div>
 
-               <div className="flex flex-col gap-3">
+               <div className="flex flex-col gap-3 px-4 sm:px-0">
                  <button
                   onClick={handleShare}
                   disabled={isGenerating}
