@@ -612,11 +612,8 @@ export default function App() {
     try {
       const { toPng } = await import('html-to-image');
       const options = { cacheBust: true, pixelRatio: 3, width: SHARE_CARD_WIDTH, height: SHARE_CARD_HEIGHT, canvasWidth: SHARE_CARD_WIDTH * 3, canvasHeight: SHARE_CARD_HEIGHT * 3, backgroundColor: '#000000' };
-      // Multiple warm-up renders to cache fonts and resources (prevents black image)
-      for (let i = 0; i < 3; i++) {
-        await toPng(shareCardRef.current, options).catch(() => {});
-      }
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Warm-up render to cache fonts and resources (prevents black image)
+      await toPng(shareCardRef.current, options).catch(() => {});
       const dataUrl = await toPng(shareCardRef.current, options);
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], 'goldview-rates.png', { type: 'image/png' });
