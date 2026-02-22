@@ -611,7 +611,10 @@ export default function App() {
     setIsGenerating(true);
     try {
       const { toPng } = await import('html-to-image');
-      const dataUrl = await toPng(shareCardRef.current, { cacheBust: true, pixelRatio: 3, width: SHARE_CARD_WIDTH, height: SHARE_CARD_HEIGHT, backgroundColor: '#000000' });
+      const options = { cacheBust: true, pixelRatio: 3, width: SHARE_CARD_WIDTH, height: SHARE_CARD_HEIGHT, backgroundColor: '#000000' };
+      // Warm-up render to cache fonts and resources (prevents black image)
+      await toPng(shareCardRef.current, options).catch(() => {});
+      const dataUrl = await toPng(shareCardRef.current, options);
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], 'goldview-rates.png', { type: 'image/png' });
 
@@ -1234,40 +1237,32 @@ export default function App() {
         <div
           ref={shareCardRef}
           id="share-card-capture"
-          style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px`, backgroundColor: '#000000' }}
-          className="fixed -left-[2000px] top-0 border-[12px] border-[#D4AF37]/20 rounded-none p-10 flex flex-col justify-between overflow-hidden"
+          style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px`, backgroundColor: '#000000', position: 'fixed', left: '-2000px', top: 0, border: '12px solid rgba(212, 175, 55, 0.2)', padding: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/15 to-transparent" />
-          <div className="relative z-10">
-            <div className="mb-10 text-center">
-              <h2 className="text-6xl font-black tracking-tighter text-white">GoldView</h2>
-              <p className="text-[#D4AF37] text-sm font-black tracking-[0.5em] uppercase mt-2">NEPALI RATES</p>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom right, rgba(212, 175, 55, 0.15), transparent)' }} />
+          <div style={{ position: 'relative', zIndex: 10 }}>
+            <div style={{ marginBottom: '28px', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '60px', fontWeight: 900, letterSpacing: '-0.05em', color: '#ffffff' }}>GoldView</h2>
+              <p style={{ color: '#D4AF37', fontSize: '14px', fontWeight: 900, letterSpacing: '0.5em', textTransform: 'uppercase', marginTop: '8px' }}>NEPALI RATES</p>
+              <p style={{ color: '#D4AF37', fontSize: '14px', fontWeight: 900, letterSpacing: '0.5em', textTransform: 'uppercase', marginTop: '4px' }}>WWW.GOLDVIEW.TECH</p>
             </div>
 
-            <div className="space-y-6 px-4">
+            <p style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', paddingLeft: '16px', marginBottom: '16px' }}>{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingLeft: '16px', paddingRight: '16px' }}>
                {['gold', 'tejabi', 'silver'].map(m => (
-                 <div key={m} className="flex justify-between items-center border-b border-white/10 pb-4 gap-4">
-                    <div className="flex flex-col gap-1 min-w-0 flex-1">
-                       <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
-                       <p className="text-[10px] font-bold text-zinc-600">{t('perTola')}</p>
+                 <div key={m} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '16px', gap: '16px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0, flex: 1 }}>
+                       <p style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{t(m === 'gold' ? 'gold24K' : m === 'tejabi' ? 'gold22K' : 'silver')}</p>
+                       <p style={{ fontSize: '10px', fontWeight: 700, color: '#52525b' }}>{t('perTola')}</p>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                       <p className="text-4xl font-black text-white whitespace-nowrap">{formatRS(priceData[priceData.length-1]?.[m])}</p>
-                       <p className={`text-[12px] font-black mt-0.5 ${allDiffs[m].isUp ? 'text-green-400' : 'text-red-400'}`}>{allDiffs[m].val}</p>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                       <p style={{ fontSize: '36px', fontWeight: 900, color: '#ffffff', whiteSpace: 'nowrap' }}>{formatRS(priceData[priceData.length-1]?.[m])}</p>
+                       <p style={{ fontSize: '12px', fontWeight: 900, marginTop: '2px', color: allDiffs[m].isUp ? '#4ade80' : '#f87171' }}>{allDiffs[m].val}</p>
                     </div>
                  </div>
                ))}
             </div>
-          </div>
-
-          <div className="relative z-10 flex flex-col items-center border-t border-white/10 pt-6">
-             <div className="flex justify-between items-center w-full mb-4">
-               <p className="text-[12px] font-black text-zinc-400 uppercase">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-               <div className="w-12 h-12 bg-[#D4AF37]/20 flex items-center justify-center border border-[#D4AF37]/30">
-                  <TrendingUp className="w-6 h-6 text-[#D4AF37]" />
-               </div>
-             </div>
-             <p className="text-[14px] font-black text-[#D4AF37] tracking-[0.5em] uppercase">WWW.GOLDVIEW.TECH</p>
           </div>
         </div>
 
@@ -1275,15 +1270,18 @@ export default function App() {
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
             <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setShowShareModal(false)} />
             <div className="max-w-[400px] w-full space-y-8 relative z-10">
-               <div className="aspect-square bg-black border-[8px] border-[#D4AF37]/20 rounded-none p-8 flex flex-col justify-between relative overflow-hidden shadow-2xl">
+               <div className="aspect-square bg-black border-[8px] border-[#D4AF37]/20 rounded-none p-8 flex flex-col justify-center relative overflow-hidden shadow-2xl">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/15 to-transparent" />
                   <div className="relative z-10">
-                    <div className="mb-8 text-center">
+                    <div className="mb-5 text-center">
                       <h2 className="text-4xl font-black tracking-tighter text-white">GoldView</h2>
                       <p className="text-[#D4AF37] text-[10px] font-black tracking-[0.4em] uppercase mt-1">NEPALI RATES</p>
+                      <p className="text-[#D4AF37] text-[10px] font-black tracking-[0.4em] uppercase">WWW.GOLDVIEW.TECH</p>
                     </div>
 
-                    <div className="space-y-6">
+                    <p className="text-[9px] font-black text-zinc-400 uppercase mb-3">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+
+                    <div className="space-y-4">
                        {['gold', 'tejabi', 'silver'].map(m => (
                          <div key={m} className="flex justify-between items-center border-b border-white/10 pb-4">
                             <div className="flex flex-col">
@@ -1299,13 +1297,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="relative z-10 flex flex-col items-center border-t border-white/10 pt-4">
-                     <div className="flex justify-between items-center w-full mb-2">
-                       <p className="text-[9px] font-black text-zinc-400 uppercase">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                       <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
-                     </div>
-                     <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase">WWW.GOLDVIEW.TECH</p>
-                  </div>
                </div>
 
                <div className="flex flex-col gap-3 px-4 sm:px-0">
