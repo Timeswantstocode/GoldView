@@ -1237,7 +1237,7 @@ export default function App() {
         <div
           ref={shareCardRef}
           id="share-card-capture"
-          style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px`, backgroundColor: '#000000', position: 'fixed', left: '-2000px', top: 0, border: '12px solid rgba(212, 175, 55, 0.2)', padding: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden' }}
+          style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px`, backgroundColor: '#000000', position: 'fixed', left: '-2000px', top: 0, border: '12px solid rgba(212, 175, 55, 0.2)', padding: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}
         >
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom right, rgba(212, 175, 55, 0.15), transparent)' }} />
           <div style={{ position: 'relative', zIndex: 10 }}>
@@ -1246,6 +1246,8 @@ export default function App() {
               <p style={{ color: '#D4AF37', fontSize: '14px', fontWeight: 900, letterSpacing: '0.5em', textTransform: 'uppercase', marginTop: '8px' }}>NEPALI RATES</p>
               <p style={{ color: '#D4AF37', fontSize: '14px', fontWeight: 900, letterSpacing: '0.5em', textTransform: 'uppercase', marginTop: '4px' }}>WWW.GOLDVIEW.TECH</p>
             </div>
+
+            <p style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', paddingLeft: '16px', marginBottom: '16px' }}>{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingLeft: '16px', paddingRight: '16px' }}>
                {['gold', 'tejabi', 'silver'].map(m => (
@@ -1262,23 +1264,13 @@ export default function App() {
                ))}
             </div>
           </div>
-
-          <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '24px' }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px' }}>
-               <p style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase' }}>{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-               <div style={{ width: '48px', height: '48px', backgroundColor: 'rgba(212, 175, 55, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                  <TrendingUp style={{ width: '24px', height: '24px', color: '#D4AF37' }} />
-               </div>
-             </div>
-             <p style={{ fontSize: '14px', fontWeight: 900, color: '#D4AF37', letterSpacing: '0.5em', textTransform: 'uppercase' }}>WWW.GOLDVIEW.TECH</p>
-          </div>
         </div>
 
         {showShareModal && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
             <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setShowShareModal(false)} />
             <div className="max-w-[400px] w-full space-y-8 relative z-10">
-               <div className="aspect-square bg-black border-[8px] border-[#D4AF37]/20 rounded-none p-8 flex flex-col justify-between relative overflow-hidden shadow-2xl">
+               <div className="aspect-square bg-black border-[8px] border-[#D4AF37]/20 rounded-none p-8 flex flex-col justify-center relative overflow-hidden shadow-2xl">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/15 to-transparent" />
                   <div className="relative z-10">
                     <div className="mb-5 text-center">
@@ -1286,6 +1278,8 @@ export default function App() {
                       <p className="text-[#D4AF37] text-[10px] font-black tracking-[0.4em] uppercase mt-1">NEPALI RATES</p>
                       <p className="text-[#D4AF37] text-[10px] font-black tracking-[0.4em] uppercase">WWW.GOLDVIEW.TECH</p>
                     </div>
+
+                    <p className="text-[9px] font-black text-zinc-400 uppercase mb-3">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
 
                     <div className="space-y-4">
                        {['gold', 'tejabi', 'silver'].map(m => (
@@ -1303,13 +1297,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="relative z-10 flex flex-col items-center border-t border-white/10 pt-4">
-                     <div className="flex justify-between items-center w-full mb-2">
-                       <p className="text-[9px] font-black text-zinc-400 uppercase">{new Date().toLocaleDateString(lang === 'ne' ? 'ne-NP' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                       <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
-                     </div>
-                     <p className="text-[10px] font-black text-[#D4AF37] tracking-[0.4em] uppercase">WWW.GOLDVIEW.TECH</p>
-                  </div>
                </div>
 
                <div className="flex flex-col gap-3 px-4 sm:px-0">
