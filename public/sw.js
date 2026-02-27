@@ -49,6 +49,21 @@ self.addEventListener('fetch', (event) => {
   // Special handling for data.json - Stale-While-Revalidate
   // This allows charts to load instantly from cache while updating in background
   if (url.pathname.includes('data.json')) {
+    // Cache-bust requests (with _t param) skip stale cache and go network-first
+    if (url.searchParams.has('_t')) {
+      event.respondWith(
+        fetch(event.request).then((networkResponse) => {
+          // Clone before the async cache write to avoid consuming the response body
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            // Store under the canonical URL (without cache-bust param)
+            cache.put(new Request(url.origin + url.pathname), responseToCache);
+          }).catch((err) => console.warn('[SW] Cache update failed:', err));
+          return networkResponse;
+        }).catch(() => caches.match(url.origin + url.pathname))
+      );
+      return;
+    }
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
         return cache.match(event.request).then((cachedResponse) => {

@@ -423,8 +423,9 @@ export default function App() {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  useEffect(() => {
-    fetch(DATA_URL).then(res => res.json()).then(json => {
+  const fetchAllData = useCallback((cacheBust = false) => {
+    const dataUrl = cacheBust ? `${DATA_URL}?_t=${Date.now()}` : DATA_URL;
+    fetch(dataUrl).then(res => res.json()).then(json => {
         setPriceData(json);
         localStorage.setItem('gv_v18_metal', JSON.stringify(json));
         setLoading(false);
@@ -443,11 +444,35 @@ export default function App() {
         console.error("Forex fetch failed:", err);
         setForexLoading(false);
     });
+  }, []);
+
+  useEffect(() => {
+    fetchAllData();
 
     if ('Notification' in window) {
       setNotifStatus(Notification.permission);
     }
-  }, []);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchAllData(true);
+      }
+    };
+
+    const handlePageShow = (e) => {
+      if (e.persisted) {
+        fetchAllData(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [fetchAllData]);
 
   const isIOS = useMemo(() => {
     return (/iPad|iPhone|iPod/.test(navigator.userAgent) || 
