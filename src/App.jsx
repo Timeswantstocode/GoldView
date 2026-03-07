@@ -13,6 +13,7 @@ import {
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
+import FAQ from './components/FAQ';
 
 const PriceChart = lazy(() => import('./components/PriceChart'));
 
@@ -401,6 +402,47 @@ export default function App() {
   const highlightTimeoutRef = useRef(null);
 
   const t = useCallback((key) => TRANSLATIONS[lang][key] || key, [lang]);
+
+  const dynamicStructuredData = useMemo(() => {
+    const latest = priceData[priceData.length - 1] || {};
+    const goldPrice = latest.gold ? `रू ${latest.gold.toLocaleString('en-IN')}` : 'check our dashboard';
+    const silverPrice = latest.silver ? `रू ${latest.silver.toLocaleString('en-IN')}` : 'check our dashboard';
+
+    const baseSchema = JSON.parse(STRUCTURED_DATA);
+
+    const faqSchema = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is the gold price in Nepal today?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": `As of today, the 24K Chhapawal gold price in Nepal is ${goldPrice} per tola. Prices are updated hourly based on official sources.`
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the silver price in Nepal today?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": `Today's pure silver price in Nepal is ${silverPrice} per tola.`
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Where can I check live gold and silver rates in Nepal?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "You can check live, verified gold and silver rates in Nepal on GoldView (www.goldview.tech), which aggregates data from FENEGOSIDA and Nepal Rastra Bank."
+          }
+        }
+      ]
+    };
+
+    return JSON.stringify([...baseSchema, faqSchema]);
+  }, [priceData]);
 
   // Clean up highlight timeout when component unmounts
   useEffect(() => {
@@ -860,6 +902,7 @@ export default function App() {
             )}
           </div>
         </section>
+        <FAQ lang={lang} />
       </main>
     </div>
   ), [view, activeMetal, dashboardForex, allDiffs, priceData, forexHistory, forexLoading, themeColor, timeframe, chartData, chartOptions, selectedPoint, handleMetalClick, formatValue, handleCurrencyChange, handleTimeframeChange, t, lang]);
@@ -1169,7 +1212,7 @@ export default function App() {
             <meta name="description" content="Official GoldView Nepal: Real-time 24K Gold, Silver and Forex rates in Nepal. Track your jewelry portfolio and calculate costs instantly." />
             <link rel="canonical" href="https://www.goldview.tech/"/>
             <meta name="robots" content="index, follow" />
-            <script type="application/ld+json">{STRUCTURED_DATA}</script>
+            <script type="application/ld+json">{dynamicStructuredData}</script>
         </Helmet>
 
         <header className="px-4 sm:px-8 pt-12 sm:pt-16 flex justify-between items-end relative z-10">
@@ -1400,8 +1443,14 @@ export default function App() {
         </nav>
 
         <footer className="mt-12 px-8 pb-12 text-zinc-500 text-[10px] leading-relaxed border-t border-white/5 pt-10">
-          <h2 className="text-zinc-400 font-black mb-2 uppercase tracking-widest">GoldView Nepal - Live Gold & Silver Prices</h2>
-          <p>GoldView provides real-time updates for <strong>24K Chhapawal Gold</strong>, <strong>22K Tejabi Gold</strong> and <strong>Pure Silver</strong> rates in Nepal.</p>
+          <h2 className="text-zinc-400 font-black mb-2 uppercase tracking-widest">GoldView Nepal - Official Live Rates</h2>
+          <p>
+            GoldView provides high-precision, real-time updates for <strong>24K Chhapawal Gold</strong>, <strong>22K Tejabi Gold</strong> and <strong>Pure Silver</strong> rates in Nepal.
+            Our automated system aggregates and cross-verifies data from official sources including the <strong>Federation of Nepal Gold and Silver Dealers' Association (FENEGOSIDA)</strong> and <strong>Ashesh</strong>.
+          </p>
+          <p className="mt-2">
+            Foreign exchange rates are sourced directly from <strong>Nepal Rastra Bank (NRB)</strong>, ensuring official government accuracy for all currency conversions.
+          </p>
           <div className="mt-12 text-center">
             <p className="font-black uppercase tracking-[0.3em] text-zinc-400">Made by @Timeswantstocode</p>
           </div>
