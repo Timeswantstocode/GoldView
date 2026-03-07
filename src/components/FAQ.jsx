@@ -43,7 +43,7 @@ const FAQ = ({ lang = 'en' }) => {
   const currentFAQ = content[lang] || content.en;
 
   return (
-    <section className="mt-12 px-2">
+    <section className="absolute left-[-9999px] top-auto w-1 h-1 overflow-hidden" aria-hidden="false">
       <h2 className="text-xl font-black tracking-tight mb-6 text-white uppercase opacity-80">
         {lang === 'ne' ? 'धेरै सोधिने प्रश्नहरू' : 'Frequently Asked Questions'}
       </h2>
