@@ -405,8 +405,18 @@ export default function App() {
 
   const dynamicStructuredData = useMemo(() => {
     const latest = priceData[priceData.length - 1] || {};
+    const previous = priceData[priceData.length - 2] || {};
     const goldPrice = latest.gold ? `रू ${latest.gold.toLocaleString('en-IN')}` : 'check our dashboard';
     const silverPrice = latest.silver ? `रू ${latest.silver.toLocaleString('en-IN')}` : 'check our dashboard';
+
+    const dateObj = latest.date ? new Date(latest.date.replace(' ', 'T')) : new Date();
+    const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+    const getChange = (curr, prev) => {
+      if (!curr || !prev) return "";
+      const diff = curr - prev;
+      return ` (a daily ${diff >= 0 ? 'increase' : 'decrease'} of रू ${Math.abs(diff).toLocaleString('en-IN')})`;
+    };
 
     const baseSchema = JSON.parse(STRUCTURED_DATA);
 
@@ -416,18 +426,18 @@ export default function App() {
       "mainEntity": [
         {
           "@type": "Question",
-          "name": "What is the gold price in Nepal today?",
+          "name": `What is the gold price in Nepal today, ${dateStr}?`,
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": `As of today, the 24K Chhapawal gold price in Nepal is ${goldPrice} per tola. Prices are updated hourly based on official sources.`
+            "text": `As of ${dateStr}, the 24K Chhapawal gold price in Nepal is ${goldPrice} per tola${getChange(latest.gold, previous.gold)}. 22K Tejabi gold is रू ${latest.tejabi?.toLocaleString('en-IN')} per tola. Prices are updated hourly based on official sources like FENEGOSIDA.`
           }
         },
         {
           "@type": "Question",
-          "name": "What is the silver price in Nepal today?",
+          "name": `What is the silver price in Nepal today, ${dateStr}?`,
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": `Today's pure silver price in Nepal is ${silverPrice} per tola.`
+            "text": `Today's (${dateStr}) pure silver price in Nepal is ${silverPrice} per tola${getChange(latest.silver, previous.silver)}.`
           }
         },
         {
@@ -435,7 +445,7 @@ export default function App() {
           "name": "Where can I check live gold and silver rates in Nepal?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "You can check live, verified gold and silver rates in Nepal on GoldView (www.goldview.tech), which aggregates data from FENEGOSIDA and Nepal Rastra Bank."
+            "text": "You can check live, verified gold and silver rates in Nepal on GoldView (www.goldview.tech), which aggregates and cross-verifies data from official sources including FENEGOSIDA, Ashesh, and Nepal Rastra Bank (NRB)."
           }
         }
       ]
@@ -902,7 +912,11 @@ export default function App() {
             )}
           </div>
         </section>
-        <FAQ lang={lang} />
+        <FAQ
+          lang={lang}
+          latestData={priceData[priceData.length - 1]}
+          previousData={priceData[priceData.length - 2]}
+        />
       </main>
     </div>
   ), [view, activeMetal, dashboardForex, allDiffs, priceData, forexHistory, forexLoading, themeColor, timeframe, chartData, chartOptions, selectedPoint, handleMetalClick, formatValue, handleCurrencyChange, handleTimeframeChange, t, lang]);
