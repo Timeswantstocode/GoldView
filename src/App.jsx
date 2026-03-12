@@ -499,6 +499,41 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Implementation of daily auto-refresh logic past 11:25 AM NPT
+    // This ensures that all devices get the latest scraped data once it's available.
+    const handleDailyAutoRefresh = () => {
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Kathmandu',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: false
+        });
+        const parts = formatter.formatToParts(new Date());
+        const getPart = (type) => parts.find(p => p.type === type).value;
+        const h = parseInt(getPart('hour'));
+        const m = parseInt(getPart('minute'));
+        const todayDate = `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+
+        // If past 11:25 AM NPT, check if we've refreshed today
+        if (h > 11 || (h === 11 && m >= 25)) {
+          const lastRefresh = localStorage.getItem('gv_last_refresh_date');
+          if (lastRefresh !== todayDate && navigator.onLine) {
+            localStorage.setItem('gv_last_refresh_date', todayDate);
+            window.location.reload();
+            return true;
+          }
+        }
+      } catch (e) {
+        console.warn("Auto-refresh check failed:", e);
+      }
+      return false;
+    };
+
+    if (handleDailyAutoRefresh()) return;
     fetchAllData();
 
     if ('Notification' in window) {
@@ -507,13 +542,17 @@ export default function App() {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchAllData(true);
+        if (!handleDailyAutoRefresh()) {
+          fetchAllData(true);
+        }
       }
     };
 
     const handlePageShow = (e) => {
       if (e.persisted) {
-        fetchAllData(true);
+        if (!handleDailyAutoRefresh()) {
+          fetchAllData(true);
+        }
       }
     };
 
