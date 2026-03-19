@@ -1750,5 +1750,14 @@
         "usd": 147.79,
         "source": "FENEGOSIDA / Ashesh (Tejabi)",
         "verified": true
+    },
+    {
+        "date": "2026-03-19 11:28",
+        "gold": 302300,
+        "tejabi": 299300,
+        "silver": 5010,
+        "usd": 145.86,
+        "source": "FENEGOSIDA / Ashesh (Tejabi)",
+        "verified": true
     }
 ]
