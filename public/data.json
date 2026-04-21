@@ -2047,5 +2047,14 @@
         "usd": 148.89,
         "source": "FENEGOSIDA / Ashesh (Tejabi)",
         "verified": true
+    },
+    {
+        "date": "2026-04-21 12:05",
+        "gold": 301300,
+        "tejabi": 298300,
+        "silver": 5160,
+        "usd": 149.26,
+        "source": "FENEGOSIDA / Ashesh (Tejabi)",
+        "verified": true
     }
 ]
