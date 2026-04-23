@@ -60,7 +60,7 @@ python generate_vapid.py
 
 ## 🛰️ Automated Data Updates
 
-The project uses GitHub Actions to scrape the latest prices from official sources (**FENEGOSIDA** and **Ashesh**) every hour.
+The project uses GitHub Actions to scrape the latest prices from official sources (**FENEGOSIDA** and **Ashesh**) at 11:10 AM, 11:20 AM, 11:40 AM, and 12:00 PM Nepal time.
 
 -   **Scheduled Scrape:** Runs automatically via `.github/workflows/scrape.yml`.
 -   **Manual Scrape:** Can be triggered via the "Actions" tab in GitHub.
