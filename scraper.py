@@ -8,6 +8,7 @@ import datetime
 import os
 import re
 from bs4 import BeautifulSoup
+import time
 import urllib3
 
 # Suppress SSL warnings for FENEGOSIDA (expired certificates are common)
@@ -207,60 +208,71 @@ def get_candidates(url, metal):
     years = list(range(2000, 2101))
     blacklist = set(purity + weights + office_nums + years)
     
-    try:
-        r = requests.get(url, headers=headers, timeout=25, verify=False)
-        r.raise_for_status()
-        raw_html = r.text.replace(',', '')
-        raw_html = re.sub(r'\s+', ' ', raw_html)
-        
-        soup = BeautifulSoup(raw_html, 'html.parser')
-        
-        if "ashesh.com.np" in url:
-            rows = soup.find_all('div', class_='country')
-            prices = []
-            for row in rows:
-                text = row.get_text(separator=' ')
-                if "Tola" in text:
-                    if metal == "gold" and ("Gold Hallmark" in text or "छापावाल" in text):
-                        m = re.search(r'(\d{5,6})', text)
-                        if m: prices.append(int(m.group(1)))
-                    elif metal == "tejabi" and ("Gold Tajabi" in text or "Gold Tejabi" in text or "तेजाबी" in text):
-                        m = re.search(r'(\d{5,6})', text)
-                        if m: prices.append(int(m.group(1)))
-                    elif metal == "silver" and ("Silver" in text or "चाँदी" in text):
-                        m = re.search(r'(\d{4,5})', text)
-                        if m: prices.append(int(m.group(1)))
-            if prices: return prices
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            r = requests.get(url, headers=headers, timeout=25, verify=False)
+            r.raise_for_status()
+            raw_html = r.text.replace(',', '')
+            raw_html = re.sub(r'\s+', ' ', raw_html)
+            
+            soup = BeautifulSoup(raw_html, 'html.parser')
+            
+            if "ashesh.com.np" in url:
+                rows = soup.find_all('div', class_='country')
+                prices = []
+                for row in rows:
+                    text = row.get_text(separator=' ')
+                    if "Tola" in text:
+                        if metal == "gold" and ("Gold Hallmark" in text or "छापावाल" in text):
+                            m = re.search(r'(\d{5,6})', text)
+                            if m: prices.append(int(m.group(1)))
+                        elif metal == "tejabi" and ("Gold Tajabi" in text or "Gold Tejabi" in text or "तेजाबी" in text):
+                            m = re.search(r'(\d{5,6})', text)
+                            if m: prices.append(int(m.group(1)))
+                        elif metal == "silver" and ("Silver" in text or "चाँदी" in text):
+                            m = re.search(r'(\d{4,5})', text)
+                            if m: prices.append(int(m.group(1)))
+                if prices: return prices
 
-        for junk in soup(["script", "style", "footer", "header", "nav", "aside"]):
-            junk.decompose()
-        content = soup.get_text(separator=' ')
+            for junk in soup(["script", "style", "footer", "header", "nav", "aside"]):
+                junk.decompose()
+            content = soup.get_text(separator=' ')
 
-        if metal == "gold":
-            pattern = r"(?:FINE|Hallmark|Tola|छापावाल).{0,100}?(\d{5,6})"
-            min_p, max_p = 100000, 1000000
-        elif metal == "tejabi":
-            pattern = r"(?:Tejabi|Tajabi|तेजाबी|Tola).{0,100}?(\d{5,6})"
-            min_p, max_p = 100000, 1000000
-        else:
-            pattern = r"(?:SILVER|Tola|चाँदी).{0,100}?(\d{4,5})"
-            min_p, max_p = 1000, 15000
+            if metal == "gold":
+                pattern = r"(?:FINE|Hallmark|Tola|छापावाल).{0,100}?(\d{5,6})"
+                min_p, max_p = 100000, 1000000
+            elif metal == "tejabi":
+                pattern = r"(?:Tejabi|Tajabi|तेजाबी|Tola).{0,100}?(\d{5,6})"
+                min_p, max_p = 100000, 1000000
+            else:
+                pattern = r"(?:SILVER|Tola|चाँदी).{0,100}?(\d{4,5})"
+                min_p, max_p = 1000, 15000
 
-        matches = re.findall(pattern, content, re.IGNORECASE | re.DOTALL)
-        if not matches:
-            raw_p = r"(\d{5,6})" if metal in ["gold", "tejabi"] else r"(\d{4,5})"
-            matches = re.findall(raw_p, content)
+            matches = re.findall(pattern, content, re.IGNORECASE | re.DOTALL)
+            if not matches:
+                raw_p = r"(\d{5,6})" if metal in ["gold", "tejabi"] else r"(\d{4,5})"
+                matches = re.findall(raw_p, content)
 
-        valid = []
-        for m in matches:
-            val = int(m)
-            if val in blacklist: continue
-            if min_p <= val <= max_p:
-                valid.append(val)
-        return valid
-    except Exception as e:
-        print(f"DEBUG: Error fetching {metal} from {url}: {e}")
-        return []
+            valid = []
+            for m in matches:
+                val = int(m)
+                if val in blacklist: continue
+                if min_p <= val <= max_p:
+                    valid.append(val)
+            if valid: return valid
+            
+            # If no valid prices found but request was successful, don't retry, just return empty
+            return []
+            
+        except Exception as e:
+            print(f"DEBUG: Attempt {attempt+1} failed for {url} ({metal}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(5)
+            else:
+                print(f"ERROR: All {max_retries} attempts failed for {url}")
+                return []
+
 
 def verify_price(primary, backup, tolerance=0.05):
     if primary > 0 and backup > 0:
@@ -298,8 +310,9 @@ def fetch_usd_history(days=90):
 
 def update():
     file = 'public/data.json'
-    widget_url = "https://www.ashesh.com.np/gold/widget.php?api=521224q192"
-    fenegosida_url = "https://fenegosida.org/"
+    timestamp = int(time.time())
+    widget_url = f"https://www.ashesh.com.np/gold/widget.php?api=521224q192&t={timestamp}"
+    fenegosida_url = f"https://fenegosida.org/?t={timestamp}"
     
     f_gold = get_candidates(fenegosida_url, "gold")
     f_tejabi = get_candidates(fenegosida_url, "tejabi")

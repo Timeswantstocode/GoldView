@@ -2,17 +2,22 @@ name: Scrape Gold Data
 
 on:
   schedule:
-    # 11:10 AM NPT (UTC 05:25)
-    - cron: '25 5 * * *'
+    # 10:00 AM NPT (UTC 04:15) - Early buffer run
+    - cron: '15 4 * * *'
 
-    # 11:20 AM NPT (UTC 05:35)
-    - cron: '35 5 * * *'
+    # 11:00 AM - 11:45 AM (Peak window, high frequency)
+    - cron: '07 5 * * *'  # 10:52 AM NPT
+    - cron: '17 5 * * *'  # 11:02 AM NPT
+    - cron: '27 5 * * *'  # 11:12 AM NPT
+    - cron: '37 5 * * *'  # 11:22 AM NPT
+    - cron: '47 5 * * *'  # 11:32 AM NPT
+    - cron: '57 5 * * *'  # 11:42 AM NPT
 
-    # 11:40 AM NPT (UTC 05:55)
-    - cron: '55 5 * * *'
+    # 12:00 PM - 12:30 PM (Closing window)
+    - cron: '13 6 * * *'  # 11:58 AM NPT
+    - cron: '31 6 * * *'  # 12:16 PM NPT
+    - cron: '53 6 * * *'  # 12:38 PM NPT
 
-    # 12:00 PM NPT (UTC 06:15)
-    - cron: '15 6 * * *'
     
   workflow_dispatch: # Allows you to manually trigger a scrape from the Actions tab
 
