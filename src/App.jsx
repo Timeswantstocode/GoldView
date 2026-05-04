@@ -80,7 +80,7 @@ const TRANSLATIONS = {
     aana: "Aana",
     lal: "Lal",
     makingCharges: "Making Charges (रू)",
-    includeVat: "Include 13% VAT",
+    includeVat: "Include 13% VAT + 2% Luxurious Tax",
     estimatedTotal: "Estimated Total",
     buybackValue: "Buyback Value (Market - 5%)",
     youSend: "YOU SEND",
@@ -158,7 +158,7 @@ const TRANSLATIONS = {
     aana: "आना",
     lal: "लाल",
     makingCharges: "ज्याला (रू)",
-    includeVat: "१३% भ्याट समावेश गर्नुहोस्",
+    includeVat: "१३% भ्याट + २% विलासिता कर",
     estimatedTotal: "अनुमानित जम्मा",
     buybackValue: "बाइबाक मूल्य (बजार - ५%)",
     youSend: "तपाईं पठाउनुहुन्छ",
@@ -285,7 +285,7 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
 
 const JewelryResult = React.memo(({ themeColor, activeMetal, tradeMode, calc, latestPrice, formatRS }) => {
   const weight = (Number(calc.tola)||0) + (Number(calc.aana)||0)/16 + (Number(calc.lal)||0)/192;
-  const result = tradeMode === 'sell' ? formatRS(weight * latestPrice * 0.95) : formatRS((weight * latestPrice + (Number(calc.making)||0)) * (calc.vat ? 1.13 : 1));
+  const result = tradeMode === 'sell' ? formatRS(weight * latestPrice * 0.95) : formatRS((weight * latestPrice + (Number(calc.making)||0)) * (calc.vat ? 1.15 : 1));
   const fontSize = result.length > 15 ? 'text-2xl' : result.length > 12 ? 'text-3xl' : result.length > 10 ? 'text-4xl' : 'text-5xl';
   return (
     <div className="p-6 sm:p-12 rounded-[3rem] sm:rounded-[3.5rem] text-black text-center shadow-2xl transition-all" style={{ background: `linear-gradient(135deg, ${themeColor}, ${activeMetal === 'gold' ? '#b8860b' : activeMetal === 'tejabi' ? '#8B4513' : '#4b5563'})` }}>
@@ -1172,7 +1172,7 @@ export default function App() {
                       onClick={() => setCalc({...calc, vat: !calc.vat})}
                       role="switch"
                       aria-checked={calc.vat}
-                      aria-label="Include 13% VAT"
+                      aria-label="Include 13% VAT and 2% Luxurious Tax"
                       className={`w-14 h-8 rounded-full transition-all relative focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${calc.vat ? 'bg-green-500' : 'bg-zinc-700'}`}>
                       <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${calc.vat ? 'left-7' : 'left-1'}`} />
                     </button>
