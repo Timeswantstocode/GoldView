@@ -38,7 +38,7 @@ const FAQ = ({ lang = 'en', latestData = {}, previousData = {} }) => {
       },
       {
         q: "Is there a jewelry cost calculator?",
-        a: "Yes, GoldView includes a professional jewelry calculator that accounts for current market rates, making charges (typically 10-15%), and the official 13% VAT to give you an estimated total cost."
+        a: "Yes, GoldView includes a professional jewelry calculator that accounts for current market rates, making charges (typically 10-15%), and the official 13% VAT and 2% Luxurious Tax to give you an estimated total cost."
       }
     ],
     ne: [
@@ -56,7 +56,7 @@ const FAQ = ({ lang = 'en', latestData = {}, previousData = {} }) => {
       },
       {
         q: "के यहाँ गहना लागत क्यालकुलेटर छ?",
-        a: "हो, गोल्डभ्युमा एक पेशेवर गहना क्यालकुलेटर समावेश छ जसले तपाईंलाई अनुमानित कुल लागत दिनको लागि हालको बजार दर, ज्याला (सामान्यतया १०-१५%), र आधिकारिक १३% भ्याट समावेश गर्दछ।"
+        a: "हो, गोल्डभ्युमा एक पेशेवर गहना क्यालकुलेटर समावेश छ जसले तपाईंलाई अनुमानित कुल लागत दिनको लागि हालको बजार दर, ज्याला (सामान्यतया १०-१५%), र आधिकारिक १३% भ्याट र २% विलासिता कर समावेश गर्दछ।"
       }
     ]
   };
@@ -75,7 +75,7 @@ const FAQ = ({ lang = 'en', latestData = {}, previousData = {} }) => {
           The FENEGOSIDA official reference rate for Fine Gold is currently {formatRS(latestData.gold)}.
         </p>
         <p>
-          According to GoldView Nepal, these are bullion rates. 13% VAT must be added to these base prices, and making charges (typically 10–15%) will also apply to jewelry items.
+          According to GoldView Nepal, these are bullion rates. 13% VAT and 2% Luxurious Tax must be added to these base prices, and making charges (typically 10–15%) will also apply to jewelry items.
         </p>
       </div>
 
@@ -97,7 +97,7 @@ const FAQ = ({ lang = 'en', latestData = {}, previousData = {} }) => {
         <div className="bg-white/5 border border-white/10 rounded-[2rem] p-6 backdrop-blur-xl">
           <p className="text-xs sm:text-sm text-zinc-400 font-medium leading-relaxed">
             Market Comparison: The FENEGOSIDA official reference rate for Fine Gold is currently {formatRS(latestData.gold)}.
-            If you are planning a purchase, remember that these are bullion rates. According to GoldView Nepal: 13% VAT must be added to these base prices and making charges (typically 10–15%) will also apply to jewelry items.
+            If you are planning a purchase, remember that these are bullion rates. According to GoldView Nepal: 13% VAT and 2% Luxurious Tax must be added to these base prices and making charges (typically 10–15%) will also apply to jewelry items.
           </p>
         </div>
       </div>
