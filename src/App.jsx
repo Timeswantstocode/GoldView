@@ -80,7 +80,8 @@ const TRANSLATIONS = {
     aana: "Aana",
     lal: "Lal",
     makingCharges: "Making Charges (रू)",
-    includeVat: "Include 13% VAT + 2% Luxurious Tax",
+    includeVat: "Include 13% VAT",
+    includeLuxTax: "+ 2% Luxurious Tax",
     estimatedTotal: "Estimated Total",
     buybackValue: "Buyback Value (Market - 5%)",
     youSend: "YOU SEND",
@@ -158,7 +159,8 @@ const TRANSLATIONS = {
     aana: "आना",
     lal: "लाल",
     makingCharges: "ज्याला (रू)",
-    includeVat: "१३% भ्याट + २% विलासिता कर",
+    includeVat: "१३% भ्याट",
+    includeLuxTax: "+ २% विलासिता कर",
     estimatedTotal: "अनुमानित जम्मा",
     buybackValue: "बाइबाक मूल्य (बजार - ५%)",
     youSend: "तपाईं पठाउनुहुन्छ",
@@ -1167,14 +1169,17 @@ export default function App() {
                 <>
                   <input type="number" placeholder={t('makingCharges')} className="w-full bg-black/60 border-2 border-zinc-800 p-5 sm:p-6 rounded-3xl font-black text-base sm:text-lg outline-none text-white focus:border-white/20 animate-in fade-in slide-in-from-top-2" value={calc.making} onChange={(e) => setCalc({...calc, making: e.target.value})} />
                   <div className="flex items-center justify-between px-5 sm:px-6 py-4 bg-white/5 rounded-3xl border border-white/5">
-                    <span className="text-xs font-black text-zinc-400 uppercase tracking-widest">{t('includeVat')}</span>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-zinc-400 uppercase tracking-widest">{t('includeVat')}</span>
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('includeLuxTax')}</span>
+                    </div>
                     <button
                       onClick={() => setCalc({...calc, vat: !calc.vat})}
                       role="switch"
                       aria-checked={calc.vat}
                       aria-label="Include 13% VAT and 2% Luxurious Tax"
                       className={`w-14 h-8 rounded-full transition-all relative focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${calc.vat ? 'bg-green-500' : 'bg-zinc-700'}`}>
-                      <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${calc.vat ? 'left-7' : 'left-1'}`} />
+                      <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-transform duration-300 ${calc.vat ? 'translate-x-7' : 'translate-x-1'}`} />
                     </button>
                   </div>
                 </>
