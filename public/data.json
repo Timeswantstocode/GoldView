@@ -2535,12 +2535,12 @@
         "verified": true
     },
     {
-        "date": "2026-06-14 12:42",
+        "date": "2026-06-14 13:44",
         "gold": 293200,
         "tejabi": 290300,
         "silver": 4895,
         "usd": 152.17,
-        "source": "FENEGOSIDA / Ashesh (Tejabi)",
-        "verified": true
+        "source": "Ashesh / Ashesh (Tejabi)",
+        "verified": false
     }
 ]
