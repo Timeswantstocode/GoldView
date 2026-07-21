@@ -2866,5 +2866,14 @@
         "usd": 154.14,
         "source": "Ashesh / Ashesh (Tejabi)",
         "verified": false
+    },
+    {
+        "date": "2026-07-21 11:15",
+        "gold": 285600,
+        "tejabi": 282700,
+        "silver": 4395,
+        "usd": 154.09,
+        "source": "Ashesh / Ashesh (Tejabi)",
+        "verified": false
     }
 ]
