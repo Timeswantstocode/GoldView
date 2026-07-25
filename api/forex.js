@@ -47,28 +47,66 @@ async function yahooPrice(symbol) {
   return json?.chart?.result?.[0]?.meta?.regularMarketPrice ?? null;
 }
 
-async function fetchYahooForex() {
-  const today = new Date().toISOString().split('T')[0];
-  const usdNpr = await yahooPrice('USDNPR=X');
-  if (!usdNpr) throw new Error('Yahoo USDNPR unavailable');
-
-  const nonUsd = CURRENCY_LIST.filter(c => c !== 'USD');
-  const results = await Promise.allSettled(nonUsd.map(c => yahooPrice(`USD${c}=X`)));
-
-  const currencies = [{ currency: 'U.S. Dollar', code: 'USD', unit: 1, buy: usdNpr, sell: usdNpr }];
-
-  for (let i = 0; i < nonUsd.length; i++) {
-    const code = nonUsd[i];
-    const r = results[i];
-    if (code === 'INR') {
-      currencies.push({ currency: 'INR', code: 'INR', unit: 1, buy: 1.6, sell: 1.6 });
-    } else if (r.status === 'fulfilled' && r.value && r.value > 0) {
-      const nprRate = usdNpr / r.value;
-      currencies.push({ currency: code, code, unit: 1, buy: nprRate, sell: nprRate });
+async function yahooHistory(symbol, days) {
+  const range = `${days}d`;
+  const res = await fetch(
+    `${YAHOO_BASE}/${encodeURIComponent(symbol)}?interval=1d&range=${range}`,
+    { headers: { 'User-Agent': 'Mozilla/5.0' } },
+  );
+  if (!res.ok) throw new Error(`Yahoo history unavailable for ${symbol}`);
+  const json = await res.json();
+  const result = json?.chart?.result?.[0];
+  if (!result) throw new Error(`Yahoo history empty for ${symbol}`);
+  const timestamps = result.timestamp || [];
+  const closes = result?.indicators?.quote?.[0]?.close || [];
+  const entries = [];
+  for (let i = 0; i < timestamps.length; i++) {
+    if (closes[i] != null) {
+      const d = new Date(timestamps[i] * 1000);
+      entries.push({ date: d.toISOString().split('T')[0], close: closes[i] });
     }
   }
+  return entries;
+}
 
-  return [{ date: today, currencies }];
+async function fetchYahooForex() {
+  const today = new Date().toISOString().split('T')[0];
+
+  // Fetch USDNPR history (90 days) + latest spot prices for cross-rate currencies
+  const [usdNprHistory, ...crossResults] = await Promise.all([
+    yahooHistory('USDNPR=X', 95),
+    ...CURRENCY_LIST.filter(c => c !== 'USD').map(c => yahooPrice(`USD${c}=X`)),
+  ]);
+
+  if (usdNprHistory.length === 0) throw new Error('Yahoo USDNPR history unavailable');
+  const usdNprLatest = usdNprHistory[usdNprHistory.length - 1].close;
+  if (!usdNprLatest) throw new Error('Yahoo USDNPR latest price unavailable');
+
+  // Build cross-rate map from latest spot prices
+  const crossMap = {};
+  let idx = 0;
+  for (const code of CURRENCY_LIST) {
+    if (code === 'USD') { crossMap.USD = 1; continue; }
+    if (code === 'INR') { crossMap.INR = 1.6; continue; }
+    const r = crossResults[idx++];
+    if (r) crossMap[code] = r;
+  }
+
+  // Build a rates array for each historical day
+  return usdNprHistory.map(({ date, close }) => {
+    const usdBuy = close;
+    const currencies = [{ currency: 'U.S. Dollar', code: 'USD', unit: 1, buy: usdBuy, sell: usdBuy }];
+    for (const code of CURRENCY_LIST) {
+      if (code === 'USD') continue;
+      if (code === 'INR') {
+        currencies.push({ currency: 'INR', code: 'INR', unit: 1, buy: 1.6, sell: 1.6 });
+      } else if (crossMap[code]) {
+        const nprRate = usdBuy / crossMap[code];
+        currencies.push({ currency: code, code, unit: 1, buy: nprRate, sell: nprRate });
+      }
+    }
+    return { date, currencies };
+  });
 }
 
 export default async function handler(req, res) {
