@@ -274,7 +274,7 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
           )}
           <p className="text-[10px] opacity-70">{meta.sub}</p>
         </div>
-        {isForex && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-spin" /> :
+        {isForex && forexLoading ? <RefreshCcw className="w-3 h-3 text-green-500 animate-gv-spin" /> :
         <div className={`px-2.5 py-1 rounded-xl border font-bold ${diff.isUp ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{diff.val}</div>}
       </div>
       <div className="flex justify-between items-end text-4xl lg:text-5xl font-extrabold tracking-tighter">
