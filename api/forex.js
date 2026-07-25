@@ -82,7 +82,7 @@ async function fetchYahooForex() {
   // Fetch USDNPR history (1 request) + all cross-rate quotes (1 request = 2 total)
   const crossSymbols = CURRENCY_LIST.filter(c => c !== 'USD' && c !== 'INR');
   const [usdNprHistory, quoteMap] = await Promise.all([
-    yahooHistory('USDNPR=X', 65),
+    yahooHistory('USDNPR=X', 95),
     yahooBatchQuotes(crossSymbols.map(c => `USD${c}=X`)),
   ]);
 
