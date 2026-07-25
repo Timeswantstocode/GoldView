@@ -2,7 +2,8 @@
 const CURRENCY_LIST = ['USD', 'INR', 'GBP', 'AUD', 'JPY', 'KRW', 'AED', 'EUR'];
 
 const NRB_BASE = 'https://www.nrb.org.np/api/forex/v1';
-const YAHOO_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
+const YAHOO_CHART = 'https://query1.finance.yahoo.com/v8/finance/chart';
+const YAHOO_QUOTE = 'https://query1.finance.yahoo.com/v7/finance/quote';
 
 async function fetchNrbLiveRates() {
   const res = await fetch(`${NRB_BASE}/app-rate`);
@@ -37,20 +38,10 @@ async function fetchNrbDateRangeRates(from, to) {
   }));
 }
 
-async function yahooPrice(symbol) {
-  const res = await fetch(
-    `${YAHOO_BASE}/${encodeURIComponent(symbol)}?interval=1d&range=5d`,
-    { headers: { 'User-Agent': 'Mozilla/5.0' } },
-  );
-  if (!res.ok) return null;
-  const json = await res.json();
-  return json?.chart?.result?.[0]?.meta?.regularMarketPrice ?? null;
-}
-
 async function yahooHistory(symbol, days) {
   const range = `${days}d`;
   const res = await fetch(
-    `${YAHOO_BASE}/${encodeURIComponent(symbol)}?interval=1d&range=${range}`,
+    `${YAHOO_CHART}/${encodeURIComponent(symbol)}?interval=1d&range=${range}`,
     { headers: { 'User-Agent': 'Mozilla/5.0' } },
   );
   if (!res.ok) throw new Error(`Yahoo history unavailable for ${symbol}`);
@@ -69,40 +60,44 @@ async function yahooHistory(symbol, days) {
   return entries;
 }
 
-async function fetchYahooForex() {
-  const today = new Date().toISOString().split('T')[0];
+async function yahooBatchQuotes(symbols) {
+  if (symbols.length === 0) return {};
+  const res = await fetch(
+    `${YAHOO_QUOTE}?symbols=${symbols.map(s => encodeURIComponent(s)).join(',')}`,
+    { headers: { 'User-Agent': 'Mozilla/5.0' } },
+  );
+  if (!res.ok) return {};
+  const json = await res.json();
+  const results = json?.quoteResponse?.result || [];
+  const map = {};
+  for (const r of results) {
+    if (r.regularMarketPrice != null) {
+      map[r.symbol.replace('=X', '')] = r.regularMarketPrice;
+    }
+  }
+  return map;
+}
 
-  // Fetch USDNPR history (90 days) + latest spot prices for cross-rate currencies
-  const [usdNprHistory, ...crossResults] = await Promise.all([
-    yahooHistory('USDNPR=X', 95),
-    ...CURRENCY_LIST.filter(c => c !== 'USD').map(c => yahooPrice(`USD${c}=X`)),
+async function fetchYahooForex() {
+  // Fetch USDNPR history (1 request) + all cross-rate quotes (1 request = 2 total)
+  const crossSymbols = CURRENCY_LIST.filter(c => c !== 'USD' && c !== 'INR');
+  const [usdNprHistory, quoteMap] = await Promise.all([
+    yahooHistory('USDNPR=X', 65),
+    yahooBatchQuotes(crossSymbols.map(c => `USD${c}=X`)),
   ]);
 
   if (usdNprHistory.length === 0) throw new Error('Yahoo USDNPR history unavailable');
   const usdNprLatest = usdNprHistory[usdNprHistory.length - 1].close;
   if (!usdNprLatest) throw new Error('Yahoo USDNPR latest price unavailable');
 
-  // Build cross-rate map from latest spot prices
-  const crossMap = {};
-  let idx = 0;
-  for (const code of CURRENCY_LIST) {
-    if (code === 'USD') { crossMap.USD = 1; continue; }
-    if (code === 'INR') { crossMap.INR = 1.6; continue; }
-    const r = crossResults[idx++];
-    if (r) crossMap[code] = r;
-  }
-
-  // Build a rates array for each historical day
   return usdNprHistory.map(({ date, close }) => {
     const usdBuy = close;
     const currencies = [{ currency: 'U.S. Dollar', code: 'USD', unit: 1, buy: usdBuy, sell: usdBuy }];
-    for (const code of CURRENCY_LIST) {
-      if (code === 'USD') continue;
-      if (code === 'INR') {
-        currencies.push({ currency: 'INR', code: 'INR', unit: 1, buy: 1.6, sell: 1.6 });
-      } else if (crossMap[code]) {
-        const nprRate = usdBuy / crossMap[code];
-        currencies.push({ currency: code, code, unit: 1, buy: nprRate, sell: nprRate });
+    currencies.push({ currency: 'INR', code: 'INR', unit: 1, buy: 1.6, sell: 1.6 });
+    for (const code of crossSymbols) {
+      const usdRate = quoteMap[`USD${code}`];
+      if (usdRate && usdRate > 0) {
+        currencies.push({ currency: code, code, unit: 1, buy: usdBuy / usdRate, sell: usdBuy / usdRate });
       }
     }
     return { date, currencies };
