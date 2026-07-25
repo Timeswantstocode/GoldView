@@ -7,3 +7,4 @@ dist-ssr
 .env
 __pycache__
 *.log
+.vercel
