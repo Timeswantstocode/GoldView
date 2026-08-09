@@ -407,10 +407,10 @@ const TimeframeDropdown = React.memo(({ timeframe, onChange, themeColor }) => {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Select time range"
-        className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full pl-4 pr-1.5 py-1.5 backdrop-blur-xl text-[10px] sm:text-[11px] font-black tracking-wide text-white transition-all hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/50 outline-none">
+        className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-full pl-5 pr-2 py-2 backdrop-blur-xl text-xs sm:text-sm font-black tracking-wide text-white transition-all hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/50 outline-none">
         {current.label}
-        <span className={`w-6 h-6 rounded-full flex items-center justify-center transition-transform duration-300 ${open ? 'rotate-180' : ''}`} style={{ backgroundColor: themeColor }}>
-          <ChevronDown className="w-3.5 h-3.5 text-black" />
+        <span className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 ${open ? 'rotate-180' : ''}`} style={{ backgroundColor: themeColor }}>
+          <ChevronDown className="w-4 h-4 text-black" />
         </span>
       </button>
       {open && (
