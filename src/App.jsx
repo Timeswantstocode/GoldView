@@ -407,10 +407,10 @@ const TimeframeDropdown = React.memo(({ timeframe, onChange, themeColor }) => {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Select time range"
-        className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-full pl-5 pr-2 py-2 backdrop-blur-xl text-xs sm:text-sm font-black tracking-wide text-white transition-all hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/50 outline-none">
+        className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full pl-4 pr-1.5 py-1.5 backdrop-blur-xl text-[11px] sm:text-xs font-black tracking-wide text-white transition-all hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/50 outline-none">
         {current.label}
-        <span className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 ${open ? 'rotate-180' : ''}`} style={{ backgroundColor: themeColor }}>
-          <ChevronDown className="w-4 h-4 text-black" />
+        <span className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform duration-300 ${open ? 'rotate-180' : ''}`} style={{ backgroundColor: themeColor }}>
+          <ChevronDown className="w-3.5 h-3.5 text-black" />
         </span>
       </button>
       {open && (
@@ -952,7 +952,7 @@ export default function App() {
         </div>
 
         <section className="bg-white/5 border border-white/10 rounded-[3rem] sm:rounded-[3.5rem] p-6 sm:p-9 lg:p-12 backdrop-blur-xl shadow-xl">
-          <div className="flex justify-between items-start mb-8 px-1 w-full">
+          <div className="flex justify-between items-center mb-8 px-1 w-full">
             <div className="flex flex-col gap-1">
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> {t('priceTrend')}</h3>
             </div>
