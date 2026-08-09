@@ -543,6 +543,14 @@ export default function App() {
     document.documentElement.lang = lang;
   }, [lang]);
 
+  useEffect(() => {
+    if (showMenu) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prevOverflow; };
+    }
+  }, [showMenu]);
+
   const fetchAllData = useCallback((cacheBust = false) => {
     const dataUrl = cacheBust ? `${DATA_URL}?_t=${Date.now()}` : DATA_URL;
     fetch(dataUrl).then(res => res.json()).then(json => {
