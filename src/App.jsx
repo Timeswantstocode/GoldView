@@ -560,11 +560,15 @@ export default function App() {
     }).catch(() => setLoading(false));
 
     fetch(FOREX_PROXY).then(res => res.json()).then(json => {
-        const transformed = (json.rates || []).map(day => ({
-          date: day.date,
-          usdRate: parseFloat(day.currencies.find(c => c.code === 'USD')?.buy || 0),
-          rates: day.currencies
-        })).sort((a, b) => new Date(a.date) - new Date(b.date));
+        const transformed = (json.rates || []).map(day => {
+          const usd = day.currencies?.find(c => c.code === 'USD');
+          const usdRate = usd ? parseFloat(usd.buy) : NaN;
+          return {
+            date: day.date,
+            usdRate: Number.isFinite(usdRate) ? usdRate : null,
+            rates: day.currencies
+          };
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
         setForexHistory(transformed);
         localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
         setForexLoading(false);
@@ -841,9 +845,13 @@ export default function App() {
     datasets: [{
       data: filteredData.map(d => {
         if (!['gold', 'tejabi', 'silver'].includes(activeMetal)) {
-          if (activeMetal === 'usd') return d.usdRate;
+          if (activeMetal === 'usd') {
+            return d.usdRate != null && Number.isFinite(d.usdRate) ? d.usdRate : null;
+          }
           const rate = d.rates?.find(r => r.code.toLowerCase() === activeMetal.toLowerCase());
-          return rate ? (rate.buy / (rate.unit || 1)) : 0;
+          if (!rate) return null;
+          const v = rate.buy / (rate.unit || 1);
+          return Number.isFinite(v) && v > 0 ? v : null;
         }
         return Number(d[activeMetal]) || 0;
       }),

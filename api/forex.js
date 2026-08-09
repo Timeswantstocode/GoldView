@@ -26,16 +26,29 @@ async function fetchNrbDateRangeRates(from, to) {
   if (!res.ok) throw new Error('NRB rates unavailable');
   const data = await res.json();
   if (!data?.data?.payload) throw new Error('NRB rates empty');
-  return data.data.payload.map(day => ({
-    date: day.date,
-    currencies: day.rates.map(r => ({
-      currency: r.currency.name,
-      code: r.currency.iso3,
-      unit: r.currency.unit || 1,
-      buy: parseFloat(r.buy),
-      sell: parseFloat(r.sell),
-    })),
-  }));
+  // NRB can return duplicate dates (page boundaries) where one copy has partial/empty
+  // rates. Keep only days with valid rates and dedupe by date (entry with most rates wins).
+  const byDate = new Map();
+  for (const day of data.data.payload) {
+    const currencies = day.rates
+      .filter(r => {
+        const buy = parseFloat(r?.buy);
+        return r?.currency && Number.isFinite(buy) && buy > 0;
+      })
+      .map(r => ({
+        currency: r.currency.name,
+        code: r.currency.iso3,
+        unit: r.currency.unit || 1,
+        buy: parseFloat(r.buy),
+        sell: parseFloat(r.sell),
+      }));
+    if (currencies.length === 0) continue;
+    const existing = byDate.get(day.date);
+    if (!existing || currencies.length > existing.currencies.length) {
+      byDate.set(day.date, { date: day.date, currencies });
+    }
+  }
+  return [...byDate.values()].sort((a, b) => new Date(a.date) - new Date(b.date));
 }
 
 async function yahooHistory(symbol, days) {
