@@ -114,18 +114,29 @@ export default async function handler(req, res) {
     let source;
 
     try {
-      const data = await fetchNrbLiveRates();
-      finalRates = [{ date: data.date, currencies: data.currencies }];
-      source = 'Nepal Rastra Bank (Live)';
-    } catch (err1) {
-      console.warn('NRB app-rate failed, trying date-range:', err1.message);
+      // Primary: NRB official history (~95 days) so the currency chart has a full line
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date(Date.now() - 95 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      finalRates = await fetchNrbDateRangeRates(startDate, endDate);
+      source = 'Nepal Rastra Bank (Official Government Data)';
+
+      // Merge today's live app-rate if it is newer than the history's last day
       try {
-        const endDate = new Date().toISOString().split('T')[0];
-        const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        finalRates = await fetchNrbDateRangeRates(startDate, endDate);
-        source = 'Nepal Rastra Bank (Official Government Data)';
+        const live = await fetchNrbLiveRates();
+        if (live.date > finalRates[finalRates.length - 1].date) {
+          finalRates.push(live);
+        }
+      } catch (err3) {
+        console.warn('NRB live merge failed, history only:', err3.message);
+      }
+    } catch (err1) {
+      console.warn('NRB date-range failed, trying live app-rate:', err1.message);
+      try {
+        const data = await fetchNrbLiveRates();
+        finalRates = [{ date: data.date, currencies: data.currencies }];
+        source = 'Nepal Rastra Bank (Live)';
       } catch (err2) {
-        console.warn('NRB date-range failed, using Yahoo fallback:', err2.message);
+        console.warn('NRB app-rate failed, using Yahoo fallback:', err2.message);
         finalRates = await fetchYahooForex();
         source = 'Yahoo Finance (Cross-Rate)';
       }

@@ -380,10 +380,10 @@ const TIMEFRAMES = [
   { days: 365, label: '1Y' },
 ];
 
-const TimeframeDropdown = React.memo(({ timeframe, onChange, themeColor }) => {
+const TimeframeDropdown = React.memo(({ timeframe, onChange, themeColor, options = TIMEFRAMES }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const current = TIMEFRAMES.find(tf => tf.days === timeframe) || TIMEFRAMES[0];
+  const current = options.find(tf => tf.days === timeframe) || options[0];
 
   useEffect(() => {
     const handlePointerDown = (e) => {
@@ -418,7 +418,7 @@ const TimeframeDropdown = React.memo(({ timeframe, onChange, themeColor }) => {
           role="listbox"
           aria-label="Time range"
           className="absolute right-0 top-full mt-2 min-w-[150px] bg-[#121212]/95 backdrop-blur-2xl border border-white/10 rounded-3xl p-2 shadow-2xl shadow-black/60 z-50 animate-in duration-150 origin-top-right">
-          {TIMEFRAMES.map(tf => (
+          {options.map(tf => (
             <button
               key={tf.days}
               role="option"
@@ -724,7 +724,10 @@ export default function App() {
     if (['gold', 'tejabi', 'silver'].includes(activeMetal)) return priceData;
     return forexHistory;
   }, [activeMetal, forexHistory, priceData]);
-  const filteredData = useMemo(() => activeDataList.slice(-timeframe), [activeDataList, timeframe]);
+  const isForexActive = useMemo(() => !['gold', 'tejabi', 'silver'].includes(activeMetal), [activeMetal]);
+  // Forex history has no full year of data yet, so clamp to 3M
+  const activeTimeframe = useMemo(() => (isForexActive ? Math.min(timeframe, 90) : timeframe), [isForexActive, timeframe]);
+  const filteredData = useMemo(() => activeDataList.slice(-activeTimeframe), [activeDataList, activeTimeframe]);
 
   const allDiffs = useMemo(() => {
     const latestMetal = priceData[priceData.length - 1] || {};
@@ -881,7 +884,7 @@ export default function App() {
       x: {
         display: true,
         grid: { display: true, color: 'rgba(255, 255, 255, 0.04)', borderDash: [6, 6], drawTicks: false },
-        ticks: { color: 'rgba(255, 255, 255, 0.25)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: timeframe === 7 ? 7 : timeframe >= 365 ? 10 : 8 }
+        ticks: { color: 'rgba(255, 255, 255, 0.25)', font: { size: 9, weight: '700' }, maxRotation: 0, maxTicksLimit: activeTimeframe === 7 ? 7 : activeTimeframe >= 365 ? 10 : 8 }
       },
       y: { display: true, position: 'right', grid: { display: true, color: 'rgba(255, 255, 255, 0.08)', borderDash: [5, 5], drawBorder: false }, ticks: { display: false } }
     },
@@ -901,7 +904,7 @@ export default function App() {
         setSelectedPoint({ index, date: point.date, price });
       }
     }
-  }), [filteredData, activeMetal, timeframe, formatValue]);
+  }), [filteredData, activeMetal, activeTimeframe, formatValue]);
 
   const lastUpdatedBadge = useMemo(() => {
     if (!priceData.length) return null;
@@ -956,12 +959,21 @@ export default function App() {
             <div className="flex flex-col gap-1">
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3"><Activity className="w-5 h-5" style={{ color: themeColor }} /> {t('priceTrend')}</h3>
             </div>
-            <TimeframeDropdown timeframe={timeframe} onChange={handleTimeframeChange} themeColor={themeColor} />
+            <TimeframeDropdown
+              timeframe={activeTimeframe}
+              onChange={handleTimeframeChange}
+              themeColor={themeColor}
+              options={isForexActive ? TIMEFRAMES.slice(0, 3) : TIMEFRAMES}
+            />
           </div>
           <div className="h-64 lg:h-96 relative w-full">
-            <Suspense fallback={<div className="w-full h-full bg-white/5 animate-pulse rounded-[2rem] flex items-center justify-center text-[10px] font-black text-zinc-600 uppercase tracking-widest">Loading Trend...</div>}>
-              <PriceChart ref={chartRef} data={chartData} options={chartOptions} redraw={false} />
-            </Suspense>
+            {filteredData.length < 2 ? (
+              <div className="w-full h-full bg-white/5 rounded-[2rem] flex items-center justify-center text-[10px] font-black text-zinc-600 uppercase tracking-widest">Not enough data yet</div>
+            ) : (
+              <Suspense fallback={<div className="w-full h-full bg-white/5 animate-pulse rounded-[2rem] flex items-center justify-center text-[10px] font-black text-zinc-600 uppercase tracking-widest">Loading Trend...</div>}>
+                <PriceChart ref={chartRef} data={chartData} options={chartOptions} redraw={false} />
+              </Suspense>
+            )}
           </div>
 
           {/* Currency Selector - Only visible when forex is active */}
