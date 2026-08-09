@@ -401,7 +401,7 @@ const TimeframeDropdown = React.memo(({ timeframe, onChange, themeColor }) => {
   }, []);
 
   return (
-    <div ref={ref} className="relative shrink-0">
+    <div ref={ref} className="relative shrink-0 -mt-1">
       <button
         onClick={() => setOpen(o => !o)}
         aria-haspopup="listbox"
