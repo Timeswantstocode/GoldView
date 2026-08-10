@@ -14,6 +14,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import FAQ from './components/FAQ';
+import Flag from './components/Flag';
 
 const PriceChart = lazy(() => import('./components/PriceChart'));
 
@@ -25,10 +26,10 @@ const SHARE_CARD_HEIGHT = 600;
 
 
 const CURRENCY_LIST = [
-  { code: 'USD', flag: '🇺🇸' }, { code: 'INR', flag: '🇮🇳' },
-  { code: 'GBP', flag: '🇬🇧' }, { code: 'AUD', flag: '🇦🇺' },
-  { code: 'JPY', flag: '🇯🇵' }, { code: 'KRW', flag: '🇰🇷' },
-  { code: 'AED', flag: '🇦🇪' }, { code: 'EUR', flag: '🇪🇺' }
+  { code: 'USD' }, { code: 'INR' },
+  { code: 'GBP' }, { code: 'AUD' },
+  { code: 'JPY' }, { code: 'KRW' },
+  { code: 'AED' }, { code: 'EUR' }
 ];
 
 const STRUCTURED_DATA = JSON.stringify([
@@ -553,29 +554,57 @@ export default function App() {
 
   const fetchAllData = useCallback((cacheBust = false) => {
     const dataUrl = cacheBust ? `${DATA_URL}?_t=${Date.now()}` : DATA_URL;
-    fetch(dataUrl).then(res => res.json()).then(json => {
-        setPriceData(json);
-        localStorage.setItem('gv_v18_metal', JSON.stringify(json));
-        setLoading(false);
-    }).catch(() => setLoading(false));
+    const INR_PEG = { code: 'INR', unit: 1, buy: 1.6, sell: 1.6 };
 
-    fetch(FOREX_PROXY).then(res => res.json()).then(json => {
-        const transformed = (json.rates || []).map(day => {
-          const usd = day.currencies?.find(c => c.code === 'USD');
-          const usdRate = usd ? parseFloat(usd.buy) : NaN;
-          return {
-            date: day.date,
-            usdRate: Number.isFinite(usdRate) ? usdRate : null,
-            rates: day.currencies
-          };
-        }).sort((a, b) => new Date(a.date) - new Date(b.date));
-        setForexHistory(transformed);
-        localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
-        setForexLoading(false);
-    }).catch((err) => {
-        console.error("Forex fetch failed:", err);
-        setForexLoading(false);
-    });
+    fetch(dataUrl).then(res => res.json()).then(json => {
+        const list = Array.isArray(json) ? json : [];
+        setPriceData(list);
+        localStorage.setItem('gv_v18_metal', JSON.stringify(list));
+        setLoading(false);
+
+        // Currency history now comes from the scraped per-day currency data
+        // stored in data.json (NRB rates collected during each scrape run).
+        const fromData = list
+          .map(day => {
+            const currencies = Array.isArray(day.currencies) ? [...day.currencies] : [];
+            if (!currencies.some(c => c.code === 'INR')) {
+              currencies.push(INR_PEG); // INR is a constant peg, not collected
+            }
+            const usd = currencies.find(c => c.code === 'USD');
+            const usdRate = usd ? parseFloat(usd.buy) : NaN;
+            return {
+              date: String(day.date || '').slice(0, 10),
+              usdRate: Number.isFinite(usdRate) ? usdRate : null,
+              rates: currencies
+            };
+          })
+          .filter(day => day.usdRate !== null && day.rates.length > 0)
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        if (fromData.length >= 2) {
+          setForexHistory(fromData);
+          localStorage.setItem('gv_v18_forex', JSON.stringify(fromData));
+          setForexLoading(false);
+          return;
+        }
+
+        // Fallback: older data.json without currencies — use the /api/forex proxy
+        fetch(FOREX_PROXY).then(res => res.json()).then(json2 => {
+            const transformed = (json2.rates || []).map(day => {
+              const usd = day.currencies?.find(c => c.code === 'USD');
+              const usdRate = usd ? parseFloat(usd.buy) : NaN;
+              return {
+                date: day.date,
+                usdRate: Number.isFinite(usdRate) ? usdRate : null,
+                rates: day.currencies
+              };
+            }).filter(day => day.usdRate !== null)
+              .sort((a, b) => new Date(a.date) - new Date(b.date));
+            setForexHistory(transformed);
+            localStorage.setItem('gv_v18_forex', JSON.stringify(transformed));
+            setForexLoading(false);
+        }).catch(() => setForexLoading(false));
+    }).catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -1005,7 +1034,7 @@ export default function App() {
                       aria-label={`Select ${currency.code}`}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-lg">{currency.flag}</span>
+                        <span className="text-lg"><Flag code={currency.code} /></span>
                         <span>{currency.code}</span>
                       </div>
                     </button>
@@ -1292,7 +1321,7 @@ export default function App() {
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 flex flex-col items-center gap-3">
                             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">{t('youSend')}</p>
-                            <span className="text-5xl leading-none">{currCalc.isSwapped ? '🇳🇵' : CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag}</span>
+                            <span className="text-5xl leading-none"><Flag code={currCalc.isSwapped ? 'NP' : CURRENCY_LIST.find(c => c.code === currCalc.source)?.code} /></span>
                             {currCalc.isSwapped ? <span className="text-sm font-black text-white">NPR</span> :
                             <select className="bg-zinc-800/60 font-black text-sm text-white outline-none text-center px-4 py-2 rounded-xl border border-white/10 w-full cursor-pointer" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})} aria-label="Select Source Currency">
                                 {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
@@ -1308,7 +1337,7 @@ export default function App() {
                         </div>
                         <div className="flex-1 flex flex-col items-center gap-3">
                             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">{t('receiverGets')}</p>
-                            <span className="text-5xl leading-none">{!currCalc.isSwapped ? '🇳🇵' : CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag}</span>
+                            <span className="text-5xl leading-none"><Flag code={!currCalc.isSwapped ? 'NP' : CURRENCY_LIST.find(c => c.code === currCalc.source)?.code} /></span>
                             {!currCalc.isSwapped ? <span className="text-sm font-black text-white">NPR</span> :
                             <select className="bg-zinc-800/60 font-black text-sm text-white outline-none text-center px-4 py-2 rounded-xl border border-white/10 w-full cursor-pointer" value={currCalc.source} onChange={(e) => setCurrCalc({...currCalc, source: e.target.value})} aria-label="Select Target Currency">
                                 {CURRENCY_LIST.map(c => <option key={c.code} value={c.code} className="bg-zinc-900">{c.code}</option>)}
@@ -1321,13 +1350,13 @@ export default function App() {
                 </div>
 
                 <div className="bg-gradient-to-br from-green-500 to-green-700 p-8 sm:p-10 rounded-[3rem] text-black text-center shadow-xl relative overflow-hidden">
-                   <div className="absolute top-4 right-6 text-8xl opacity-10 font-bold pointer-events-none">{currCalc.isSwapped ? CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag : '🇳🇵'}</div>
+                   <div className="absolute top-4 right-6 text-8xl opacity-10 font-bold pointer-events-none"><Flag code={currCalc.isSwapped ? CURRENCY_LIST.find(c => c.code === currCalc.source)?.code : 'NP'} /></div>
                    <div className="flex flex-col items-center gap-2 mb-3 relative z-10">
                       <p className="text-xs font-black uppercase tracking-[0.4em] opacity-60">{t('payoutEstimate')}</p>
                       <div className="flex items-center gap-2 px-3 py-1.5 bg-black/10 rounded-full border border-black/5">
-                          <span className="text-sm font-black">{currCalc.isSwapped ? '🇳🇵 NPR' : `${CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag} ${currCalc.source}`}</span>
+                          <span className="text-sm font-black inline-flex items-center gap-1.5">{currCalc.isSwapped ? <><Flag code="NP" /> NPR</> : <><Flag code={CURRENCY_LIST.find(c => c.code === currCalc.source)?.code} /> {currCalc.source}</>}</span>
                           <ArrowDown className="w-3 h-3 opacity-40" />
-                          <span className="text-sm font-black bg-white/30 px-2 rounded-md">{currCalc.isSwapped ? `${CURRENCY_LIST.find(c => c.code === currCalc.source)?.flag} ${currCalc.source}` : '🇳🇵 NPR'}</span>
+                          <span className="text-sm font-black bg-white/30 px-2 rounded-md inline-flex items-center gap-1.5">{currCalc.isSwapped ? <><Flag code={CURRENCY_LIST.find(c => c.code === currCalc.source)?.code} /> {currCalc.source}</> : <><Flag code="NP" /> NPR</>}</span>
                       </div>
                    </div>
                    <CurrencyResult

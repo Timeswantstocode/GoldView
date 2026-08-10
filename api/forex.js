@@ -43,12 +43,16 @@ async function fetchNrbDateRangeRates(from, to) {
         sell: parseFloat(r.sell),
       }));
     if (currencies.length === 0) continue;
-    const existing = byDate.get(day.date);
+    // The chart anchors on USD, so days missing a valid USD rate are useless
+    const usd = currencies.find(c => c.code === 'USD');
+    if (!usd) continue;
+    const dateKey = String(day.date).slice(0, 10);
+    const existing = byDate.get(dateKey);
     if (!existing || currencies.length > existing.currencies.length) {
-      byDate.set(day.date, { date: day.date, currencies });
+      byDate.set(dateKey, { date: dateKey, currencies });
     }
   }
-  return [...byDate.values()].sort((a, b) => new Date(a.date) - new Date(b.date));
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 async function yahooHistory(symbol, days) {
@@ -136,8 +140,9 @@ export default async function handler(req, res) {
       // Merge today's live app-rate if it is newer than the history's last day
       try {
         const live = await fetchNrbLiveRates();
-        if (live.date > finalRates[finalRates.length - 1].date) {
-          finalRates.push(live);
+        const liveDate = live.date.slice(0, 10);
+        if (liveDate > finalRates[finalRates.length - 1].date.slice(0, 10)) {
+          finalRates.push({ ...live, date: liveDate });
         }
       } catch (err3) {
         console.warn('NRB live merge failed, history only:', err3.message);

@@ -37,14 +37,18 @@ def format_indian(n):
 
 def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t, change_s):
     """Broadcasts native device notifications via Web Push"""
-    from pywebpush import webpush, WebPushException
-
     if not VAPID_PRIVATE_KEY or not VAPID_PUBLIC_KEY:
         print("PUSH SKIPPED: VAPID keys missing in GitHub Secrets.")
         return
 
     if change_g == 0 and change_t == 0 and change_s == 0:
         print("PUSH SKIPPED: No price change detected.")
+        return
+
+    try:
+        from pywebpush import webpush, WebPushException
+    except ImportError:
+        print("PUSH SKIPPED: pywebpush not installed.")
         return
 
     # Helper for calculating percentage change
@@ -200,6 +204,110 @@ def send_push_notification(new_gold, new_tejabi, new_silver, change_g, change_t,
         except Exception as e:
             print(f"ERROR: Failed to update subscriptions: {e}")
 
+# Currencies tracked in the data history.
+# INR is excluded per requirement: it is a fixed 1.6 NPR peg official rate.
+TRACKED_CURRENCIES = ['USD', 'GBP', 'AUD', 'JPY', 'KRW', 'AED', 'EUR']
+
+FENEGOSIDA_API = 'https://api.fenegosida.org/api/website/v1/Dashboard/today'
+NRB_APP_RATE = 'https://www.nrb.org.np/api/forex/v1/app-rate'
+NRB_HISTORY = 'https://www.nrb.org.np/api/forex/v1/rates'
+
+def fetch_fenegosida():
+    """Fetches today's rates from the FENEGOSIDA JSON API (no HTML/UI dependency)."""
+    headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'}
+    for attempt in range(3):
+        try:
+            r = requests.get(FENEGOSIDA_API, headers=headers, timeout=25, verify=False)
+            r.raise_for_status()
+            data = r.json()
+            result = {'gold': 0, 'silver': 0, 'usd': 0}
+            if not isinstance(data, list):
+                return result
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+                label = str(item.get('rateType', ''))
+                value = item.get('todayBaseRatePerGram')
+                try:
+                    value = float(value)
+                except (TypeError, ValueError):
+                    continue
+                if 'छापावाल' in label and 'तोला' in label:
+                    result['gold'] = int(round(value))
+                elif 'चाँदी' in label and 'तोला' in label:
+                    result['silver'] = int(round(value))
+                elif 'ollar' in label:
+                    result['usd'] = round(value, 2)
+            return result
+        except Exception as e:
+            print(f"DEBUG: Attempt {attempt+1} failed for FENEGOSIDA API: {e}")
+            if attempt < 2:
+                time.sleep(5)
+    return {'gold': 0, 'silver': 0, 'usd': 0}
+
+def fetch_nrb_currencies(days=95):
+    """Fetches NPR buy/sell rates for TRACKED_CURRENCIES.
+    Returns (live_map, history_map) where:
+      live_map: {code: {buy, sell, unit}} for today
+      history_map: {date: {code: {buy, sell, unit}}} for the last `days` days
+    """
+    headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'}
+    history_map = {}
+    live_map = {}
+
+    try:
+        r = requests.get(NRB_APP_RATE, headers=headers, timeout=25, verify=False)
+        r.raise_for_status()
+        data = r.json()
+        if isinstance(data, list) and data:
+            data = data[0]
+        for row in (data.get('rates') or []):
+            code = row.get('iso3')
+            if code not in TRACKED_CURRENCIES:
+                continue
+            try:
+                live_map[code] = {
+                    'buy': float(row.get('buy')),
+                    'sell': float(row.get('sell')),
+                    'unit': int(row.get('unit') or 1)
+                }
+            except (TypeError, ValueError):
+                continue
+    except Exception as e:
+        print(f"WARNING: NRB app-rate failed: {e}")
+
+    try:
+        end = datetime.date.today()
+        start = end - datetime.timedelta(days=days)
+        url = f"{NRB_HISTORY}?from={start}&to={end}&per_page=100&page=1"
+        r = requests.get(url, headers=headers, timeout=30, verify=False)
+        r.raise_for_status()
+        payload = (r.json().get('data') or {}).get('payload') or []
+        for day in payload:
+            date_key = str(day.get('date', ''))[:10]
+            if not date_key:
+                continue
+            day_map = {}
+            for row in (day.get('rates') or []):
+                cur = row.get('currency') or {}
+                code = cur.get('iso3')
+                if code not in TRACKED_CURRENCIES:
+                    continue
+                try:
+                    day_map[code] = {
+                        'buy': float(row.get('buy')),
+                        'sell': float(row.get('sell')),
+                        'unit': int(cur.get('unit') or 1)
+                    }
+                except (TypeError, ValueError):
+                    continue
+            if day_map:
+                history_map[date_key] = day_map
+    except Exception as e:
+        print(f"WARNING: NRB history failed: {e}")
+
+    return live_map, history_map
+
 def get_candidates(url, metal):
     headers = {'User-Agent': 'Mozilla/5.0'}
     purity = [999, 9999, 9990, 9167, 9583, 916, 750]
@@ -312,21 +420,29 @@ def update():
     file = 'public/data.json'
     timestamp = int(time.time())
     widget_url = f"https://www.ashesh.com.np/gold/widget.php?api=521224q192&t={timestamp}"
-    fenegosida_url = f"https://fenegosida.org/?t={timestamp}"
-    
-    f_gold = get_candidates(fenegosida_url, "gold")
-    f_tejabi = get_candidates(fenegosida_url, "tejabi")
-    f_silver = get_candidates(fenegosida_url, "silver")
-    
+
+    f_data = fetch_fenegosida()
+    f_gold = [f_data['gold']] if f_data['gold'] > 0 else []
+    f_silver = [f_data['silver']] if f_data['silver'] > 0 else []
+    f_usd = f_data['usd']
+
     a_gold = get_candidates(widget_url, "gold")
     a_tejabi = get_candidates(widget_url, "tejabi")
     a_silver = get_candidates(widget_url, "silver")
+
+    live_currencies, currency_history = fetch_nrb_currencies(days=95)
     
     usd_history_map = fetch_usd_history(days=90)
     live_usd = 0
     if usd_history_map:
         sorted_dates = sorted(usd_history_map.keys(), reverse=True)
         live_usd = usd_history_map[sorted_dates[0]]
+
+    # Prefer FENEGOSIDA's own dollar rate, then NRB, then Yahoo as last resort
+    if f_usd > 0:
+        live_usd = f_usd
+    elif 'USD' in live_currencies:
+        live_usd = live_currencies['USD']['sell']
 
     primary_gold = max(f_gold) if f_gold else 0
     backup_gold = max(a_gold) if a_gold else 0
@@ -336,18 +452,13 @@ def update():
     backup_silver = max(a_silver) if a_silver else 0
     final_silver, silver_verified = verify_price(primary_silver, backup_silver)
     
-    # Tejabi logic: Prioritize Ashesh as requested, then FENEGOSIDA, then calculated
+    # Tejabi logic: Prioritize Ashesh (FENEGOSIDA's new site no longer publishes tejabi)
     backup_tejabi = max(a_tejabi) if a_tejabi else 0
-    primary_tejabi = max(f_tejabi) if f_tejabi else 0
     
     if backup_tejabi > 0:
         final_tejabi = backup_tejabi
         tejabi_verified = True
         tejabi_source = "Ashesh (Tejabi)"
-    elif primary_tejabi > 0:
-        final_tejabi = primary_tejabi
-        tejabi_verified = True
-        tejabi_source = "FENEGOSIDA (Tejabi)"
     else:
         final_tejabi = int(final_gold * 0.991)
         tejabi_verified = False
@@ -392,12 +503,49 @@ def update():
     now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=45)
     today_str = now.strftime("%Y-%m-%d")
     
+    # Build today's currency list (all TRACKED_CURRENCIES from NRB; skip
+    # entries missing from the live feed and leave INR out - it's a fixed peg)
+    today_currencies = []
+    today_key = today_str
+    day_history = currency_history.get(today_key, {})
+    fallback_day = None
+    if day_history:
+        fallback_day = day_history
+    else:
+        # If NRB hasn't published today yet, use yesterday's row
+        for key in sorted(currency_history.keys(), reverse=True):
+            if key < today_key:
+                fallback_day = currency_history[key]
+                break
+    for code in TRACKED_CURRENCIES:
+        if code in live_currencies:
+            today_currencies.append({'code': code, **live_currencies[code]})
+        else:
+            prev = (fallback_day or {}).get(code)
+            if prev:
+                today_currencies.append({'code': code, **prev})
+
+    # Backfill currency history into past entries (up to 3 months)
+    backfilled = 0
+    for entry in history:
+        date_key = str(entry.get('date', ''))[:10]
+        if 'currencies' in entry:
+            continue
+        day_map = currency_history.get(date_key)
+        if not day_map:
+            continue
+        entry['currencies'] = [{'code': code, **day_map[code]} for code in TRACKED_CURRENCIES if code in day_map]
+        backfilled += 1
+    if backfilled:
+        print(f"INFO: Backfilled currency history into {backfilled} past entries")
+
     new_entry = {
         "date": now.strftime("%Y-%m-%d %H:%M"),
         "gold": final_gold,
         "tejabi": final_tejabi,
         "silver": final_silver,
         "usd": live_usd,
+        "currencies": today_currencies,
         "source": source_info,
         "verified": gold_verified and silver_verified and tejabi_verified
     }
@@ -405,6 +553,8 @@ def update():
     if history and history[-1]['date'].startswith(today_str):
         if new_entry['usd'] == 0:
             new_entry['usd'] = history[-1].get('usd', 0)
+        if not new_entry['currencies']:
+            new_entry['currencies'] = history[-1].get('currencies', [])
         history[-1] = new_entry
     else:
         history.append(new_entry)
@@ -412,7 +562,9 @@ def update():
     with open(file, 'w') as f:
         json.dump(history[-1000:], f, indent=4)
     
-    print(f"SUCCESS: Gold {final_gold}, Tejabi {final_tejabi}, Silver {final_silver} via {source_info}")
+    print(f"SUCCESS: Gold {final_gold} (tola), Tejabi {final_tejabi} (tola), Silver {final_silver} (tola), USD {live_usd} via {source_info}")
+    if live_currencies:
+        print(f"INFO: Stored {len(today_currencies)} currency rates for today")
 
 if __name__ == "__main__":
     import sys

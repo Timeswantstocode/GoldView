@@ -1,0 +1,14 @@
+/*
+ * Copyright (c) 2024-2026 Timeswantstocode. All Rights Reserved.
+ * This software is proprietary and may not be copied, modified, or distributed.
+ * See LICENSE file for details.
+ */
+
+// flag-icons, trimmed to only the flags this app uses.
+// Importing the stock CSS would bundle every country flag (~800 SVGs);
+// this sass entrypoint limits it to the 9 flags shown on the site.
+
+@use "flag-icons/sass/flag-icons" with (
+  $flag-icons-path: "../node_modules/flag-icons/flags",
+  $flag-icons-included-countries: ("us", "in", "gb", "au", "jp", "kr", "ae", "eu", "np")
+);
