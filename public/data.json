@@ -7332,5 +7332,58 @@
         ],
         "source": "FENEGOSIDA / Ashesh (Tejabi)",
         "verified": true
+    },
+    {
+        "date": "2026-08-12 10:02",
+        "gold": 307900,
+        "tejabi": 304800,
+        "silver": 4780,
+        "usd": 152.62,
+        "currencies": [
+            {
+                "code": "USD",
+                "buy": 152.4,
+                "sell": 153.0,
+                "unit": 1
+            },
+            {
+                "code": "GBP",
+                "buy": 205.76,
+                "sell": 206.57,
+                "unit": 1
+            },
+            {
+                "code": "AUD",
+                "buy": 107.53,
+                "sell": 107.96,
+                "unit": 1
+            },
+            {
+                "code": "JPY",
+                "buy": 9.57,
+                "sell": 9.6,
+                "unit": 10
+            },
+            {
+                "code": "KRW",
+                "buy": 10.76,
+                "sell": 10.8,
+                "unit": 100
+            },
+            {
+                "code": "AED",
+                "buy": 41.5,
+                "sell": 41.66,
+                "unit": 1
+            },
+            {
+                "code": "EUR",
+                "buy": 175.79,
+                "sell": 176.48,
+                "unit": 1
+            }
+        ],
+        "source": "FENEGOSIDA / Ashesh (Tejabi)",
+        "verified": true
     }
 ]
