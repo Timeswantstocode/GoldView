@@ -7652,11 +7652,11 @@
         "verified": true
     },
     {
-        "date": "2026-08-18 08:54",
+        "date": "2026-08-18 09:40",
         "gold": 306800,
         "tejabi": 303700,
         "silver": 4770,
-        "usd": 150.95,
+        "usd": 152.88,
         "currencies": [
             {
                 "code": "USD",
@@ -7701,7 +7701,7 @@
                 "unit": 1
             }
         ],
-        "source": "Ashesh / Ashesh (Tejabi)",
-        "verified": false
+        "source": "FENEGOSIDA / Ashesh (Tejabi)",
+        "verified": true
     }
 ]
