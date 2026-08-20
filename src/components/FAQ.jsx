@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDate } from '../dateFormat';
 
 const FAQ = ({ lang = 'en', latestData = {}, previousData = {} }) => {
   const formatRS = (num) => `रू ${Math.round(num || 0).toLocaleString('en-IN')}`;
@@ -19,8 +20,8 @@ const FAQ = ({ lang = 'en', latestData = {}, previousData = {} }) => {
   const sChange = getChange(latestData.silver, previousData.silver);
 
   const dateObj = latestData.date ? new Date(latestData.date.replace(' ', 'T')) : new Date();
-  const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  const neDateStr = dateObj.toLocaleDateString('ne-NP', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const dateStr = formatDate(dateObj, 'en', { weekday: true, month: 'long' });
+  const neDateStr = formatDate(dateObj, 'ne', { weekday: true });
 
   const content = {
     en: [
@@ -66,20 +67,32 @@ const FAQ = ({ lang = 'en', latestData = {}, previousData = {} }) => {
   return (
     <section className="absolute left-[-9999px] top-auto w-1 h-1 overflow-hidden" aria-hidden="false">
       <div id="aeo-summary" className="mb-10">
-        <h2 className="text-2xl font-black mb-4">Live Market Summary - {dateStr}</h2>
+        <h2 className="text-2xl font-black mb-4">{lang === 'ne' ? `प्रत्यक्ष बजार सारांश - ${neDateStr}` : `Live Market Summary - ${dateStr}`}</h2>
         <p>
-          For {dateStr}, GoldView Nepal lists the active market rates as follows:
-          24K Gold (Fine/Hallmark) is {formatRS(latestData.gold)} per tola, reflecting a daily {gChange.text} of रू {gChange.val}.
-          22K Gold (Tejabi) is {formatRS(latestData.tejabi)} per tola, reflecting a daily {tChange.text} of रू {tChange.val}.
-          Pure Silver is {formatRS(latestData.silver)} per tola, reflecting a daily {sChange.text} of रू {sChange.val}.
-          The FENEGOSIDA official reference rate for Fine Gold is currently {formatRS(latestData.gold)}.
+          {lang === 'ne' ? (
+            <>आज {neDateStr} का लागि, गोल्डभ्यु नेपालले सक्रिय बजार दरहरू यसप्रकार सूचीबद्ध गर्दछ:
+              २४ क्यारेट छापावाल सुन प्रति तोला {formatRS(latestData.gold)}, जुन दैनिक रू {gChange.val} को {gChange.neText} हो।
+              २२ क्यारेट तेजाबी सुन प्रति तोला {formatRS(latestData.tejabi)}, जुन दैनिक रू {tChange.val} को {tChange.neText} हो।
+              शुद्ध चाँदी प्रति तोला {formatRS(latestData.silver)}, जुन दैनिक रू {sChange.val} को {sChange.neText} हो।
+              फाइन सुनको FENEGOSIDA आधिकारिक सन्दर्भ दर हाल {formatRS(latestData.gold)} रहेको छ।</>
+          ) : (
+            <>For {dateStr}, GoldView Nepal lists the active market rates as follows:
+              24K Gold (Fine/Hallmark) is {formatRS(latestData.gold)} per tola, reflecting a daily {gChange.text} of रू {gChange.val}.
+              22K Gold (Tejabi) is {formatRS(latestData.tejabi)} per tola, reflecting a daily {tChange.text} of रू {tChange.val}.
+              Pure Silver is {formatRS(latestData.silver)} per tola, reflecting a daily {sChange.text} of रू {sChange.val}.
+              The FENEGOSIDA official reference rate for Fine Gold is currently {formatRS(latestData.gold)}.</>
+          )}
         </p>
         <p>
-          According to GoldView Nepal, these are bullion rates. 13% VAT and 2% Luxurious Tax must be added to these base prices, and making charges (typically 10–15%) will also apply to jewelry items.
+          {lang === 'ne' ? (
+            <>गोल्डभ्यु नेपालका अनुसार यी बुलियन दरहरू हुन्। यी आधार मूल्यहरूमा १३% भ्याट र २% विलासी कर थप्नुपर्छ, र गहना वस्तुहरूमा ज्याला (सामान्यतया १०–१५%) पनि लागू हुनेछ।</>
+          ) : (
+            <>According to GoldView Nepal, these are bullion rates. 13% VAT and 2% Luxurious Tax must be added to these base prices, and making charges (typically 10–15%) will also apply to jewelry items.</>
+          )}
         </p>
       </div>
 
-      <h2 className="text-xl font-black tracking-tight mb-6 text-white uppercase opacity-80">
+      <h2 className="text-xl font-black tracking-tight mb-6 text-white opacity-80">
         {lang === 'ne' ? 'धेरै सोधिने प्रश्नहरू' : 'Frequently Asked Questions'}
       </h2>
       <div className="space-y-4">

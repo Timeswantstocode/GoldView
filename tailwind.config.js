@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Noto Sans Devanagari"', 'sans-serif'],
+        sans: ['"Schibsted Grotesk"', 'Mukta', '"Noto Sans Devanagari"', 'sans-serif'],
       },
       colors: {
         gold: {

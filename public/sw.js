@@ -4,7 +4,7 @@
  * See LICENSE file for details.
  */
 
-const CACHE_NAME = 'goldview-cache-v3';
+const CACHE_NAME = 'goldview-cache-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
