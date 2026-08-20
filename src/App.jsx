@@ -25,6 +25,10 @@ const PRIMARY_DOMAIN = "https://www.goldview.tech/";
 const SHARE_CARD_WIDTH = 600;
 const SHARE_CARD_HEIGHT = 600;
 
+const sanitizePriceData = (list) => Array.isArray(list)
+  ? list.filter(d => ['gold', 'tejabi', 'silver'].every(k => Number.isFinite(d?.[k]) && d[k] > 0))
+  : [];
+
 
 const CURRENCY_LIST = [
   { code: 'USD' }, { code: 'INR' },
@@ -104,7 +108,8 @@ const TRANSLATIONS = {
     addAsset: "Add Asset",
     assetName: "Asset Name (Optional)",
     weight: "Weight",
-    purchasePrice: "Purchase Price",
+    purchasePrice: "Total Paid",
+    worthToday: "Worth today",
     currentValue: "Current Value",
     profit: "Profit",
     loss: "Loss",
@@ -188,7 +193,8 @@ const TRANSLATIONS = {
     addAsset: "नयाँ सम्पत्ति थप्नुहोस्",
     assetName: "सम्पत्तिको नाम (वैकल्पिक)",
     weight: "तौल",
-    purchasePrice: "खरिद मूल्य",
+    purchasePrice: "कुल भुक्तानी",
+    worthToday: "आजको मूल्य",
     currentValue: "हालको मूल्य",
     profit: "नाफा",
     loss: "घाटा",
@@ -450,7 +456,7 @@ const TimeframeDropdown = React.memo(({ timeframe, onChange, themeColor, options
 });
 
 export default function App() {
-  const [priceData, setPriceData] = useState(() => JSON.parse(localStorage.getItem('gv_v18_metal') || '[]'));
+  const [priceData, setPriceData] = useState(() => sanitizePriceData(JSON.parse(localStorage.getItem('gv_v18_metal') || '[]')));
   const [forexHistory, setForexHistory] = useState(() => JSON.parse(localStorage.getItem('gv_v18_forex') || '[]'));
   const [loading, setLoading] = useState(priceData.length === 0);
   const [forexLoading, setForexLoading] = useState(true);
@@ -556,8 +562,9 @@ export default function App() {
 
     fetch(dataUrl).then(res => res.json()).then(json => {
         const list = Array.isArray(json) ? json : [];
-        setPriceData(list);
-        localStorage.setItem('gv_v18_metal', JSON.stringify(list));
+        const clean = sanitizePriceData(list);
+        setPriceData(clean);
+        localStorage.setItem('gv_v18_metal', JSON.stringify(clean));
         setLoading(false);
 
         // Currency history now comes from the scraped per-day currency data
@@ -1091,9 +1098,9 @@ export default function App() {
 
   const portfolioView = useMemo(() => {
     const latestPrices = priceData[priceData.length - 1] || {};
+    const metalPrice = (t) => { const p = latestPrices[t] || 0; return p > 0 ? p : 0; };
     const totalCurrentValue = portfolio.reduce((acc, asset) => {
-      const currentPrice = latestPrices[asset.type] || 0;
-      return acc + (asset.weight * currentPrice);
+      return acc + (asset.weight * metalPrice(asset.type));
     }, 0);
     const totalPaid = portfolio.reduce((acc, asset) => acc + asset.pricePaid, 0);
     const totalPL = totalCurrentValue - totalPaid;
@@ -1137,7 +1144,7 @@ export default function App() {
             ) : (
               portfolio.map((asset, index) => {
                 const currentPrice = latestPrices[asset.type] || 0;
-                const currentValue = asset.weight * currentPrice;
+                const currentValue = asset.weight * (currentPrice > 0 ? currentPrice : 0);
                 const pl = currentValue - asset.pricePaid;
                 return (
                   <div 
@@ -1221,6 +1228,12 @@ onClick={() => {
                 <div>
                   <label className="text-[12px] font-black text-zinc-400 mb-2 block ml-3">{t('purchasePrice')} (रू)</label>
                   <input type="number" className="w-full bg-black/60 border-2 border-zinc-800 p-5 rounded-2xl font-black text-white outline-none focus:border-[#D4AF37]" value={newAsset.pricePaid} onChange={(e) => setNewAsset({...newAsset, pricePaid: e.target.value})} />
+                  {(() => {
+                    const w = parseFloat(newAsset.tola || 0) + parseFloat(newAsset.aana || 0)/16 + parseFloat(newAsset.lal || 0)/192;
+                    const p = latestPrices[newAsset.type] || 0;
+                    if (!w || !(p > 0)) return null;
+                    return <p className="text-[11px] font-bold text-zinc-500 ml-3 mt-2">{t('worthToday')}: {formatRS(w * p)}</p>;
+                  })()}
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
@@ -1480,8 +1493,8 @@ onClick={() => {
           <div style={{ position: 'relative', zIndex: 10 }}>
             <div style={{ marginBottom: '28px', textAlign: 'center' }}>
               <h2 style={{ fontSize: '60px', fontWeight: 900, letterSpacing: '-0.05em', color: '#ffffff' }}>GoldView</h2>
-              <p style={{ color: '#D4AF37', fontSize: '14px', fontWeight: 900, letterSpacing: '0.35em', textTransform: 'uppercase', marginTop: '8px' }}>NEPALI RATES</p>
-              <p style={{ color: '#D4AF37', fontSize: '14px', fontWeight: 900, letterSpacing: '0.35em', textTransform: 'uppercase', marginTop: '4px' }}>WWW.GOLDVIEW.TECH</p>
+              <p style={{ color: '#D4AF37', fontSize: '14px', fontWeight: 900, letterSpacing: '0.35em', marginTop: '8px' }}>Nepali Rates</p>
+              <p style={{ color: '#D4AF37', fontSize: '14px', fontWeight: 900, letterSpacing: '0.35em', marginTop: '4px' }}>www.goldview.tech</p>
             </div>
 
             <p style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', letterSpacing: '0.05em', paddingLeft: '16px', marginBottom: '16px' }}>{formatDate(new Date(), lang)}</p>
@@ -1513,8 +1526,8 @@ onClick={() => {
                   <div className="relative z-10">
                     <div className="mb-5 text-center">
                       <h2 className="text-4xl font-black tracking-tight text-white">GoldView</h2>
-                      <p className="text-[#D4AF37] text-[10px] font-black tracking-[0.25em] uppercase mt-1">NEPALI RATES</p>
-                      <p className="text-[#D4AF37] text-[10px] font-black tracking-[0.25em] uppercase">WWW.GOLDVIEW.TECH</p>
+                      <p className="text-[#D4AF37] text-[10px] font-black tracking-[0.25em] mt-1">Nepali Rates</p>
+                      <p className="text-[#D4AF37] text-[10px] font-black tracking-[0.25em] mt-1">www.goldview.tech</p>
                     </div>
 
                     <p className="text-[10px] font-black text-zinc-400 tracking-wide mb-3">{formatDate(new Date(), lang, { month: 'long' })}</p>
