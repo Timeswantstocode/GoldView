@@ -607,34 +607,38 @@ export default function App() {
     }).catch(() => setLoading(false));
   }, []);
 
+  // Keep the latest priceData in a ref so the auto-refresh check can read the
+  // date of the data currently shown on the dashboard without re-binding listeners.
+  const priceDataRef = useRef(priceData);
   useEffect(() => {
-    // Implementation of daily auto-refresh logic past 11:25 AM NPT
-    // This ensures that all devices get the latest scraped data once it's available.
-    const handleDailyAutoRefresh = () => {
-      try {
-        const formatter = new Intl.DateTimeFormat('en-US', {
-          timeZone: 'Asia/Kathmandu',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: 'numeric',
-          minute: 'numeric',
-          hour12: false
-        });
-        const parts = formatter.formatToParts(new Date());
-        const getPart = (type) => parts.find(p => p.type === type).value;
-        const h = parseInt(getPart('hour'));
-        const m = parseInt(getPart('minute'));
-        const todayDate = `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+    priceDataRef.current = priceData;
+  }, [priceData]);
 
-        // If past 11:25 AM NPT, check if we've refreshed today
-        if (h > 11 || (h === 11 && m >= 25)) {
-          const lastRefresh = localStorage.getItem('gv_last_refresh_date');
-          if (lastRefresh !== todayDate && navigator.onLine) {
-            localStorage.setItem('gv_last_refresh_date', todayDate);
-            window.location.reload();
-            return true;
-          }
+  useEffect(() => {
+    // Auto-refresh: compare the date of the data shown on the dashboard against
+    // today's date. If the data is from an older day and the user is online,
+    // re-fetch the latest data so the dashboard is never showing stale rates.
+    const getTodayNPT = () => {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kathmandu',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const parts = formatter.formatToParts(new Date());
+      const getPart = (type) => parts.find(p => p.type === type).value;
+      return `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+    };
+
+    const refreshIfStale = () => {
+      try {
+        const list = priceDataRef.current;
+        const latest = list[list.length - 1];
+        const dataDate = latest?.date ? String(latest.date).slice(0, 10) : '';
+        if (!dataDate) return false;
+        if (dataDate < getTodayNPT() && navigator.onLine) {
+          fetchAllData(true);
+          return true;
         }
       } catch (e) {
         console.warn("Auto-refresh check failed:", e);
@@ -642,7 +646,7 @@ export default function App() {
       return false;
     };
 
-    if (handleDailyAutoRefresh()) return;
+    if (refreshIfStale()) return;
     fetchAllData();
 
     if ('Notification' in window) {
@@ -651,7 +655,7 @@ export default function App() {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        if (!handleDailyAutoRefresh()) {
+        if (!refreshIfStale()) {
           fetchAllData(true);
         }
       }
@@ -659,7 +663,7 @@ export default function App() {
 
     const handlePageShow = (e) => {
       if (e.persisted) {
-        if (!handleDailyAutoRefresh()) {
+        if (!refreshIfStale()) {
           fetchAllData(true);
         }
       }
