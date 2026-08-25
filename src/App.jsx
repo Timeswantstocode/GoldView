@@ -276,8 +276,8 @@ const PriceCard = React.memo(({ type, isActive, diff, val, meta, onClick, format
       role="button"
       tabIndex={0}
       aria-label={`Select ${meta.label}`}
-      className={`p-5 sm:p-7 lg:p-9 rounded-[2.4rem] sm:rounded-[2.8rem] lg:rounded-[3.2rem] border-[1.5px] transition-all duration-300 cursor-pointer bg-gradient-to-br backdrop-blur-xl relative overflow-hidden focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${
-        isActive ? `${meta.grad} border-white/20 scale-[1.02]` : 'border-white/5 bg-white/5 opacity-60'
+      className={`p-5 sm:p-7 lg:p-9 rounded-[2.4rem] sm:rounded-[2.8rem] lg:rounded-[3.2rem] border border-transparent transition-all duration-300 cursor-pointer bg-gradient-to-br relative overflow-hidden focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${
+        isActive ? `${meta.grad} scale-[1.02]` : 'bg-white/5 opacity-60'
       }`}>
       <div className="flex justify-between items-start mb-2 text-[12px] font-black tracking-wide">
         <div className="flex flex-col gap-0.5">
