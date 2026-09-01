@@ -2,11 +2,8 @@ name: Scrape Gold Data
 
 on:
   schedule:
-    # 1. 10:45 AM NPT
-    - cron: '0 5 * * *'
-
-    # 2. 11:00 AM NPT
-    - cron: '15 5 * * *'
+    # 11:15 AM NPT (05:30 UTC) - single reliable slot, Vercel Cron at same time triggers dispatch instantly
+    - cron: '30 5 * * *'
 
   workflow_dispatch: # Allows you to manually trigger a scrape from the Actions tab
 
