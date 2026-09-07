@@ -223,10 +223,6 @@ ASHESH_CHART_URLS = {
     'silver': 'https://www.ashesh.com.np/gold/chart.php?type=2&unit=tola',
 }
 
-# Vercel edge bridge (/api/ashesh): same Ashesh data fetched from Vercel's
-# egress IPs, which Ashesh does not block. Tried after direct fetches fail.
-ASHESH_BRIDGE_URL = 'https://www.goldview.tech/api/ashesh'
-
 # Full browser headers: Ashesh WAF started rejecting the bare
 # 'Mozilla/5.0' UA from datacenter IPs with 403 (observed 2026-09-06/07).
 BROWSER_HEADERS = {
@@ -247,8 +243,9 @@ BROWSER_HEADERS = {
 # than Rs 100. The threshold is empirical, not a published rule: the 10
 # remaining misses are human rate-setting noise (e.g. frac 50.0 priced both
 # up and down on different days), so no formula of gold alone can hit 100%.
-# Last-resort fallback only — live Ashesh data (direct or via the Vercel
-# /api/ashesh bridge) is always preferred. Re-validate against Ashesh
+# Last-resort fallback only — live Ashesh data is always preferred (a Vercel
+# /api/ashesh bridge was tried and removed: Ashesh 403s Vercel edge IPs and
+# GoldView's own bot protection 429s automation). Re-validate against Ashesh
 # history if estimates start missing by >100.
 def estimate_tejabi(hallmark):
     if hallmark <= 0:
@@ -470,33 +467,6 @@ def fetch_ashesh_metal(metal):
     return fetch_ashesh_chart(metal)
 
 
-def fetch_bridge():
-    """Fetch live Ashesh rates via the Vercel /api/ashesh edge bridge.
-
-    Returns {metal: price} with only sane in-range values, else {}.
-    """
-    bounds = {'gold': (100000, 1000000), 'tejabi': (100000, 1000000), 'silver': (1000, 15000)}
-    try:
-        r = requests.get(ASHESH_BRIDGE_URL, headers={'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'},
-                         timeout=30)
-        r.raise_for_status()
-        data = r.json()
-        out = {}
-        for metal, (lo, hi) in bounds.items():
-            try:
-                v = int(data.get(metal, 0))
-            except (TypeError, ValueError):
-                continue
-            if lo <= v <= hi:
-                out[metal] = v
-        if out:
-            print(f"INFO: Ashesh bridge gave {out}")
-        return out
-    except Exception as e:
-        print(f"DEBUG: Ashesh bridge failed: {e}")
-        return {}
-
-
 def verify_price(primary, backup, tolerance=0.05):
     if primary > 0 and backup > 0:
         diff = abs(primary - backup) / primary
@@ -542,17 +512,6 @@ def update():
     a_gold = fetch_ashesh_metal("gold")
     a_tejabi = fetch_ashesh_metal("tejabi")
     a_silver = fetch_ashesh_metal("silver")
-
-    # Second source for Ashesh data: Vercel edge bridge (different egress
-    # IPs, not blocked). Fills only metals the direct fetch missed.
-    if not (a_gold and a_tejabi and a_silver):
-        bridge = fetch_bridge()
-        if not a_gold and bridge.get('gold'):
-            a_gold = [bridge['gold']]
-        if not a_tejabi and bridge.get('tejabi'):
-            a_tejabi = [bridge['tejabi']]
-        if not a_silver and bridge.get('silver'):
-            a_silver = [bridge['silver']]
 
     live_currencies, currency_history = fetch_nrb_currencies(days=95)
     
