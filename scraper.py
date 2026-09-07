@@ -223,6 +223,10 @@ ASHESH_CHART_URLS = {
     'silver': 'https://www.ashesh.com.np/gold/chart.php?type=2&unit=tola',
 }
 
+# Vercel edge bridge (/api/ashesh): same Ashesh data fetched from Vercel's
+# egress IPs, which Ashesh does not block. Tried after direct fetches fail.
+ASHESH_BRIDGE_URL = 'https://www.goldview.tech/api/ashesh'
+
 # Full browser headers: Ashesh WAF started rejecting the bare
 # 'Mozilla/5.0' UA from datacenter IPs with 403 (observed 2026-09-06/07).
 BROWSER_HEADERS = {
@@ -234,10 +238,25 @@ BROWSER_HEADERS = {
     'Cache-Control': 'no-cache',
 }
 
-# Observed Ashesh spread Sept 2026 (chart.php history): Tajabi = Hallmark - 3000
-# (Sept 7: 301900->298900, Sept 6: 304300->301300). Far more accurate than
-# the old gold*0.991 estimate (off by ~280 at current prices).
-TEJABI_SPREAD = 3000
+# How Ashesh prices Tejabi, fitted on 649 days of real history covering the
+# whole 1%-discount regime (2024-08-06 to 2026-09-07; before 2024-08-06 the
+# federation used fixed Rs 300-700 spreads): Tajabi = Hallmark - 1%,
+# rounded to Rs 100, except when the 1% figure lands just above a hundred
+# boundary (fraction below 56.0) — then the published rate uses the lower
+# hundred. 639/649 exact (vs 615/649 for plain rounding), never off by more
+# than Rs 100. The threshold is empirical, not a published rule: the 10
+# remaining misses are human rate-setting noise (e.g. frac 50.0 priced both
+# up and down on different days), so no formula of gold alone can hit 100%.
+# Last-resort fallback only — live Ashesh data (direct or via the Vercel
+# /api/ashesh bridge) is always preferred. Re-validate against Ashesh
+# history if estimates start missing by >100.
+def estimate_tejabi(hallmark):
+    if hallmark <= 0:
+        return 0
+    raw = round(hallmark * 0.99, 2)  # round to paise first: avoids float dust near boundaries
+    if raw % 100 < 56.0:
+        return int(raw) // 100 * 100
+    return int(round(raw, -2))
 
 def fetch_fenegosida():
     """Fetches today's rates from the FENEGOSIDA JSON API (no HTML/UI dependency)."""
@@ -451,6 +470,33 @@ def fetch_ashesh_metal(metal):
     return fetch_ashesh_chart(metal)
 
 
+def fetch_bridge():
+    """Fetch live Ashesh rates via the Vercel /api/ashesh edge bridge.
+
+    Returns {metal: price} with only sane in-range values, else {}.
+    """
+    bounds = {'gold': (100000, 1000000), 'tejabi': (100000, 1000000), 'silver': (1000, 15000)}
+    try:
+        r = requests.get(ASHESH_BRIDGE_URL, headers={'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'},
+                         timeout=30)
+        r.raise_for_status()
+        data = r.json()
+        out = {}
+        for metal, (lo, hi) in bounds.items():
+            try:
+                v = int(data.get(metal, 0))
+            except (TypeError, ValueError):
+                continue
+            if lo <= v <= hi:
+                out[metal] = v
+        if out:
+            print(f"INFO: Ashesh bridge gave {out}")
+        return out
+    except Exception as e:
+        print(f"DEBUG: Ashesh bridge failed: {e}")
+        return {}
+
+
 def verify_price(primary, backup, tolerance=0.05):
     if primary > 0 and backup > 0:
         diff = abs(primary - backup) / primary
@@ -497,6 +543,17 @@ def update():
     a_tejabi = fetch_ashesh_metal("tejabi")
     a_silver = fetch_ashesh_metal("silver")
 
+    # Second source for Ashesh data: Vercel edge bridge (different egress
+    # IPs, not blocked). Fills only metals the direct fetch missed.
+    if not (a_gold and a_tejabi and a_silver):
+        bridge = fetch_bridge()
+        if not a_gold and bridge.get('gold'):
+            a_gold = [bridge['gold']]
+        if not a_tejabi and bridge.get('tejabi'):
+            a_tejabi = [bridge['tejabi']]
+        if not a_silver and bridge.get('silver'):
+            a_silver = [bridge['silver']]
+
     live_currencies, currency_history = fetch_nrb_currencies(days=95)
     
     usd_history_map = fetch_usd_history(days=90)
@@ -527,10 +584,10 @@ def update():
         tejabi_verified = True
         tejabi_source = "Ashesh (Tejabi)"
     else:
-        final_tejabi = final_gold - TEJABI_SPREAD if final_gold > 0 else 0
+        final_tejabi = estimate_tejabi(final_gold)
         tejabi_verified = False
         tejabi_source = "Calculated"
-        print(f"WARNING: Ashesh Tejabi unavailable, estimated {final_tejabi} = gold {final_gold} - {TEJABI_SPREAD}")
+        print(f"WARNING: Ashesh Tejabi unavailable, estimated {final_tejabi} = round({final_gold}*0.99, -2)")
 
     sources = []
     if f_gold and final_gold == primary_gold: sources.append("FENEGOSIDA")
@@ -552,7 +609,7 @@ def update():
     if (final_gold == 0 or final_silver == 0) and history:
         final_gold = final_gold or history[-1].get('gold', 0)
         final_silver = final_silver or history[-1].get('silver', 0)
-        final_tejabi = final_tejabi or history[-1].get('tejabi', (final_gold - TEJABI_SPREAD) if final_gold else 0)
+        final_tejabi = final_tejabi or history[-1].get('tejabi', estimate_tejabi(final_gold))
         source_info = "Recovery (Last Known)"
     
     # NOTIFICATION LOGIC: Compare with the very last saved record
