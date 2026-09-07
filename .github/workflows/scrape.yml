@@ -1,7 +1,12 @@
 name: Scrape Gold Data
 
 on:
-  workflow_dispatch: # Triggered by Vercel Cron /api/trigger-scrape at 11:15 NPT (no GitHub schedule to avoid 6h delay)
+  schedule:
+    # 12:00 PM NPT (06:15 UTC) - backup slot in case the Vercel Cron
+    # /api/trigger-scrape dispatch at 11:15 NPT fails (e.g. GH_PAT expired)
+    - cron: '15 6 * * *'
+
+  workflow_dispatch: # Primary trigger: Vercel Cron /api/trigger-scrape at 11:15 NPT
 
 jobs:
   scrape-and-deploy:

@@ -8618,7 +8618,7 @@
     {
         "date": "2026-09-06 11:26",
         "gold": 304300,
-        "tejabi": 301561,
+        "tejabi": 301300,
         "silver": 4725,
         "usd": 151.28,
         "currencies": [
@@ -8665,13 +8665,13 @@
                 "unit": 1
             }
         ],
-        "source": "FENEGOSIDA / Calculated",
-        "verified": false
+        "source": "FENEGOSIDA / Ashesh (Tejabi)",
+        "verified": true
     },
     {
         "date": "2026-09-07 11:26",
         "gold": 301900,
-        "tejabi": 299182,
+        "tejabi": 298900,
         "silver": 4690,
         "usd": 151.19,
         "currencies": [
@@ -8718,7 +8718,7 @@
                 "unit": 1
             }
         ],
-        "source": "FENEGOSIDA / Calculated",
-        "verified": false
+        "source": "FENEGOSIDA / Ashesh (Tejabi)",
+        "verified": true
     }
 ]

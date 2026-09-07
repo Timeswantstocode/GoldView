@@ -212,6 +212,33 @@ FENEGOSIDA_API = 'https://api.fenegosida.org/api/website/v1/Dashboard/today'
 NRB_APP_RATE = 'https://www.nrb.org.np/api/forex/v1/app-rate'
 NRB_HISTORY = 'https://www.nrb.org.np/api/forex/v1/rates'
 
+# Ashesh endpoints. widget.php is the primary source for Tejabi (FENEGOSIDA
+# does not publish Tejabi). Since 2026-09-06 Ashesh returns 403 to GitHub
+# Actions runners, so we try a fallback chain: widget -> main page -> chart.
+ASHESH_WIDGET_URL = 'https://www.ashesh.com.np/gold/widget.php?api=521224q192'
+ASHESH_MAIN_URL = 'https://www.ashesh.com.np/gold/'
+ASHESH_CHART_URLS = {
+    'gold': 'https://www.ashesh.com.np/gold/chart.php?type=0&unit=tola',
+    'tejabi': 'https://www.ashesh.com.np/gold/chart.php?type=1&unit=tola',
+    'silver': 'https://www.ashesh.com.np/gold/chart.php?type=2&unit=tola',
+}
+
+# Full browser headers: Ashesh WAF started rejecting the bare
+# 'Mozilla/5.0' UA from datacenter IPs with 403 (observed 2026-09-06/07).
+BROWSER_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Referer': 'https://www.ashesh.com.np/gold/',
+    'Upgrade-Insecure-Requests': '1',
+    'Cache-Control': 'no-cache',
+}
+
+# Observed Ashesh spread Sept 2026 (chart.php history): Tajabi = Hallmark - 3000
+# (Sept 7: 301900->298900, Sept 6: 304300->301300). Far more accurate than
+# the old gold*0.991 estimate (off by ~280 at current prices).
+TEJABI_SPREAD = 3000
+
 def fetch_fenegosida():
     """Fetches today's rates from the FENEGOSIDA JSON API (no HTML/UI dependency)."""
     headers = {'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'}
@@ -308,8 +335,8 @@ def fetch_nrb_currencies(days=95):
 
     return live_map, history_map
 
-def get_candidates(url, metal):
-    headers = {'User-Agent': 'Mozilla/5.0'}
+def get_candidates(url, metal, headers=None):
+    headers = headers or BROWSER_HEADERS
     purity = [999, 9999, 9990, 9167, 9583, 916, 750]
     weights = [1166, 11664]
     office_nums = [453227, 453228, 4532270]
@@ -382,6 +409,48 @@ def get_candidates(url, metal):
                 return []
 
 
+def fetch_ashesh_chart(metal):
+    """Fallback: parse latest y value from Ashesh chart.php dataPoints.
+
+    e.g. { x: new Date(2026,8,07), y: 298900 } -> 298900.
+    Returns [price] or [].
+    """
+    url = ASHESH_CHART_URLS.get(metal)
+    if not url:
+        return []
+    try:
+        r = requests.get(url, headers=BROWSER_HEADERS, timeout=25, verify=False)
+        r.raise_for_status()
+        points = re.findall(r'y:\s*(\d{4,6})', r.text)
+        if not points:
+            return []
+        # dataPoints are newest-first; the first valid in-range value is today
+        min_p, max_p = (100000, 1000000) if metal in ("gold", "tejabi") else (1000, 15000)
+        for p in points:
+            val = int(p)
+            if min_p <= val <= max_p:
+                print(f"INFO: Ashesh chart fallback gave {metal}={val}")
+                return [val]
+        return []
+    except Exception as e:
+        print(f"DEBUG: Ashesh chart fallback failed for {metal}: {e}")
+        return []
+
+
+def fetch_ashesh_metal(metal):
+    """Try Ashesh sources in order: widget -> main page -> chart.
+
+    Works around the 403 blocking of widget.php from datacenter IPs
+    (first seen 2026-09-06 on GitHub Actions runners).
+    """
+    for url in (ASHESH_WIDGET_URL, ASHESH_MAIN_URL):
+        prices = get_candidates(url, metal)
+        if prices:
+            return prices
+        print(f"WARNING: Ashesh {metal} empty from {url}, trying next source...")
+    return fetch_ashesh_chart(metal)
+
+
 def verify_price(primary, backup, tolerance=0.05):
     if primary > 0 and backup > 0:
         diff = abs(primary - backup) / primary
@@ -418,17 +487,15 @@ def fetch_usd_history(days=90):
 
 def update():
     file = 'public/data.json'
-    timestamp = int(time.time())
-    widget_url = f"https://www.ashesh.com.np/gold/widget.php?api=521224q192&t={timestamp}"
 
     f_data = fetch_fenegosida()
     f_gold = [f_data['gold']] if f_data['gold'] > 0 else []
     f_silver = [f_data['silver']] if f_data['silver'] > 0 else []
     f_usd = f_data['usd']
 
-    a_gold = get_candidates(widget_url, "gold")
-    a_tejabi = get_candidates(widget_url, "tejabi")
-    a_silver = get_candidates(widget_url, "silver")
+    a_gold = fetch_ashesh_metal("gold")
+    a_tejabi = fetch_ashesh_metal("tejabi")
+    a_silver = fetch_ashesh_metal("silver")
 
     live_currencies, currency_history = fetch_nrb_currencies(days=95)
     
@@ -460,9 +527,10 @@ def update():
         tejabi_verified = True
         tejabi_source = "Ashesh (Tejabi)"
     else:
-        final_tejabi = int(final_gold * 0.991)
+        final_tejabi = final_gold - TEJABI_SPREAD if final_gold > 0 else 0
         tejabi_verified = False
         tejabi_source = "Calculated"
+        print(f"WARNING: Ashesh Tejabi unavailable, estimated {final_tejabi} = gold {final_gold} - {TEJABI_SPREAD}")
 
     sources = []
     if f_gold and final_gold == primary_gold: sources.append("FENEGOSIDA")
@@ -484,7 +552,7 @@ def update():
     if (final_gold == 0 or final_silver == 0) and history:
         final_gold = final_gold or history[-1].get('gold', 0)
         final_silver = final_silver or history[-1].get('silver', 0)
-        final_tejabi = final_tejabi or history[-1].get('tejabi', int(final_gold * 0.991))
+        final_tejabi = final_tejabi or history[-1].get('tejabi', (final_gold - TEJABI_SPREAD) if final_gold else 0)
         source_info = "Recovery (Last Known)"
     
     # NOTIFICATION LOGIC: Compare with the very last saved record
