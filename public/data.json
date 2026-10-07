@@ -10259,11 +10259,11 @@
         "verified": false
     },
     {
-        "date": "2026-10-07 11:27",
-        "gold": 291500,
-        "tejabi": 288600,
-        "silver": 4415,
-        "usd": 154.28,
+        "date": "2026-10-07 19:08",
+        "gold": 292300,
+        "tejabi": 289400,
+        "silver": 4425,
+        "usd": 154.49,
         "currencies": [
             {
                 "code": "USD",
@@ -10308,7 +10308,7 @@
                 "unit": 1
             }
         ],
-        "source": "Recovery (Last Known)",
+        "source": "FENEGOSIDA / Calculated",
         "verified": false
     }
 ]
