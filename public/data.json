@@ -10416,5 +10416,58 @@
         ],
         "source": "FENEGOSIDA / Calculated",
         "verified": false
+    },
+    {
+        "date": "2026-10-10 11:26",
+        "gold": 295700,
+        "tejabi": 292700,
+        "silver": 4405,
+        "usd": 154.76,
+        "currencies": [
+            {
+                "code": "USD",
+                "buy": 154.48,
+                "sell": 155.08,
+                "unit": 1
+            },
+            {
+                "code": "GBP",
+                "buy": 204.55,
+                "sell": 205.35,
+                "unit": 1
+            },
+            {
+                "code": "AUD",
+                "buy": 107.83,
+                "sell": 108.25,
+                "unit": 1
+            },
+            {
+                "code": "JPY",
+                "buy": 9.76,
+                "sell": 9.8,
+                "unit": 10
+            },
+            {
+                "code": "KRW",
+                "buy": 11.52,
+                "sell": 11.56,
+                "unit": 100
+            },
+            {
+                "code": "AED",
+                "buy": 42.06,
+                "sell": 42.23,
+                "unit": 1
+            },
+            {
+                "code": "EUR",
+                "buy": 173.32,
+                "sell": 173.99,
+                "unit": 1
+            }
+        ],
+        "source": "FENEGOSIDA / Calculated",
+        "verified": false
     }
 ]
