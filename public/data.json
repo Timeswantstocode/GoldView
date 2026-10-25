@@ -11125,5 +11125,15 @@
         "currencies": [],
         "source": "FENEGOSIDA / Calculated",
         "verified": false
+    },
+    {
+        "date": "2026-10-25 11:27",
+        "gold": 278500,
+        "tejabi": 275700,
+        "silver": 3955,
+        "usd": 151.8,
+        "currencies": [],
+        "source": "FENEGOSIDA / Calculated",
+        "verified": false
     }
 ]
