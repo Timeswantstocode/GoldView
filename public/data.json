@@ -12215,5 +12215,217 @@
         ],
         "source": "FENEGOSIDA / Calculated",
         "verified": false
+    },
+    {
+        "date": "2026-11-17 11:25",
+        "gold": 267200,
+        "tejabi": 264500,
+        "silver": 3490,
+        "usd": 150.58,
+        "currencies": [
+            {
+                "code": "USD",
+                "buy": 149.98,
+                "sell": 150.58,
+                "unit": 1
+            },
+            {
+                "code": "GBP",
+                "buy": 197.78,
+                "sell": 198.57,
+                "unit": 1
+            },
+            {
+                "code": "AUD",
+                "buy": 101.27,
+                "sell": 101.68,
+                "unit": 1
+            },
+            {
+                "code": "JPY",
+                "buy": 9.4,
+                "sell": 9.44,
+                "unit": 10
+            },
+            {
+                "code": "KRW",
+                "buy": 11.24,
+                "sell": 11.28,
+                "unit": 100
+            },
+            {
+                "code": "AED",
+                "buy": 40.84,
+                "sell": 41.0,
+                "unit": 1
+            },
+            {
+                "code": "EUR",
+                "buy": 165.11,
+                "sell": 165.77,
+                "unit": 1
+            }
+        ],
+        "source": "Ashesh (backfill)",
+        "verified": true
+    },
+    {
+        "date": "2026-11-18 11:25",
+        "gold": 260900,
+        "tejabi": 258300,
+        "silver": 3380,
+        "usd": 149.86,
+        "currencies": [
+            {
+                "code": "USD",
+                "buy": 149.26,
+                "sell": 149.86,
+                "unit": 1
+            },
+            {
+                "code": "GBP",
+                "buy": 196.9,
+                "sell": 197.69,
+                "unit": 1
+            },
+            {
+                "code": "AUD",
+                "buy": 100.49,
+                "sell": 100.89,
+                "unit": 1
+            },
+            {
+                "code": "JPY",
+                "buy": 9.39,
+                "sell": 9.43,
+                "unit": 10
+            },
+            {
+                "code": "KRW",
+                "buy": 11.17,
+                "sell": 11.22,
+                "unit": 100
+            },
+            {
+                "code": "AED",
+                "buy": 40.64,
+                "sell": 40.8,
+                "unit": 1
+            },
+            {
+                "code": "EUR",
+                "buy": 164.12,
+                "sell": 164.78,
+                "unit": 1
+            }
+        ],
+        "source": "Ashesh (backfill)",
+        "verified": true
+    },
+    {
+        "date": "2026-11-19 11:25",
+        "gold": 257600,
+        "tejabi": 255000,
+        "silver": 3335,
+        "usd": 149.81,
+        "currencies": [
+            {
+                "code": "USD",
+                "buy": 149.21,
+                "sell": 149.81,
+                "unit": 1
+            },
+            {
+                "code": "GBP",
+                "buy": 196.53,
+                "sell": 197.32,
+                "unit": 1
+            },
+            {
+                "code": "AUD",
+                "buy": 100.4,
+                "sell": 100.8,
+                "unit": 1
+            },
+            {
+                "code": "JPY",
+                "buy": 9.37,
+                "sell": 9.41,
+                "unit": 10
+            },
+            {
+                "code": "KRW",
+                "buy": 11.2,
+                "sell": 11.25,
+                "unit": 100
+            },
+            {
+                "code": "AED",
+                "buy": 40.63,
+                "sell": 40.79,
+                "unit": 1
+            },
+            {
+                "code": "EUR",
+                "buy": 163.75,
+                "sell": 164.41,
+                "unit": 1
+            }
+        ],
+        "source": "Ashesh (backfill)",
+        "verified": true
+    },
+    {
+        "date": "2026-11-20 00:38",
+        "gold": 257600,
+        "tejabi": 255000,
+        "silver": 3335,
+        "usd": 149.27,
+        "currencies": [
+            {
+                "code": "USD",
+                "buy": 148.97,
+                "sell": 149.57,
+                "unit": 1
+            },
+            {
+                "code": "GBP",
+                "buy": 195.89,
+                "sell": 196.68,
+                "unit": 1
+            },
+            {
+                "code": "AUD",
+                "buy": 99.91,
+                "sell": 100.32,
+                "unit": 1
+            },
+            {
+                "code": "JPY",
+                "buy": 9.32,
+                "sell": 9.35,
+                "unit": 10
+            },
+            {
+                "code": "KRW",
+                "buy": 11.2,
+                "sell": 11.25,
+                "unit": 100
+            },
+            {
+                "code": "AED",
+                "buy": 40.56,
+                "sell": 40.73,
+                "unit": 1
+            },
+            {
+                "code": "EUR",
+                "buy": 163.78,
+                "sell": 164.44,
+                "unit": 1
+            }
+        ],
+        "source": "FENEGOSIDA / Ashesh (Tejabi)",
+        "verified": true
     }
 ]
